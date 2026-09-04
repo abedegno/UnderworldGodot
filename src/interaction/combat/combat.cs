@@ -255,7 +255,6 @@ namespace Underworld
 
                 AttackScoreFlankingBonus = CalcFlankingBonus();
                 var attackresult = CalcAttackResults();
-                CombatMissImpactSound(attackresult);
                 if (attackresult == 0)
                 {
                     //A hit
@@ -264,7 +263,11 @@ namespace Underworld
                 }
                 else
                 {
-                    // a miss
+                    // a miss. The impact sound belongs here, not before the test: this
+                    // routine's zero argument means "no defender found" in DOS, while the
+                    // port's attackresult is zero on a HIT, so calling it unconditionally
+                    // played the swing-and-miss sound on every successful hit. See #108.
+                    CombatMissImpactSound(attackresult);
                     damage.DamageObject(
                         objToDamage: DefendingCharacter,
                         basedamage: 0,
@@ -345,30 +348,21 @@ namespace Underworld
                     }
                 }
 
-                //TODO: UW1 may have different values.
-                var effectVar8 = 0;
-                //Seg24_E37
-                if (var6 != 1)
+                // The two games decide 7 versus 8 differently, and this was UW2's rule for
+                // both. UW1 gives 7 only when both classifications are 1 (UW.EXE 0x25122);
+                // UW2 also gives 7 when the first is 2 and the second is 1 (UW2.EXE
+                // 0x269F7). See issue #108.
+                int effectVar8;
+                if (_RES == GAME_UW2)
                 {
-                    if (var6 == 2)
-                    {
-                        if (var7 == 1)
-                        {
-                            effectVar8 = 7;
-                        }
-                        else
-                        {
-                            effectVar8 = 8;
-                        }
-                    }
-                    else
-                    {
-                        effectVar8 = 8;
-                    }
+                    // 7 when the first is 1, or when it is 2 and the second is 1.
+                    effectVar8 = (var6 == 1 || (var6 == 2 && var7 == 1)) ? 7 : 8;
                 }
                 else
                 {
-                    effectVar8 = 7;
+                    // UW1 needs both to be 1: the second cmp is only reached when the
+                    // first matched, and either mismatch falls through to 8.
+                    effectVar8 = (var6 == 1 && var7 == 1) ? 7 : 8;
                 }
                 UWsoundeffects.PlaySoundEffectAtObject((byte)effectVar8, DefendingCharacter, 0);
             }
