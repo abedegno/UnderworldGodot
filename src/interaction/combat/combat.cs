@@ -761,7 +761,23 @@ namespace Underworld
                 motion.ProcessMotionTileHeights_seg028_2941_385(0);
                 if (((MotionCalcArray.UnkC_terrain_base | MotionCalcArray.UnkE_base) & 0x300) != 0)
                 {
-                    Debug.Print("Todo SpawnImpactAnimo()");
+                    // The weapon met terrain rather than an object. DOS spawns an impact
+                    // animation here and, when the attacker is the player, plays sound
+                    // effect 7 at the impact point: UW.EXE 0x247CD tests CurrentAttacker
+                    // against 1 and skips the sound for anyone else. An NPC hitting a wall
+                    // is silent.
+                    //
+                    // Only the sound is done here. The animation allocates an object and
+                    // links it into the tile's list, which is a larger change. See #111.
+                    if (AttackingCharacter.index == 1)
+                    {
+                        UWsoundeffects.PlaySoundEffectAtCoordinate(
+                            effectNo: 7,
+                            packedX: MotionCalcArray.x0,
+                            packedY: MotionCalcArray.y2,
+                            volDelta: 0);
+                    }
+                    Debug.Print("Todo SpawnImpactAnimo() animation half");
                 }
 
             }
