@@ -767,27 +767,33 @@ namespace Underworld
                 // passed roughly one swing in twelve. See issue #111.
                 if (((MotionCalcArray.UnkC_terrain | MotionCalcArray.UnkE) & 0x300) != 0)
                 {
-                    // The weapon met terrain rather than an object. DOS spawns an impact
-                    // animation here and, when the attacker is the player, plays sound
-                    // effect 7 at the impact point: UW.EXE 0x247CD tests CurrentAttacker
-                    // against 1 and skips the sound for anyone else. An NPC hitting a wall
-                    // is silent.
+                    // The weapon met terrain rather than an object. DOS restores the
+                    // calculation array's x and y to the attacker's own tile and fine
+                    // coordinates, discarding the projected point GetCoordinateInDirection
+                    // left there, then calls SpawnImpactAnimo_seg022_2D2 with the attacker's
+                    // heading and the same weapon reach.
                     //
-                    // Only the sound is done here. The animation allocates an object and
-                    // links it into the tile's list, which is a larger change. See #111.
+                    // SpawnImpactAnimo walks outward from that start point one unit at a
+                    // time, up to reach+1 steps, and stops at the first step whose terrain
+                    // flags are set. There it plays sound effect 7 and spawns the impact
+                    // animation. The sound is played only when the attacker is the player:
+                    // UW.EXE 0x247CD tests CurrentAttacker against 1, so an NPC hitting a
+                    // wall is silent.
+                    //
+                    // Only the sound is done here, and it is played at the start of that
+                    // walk rather than at the step that stops it. The offset is under one
+                    // tile, but it is not where DOS puts it. The walk belongs with the
+                    // animation, which allocates an object and links it into the tile's
+                    // list. Both are left for their own change. See #111.
                     if (AttackingCharacter.index == 1)
                     {
-                        // At the ATTACKER, not at the weapon reach point. DOS rebuilds the
-                        // calculation array's x and y from the attacker object's own tile
-                        // and fine coordinates in the block just before the call, so the
-                        // projected point GetCoordinateInDirection left there is discarded.
                         UWsoundeffects.PlaySoundEffectAtCoordinate(
                             effectNo: 7,
                             packedX: (AttackingCharacter.tileX << 3) + AttackingCharacter.xpos,
                             packedY: (AttackingCharacter.tileY << 3) + AttackingCharacter.ypos,
                             volDelta: 0);
                     }
-                    Debug.Print("Todo SpawnImpactAnimo() animation half");
+                    Debug.Print("Todo SpawnImpactAnimo() walk and animation halves");
                 }
 
             }
