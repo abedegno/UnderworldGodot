@@ -759,7 +759,13 @@ namespace Underworld
             {
                 //seg024_24E9_65C:
                 motion.ProcessMotionTileHeights_seg028_2941_385(0);
-                if (((MotionCalcArray.UnkC_terrain_base | MotionCalcArray.UnkE_base) & 0x300) != 0)
+                // The CURRENT calculation array, not the base one. DOS reads
+                // CurrentCalculationArrayPTR +0x0C and +0x0E right after the call, and
+                // ProcessMotionTileHeights writes those same working fields. The _base
+                // properties address a different buffer that the routine never touches, so
+                // this test was reading whatever an earlier calculation had left there and
+                // passed roughly one swing in twelve. See issue #111.
+                if (((MotionCalcArray.UnkC_terrain | MotionCalcArray.UnkE) & 0x300) != 0)
                 {
                     // The weapon met terrain rather than an object. DOS spawns an impact
                     // animation here and, when the attacker is the player, plays sound
@@ -771,10 +777,14 @@ namespace Underworld
                     // links it into the tile's list, which is a larger change. See #111.
                     if (AttackingCharacter.index == 1)
                     {
+                        // At the ATTACKER, not at the weapon reach point. DOS rebuilds the
+                        // calculation array's x and y from the attacker object's own tile
+                        // and fine coordinates in the block just before the call, so the
+                        // projected point GetCoordinateInDirection left there is discarded.
                         UWsoundeffects.PlaySoundEffectAtCoordinate(
                             effectNo: 7,
-                            packedX: MotionCalcArray.x0,
-                            packedY: MotionCalcArray.y2,
+                            packedX: (AttackingCharacter.tileX << 3) + AttackingCharacter.xpos,
+                            packedY: (AttackingCharacter.tileY << 3) + AttackingCharacter.ypos,
                             volDelta: 0);
                     }
                     Debug.Print("Todo SpawnImpactAnimo() animation half");
