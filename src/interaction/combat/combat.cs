@@ -263,10 +263,17 @@ namespace Underworld
                 }
                 else
                 {
-                    // a miss. The impact sound belongs here, not before the test: this
-                    // routine's zero argument means "no defender found" in DOS, while the
-                    // port's attackresult is zero on a HIT, so calling it unconditionally
-                    // played the swing-and-miss sound on every successful hit. See #108.
+                    // a miss. The impact sound belongs here, not before the test. DOS
+                    // agrees with the port that zero from CalculateAttackResults is a hit:
+                    // at seg022_230E_E30 it does or ax,ax and jumps to the damage path on
+                    // zero, and that path plays nothing. It reaches this routine only from
+                    // the two miss paths, passing the nonzero result here and a literal
+                    // zero from the no-defender path. Calling it before the test played the
+                    // no-defender whiff on every successful hit. See #108.
+                    //
+                    // DOS calls DamageObject first and sounds afterwards, at
+                    // seg022_230E_E5A and seg022_230E_E62. The order is kept as the port
+                    // had it, since nothing here depends on it and the swap is untested.
                     CombatMissImpactSound(attackresult);
                     damage.DamageObject(
                         objToDamage: DefendingCharacter,
