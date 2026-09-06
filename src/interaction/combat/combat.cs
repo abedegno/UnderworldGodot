@@ -773,22 +773,41 @@ namespace Underworld
                     // left there, then calls SpawnImpactAnimo_seg022_2D2 with the attacker's
                     // heading and the same weapon reach.
                     //
-                    // SpawnImpactAnimo walks outward from that start point one unit at a
-                    // time, up to reach+1 steps, and stops at the first step whose terrain
-                    // flags are set. There it plays sound effect 7 and spawns the impact
-                    // animation. The sound is played only when the attacker is the player:
-                    // UW.EXE 0x247CD tests CurrentAttacker against 1, so an NPC hitting a
-                    // wall is silent.
+                    // SpawnImpactAnimo is a walk. It tests the terrain flags where it
+                    // stands, and where they are clear it steps one unit along the heading
+                    // and tests again, covering positions 0 to reach. Position 0 is the
+                    // attacker's own, so DOS can sound there; the last position it steps to
+                    // is never tested. It plays the sound and spawns the animation at the
+                    // first tested position whose flags are set.
                     //
-                    // Only the sound is done here, and it is played at the start of that
-                    // walk rather than at the step that stops it. The offset is under one
-                    // tile, but it is not where DOS puts it. The walk belongs with the
-                    // animation, which allocates an object and links it into the tile's
-                    // list. Both are left for their own change. See #111.
+                    // Both games play only when the attacker is the player, so an NPC
+                    // hitting a wall is silent: seg022_230E_3BA in UW1, seg024_24E9_3B3 in
+                    // UW2. They choose the effect differently. UW1 always plays 7. UW2
+                    // plays 7 when the player's weapon sound class is 1 or 2 and 8
+                    // otherwise, at seg024_24E9_3BF.
+                    //
+                    // PlayerWeaponSound is still a placeholder pinned to 1 in
+                    // combat_input.cs, so the UW2 arm always yields 7 today. It is written
+                    // out anyway so it comes right on its own when that is derived from the
+                    // weapon.
+                    //
+                    // Not done here. The sound plays at the start of the walk rather than
+                    // at the step that stops it, under a tile short of DOS. UW2 also sets
+                    // ImpactSkipSound at seg024_24E9_3BA, which suppresses the whiff that
+                    // CombatMissImpactSound would otherwise play straight after this; that
+                    // belongs with the change to that routine. And DOS plays nothing at all
+                    // when the impact object cannot be allocated, because the sound sits
+                    // after PrepareNewObjectProps in the routine. The walk, the animation
+                    // and the skip flag are left for their own change. See #111.
                     if (AttackingCharacter.index == 1)
                     {
+                        int impactEffect = 7;
+                        if (_RES == GAME_UW2)
+                        {
+                            impactEffect = (PlayerWeaponSound == 1 || PlayerWeaponSound == 2) ? 7 : 8;
+                        }
                         UWsoundeffects.PlaySoundEffectAtCoordinate(
-                            effectNo: 7,
+                            effectNo: (byte)impactEffect,
                             packedX: (AttackingCharacter.tileX << 3) + AttackingCharacter.xpos,
                             packedY: (AttackingCharacter.tileY << 3) + AttackingCharacter.ypos,
                             volDelta: 0);
