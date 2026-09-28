@@ -557,17 +557,21 @@ namespace Underworld
                 {
                     if (xclock >= DreamXClocks[counter_var4])
                     {
-                        if ((si_dreamflags & (1 << counter_var4)) == (1 << counter_var4))
+                        if ((si_dreamflags & (1 << counter_var4)) == 0)
                         {
-                            //found a dreamstage that has not yet happened
+                            //found a dreamstage that has not yet happened. A set bit
+                            //means the dream has played, as below where the bit is
+                            //toggled on (Dreaming_SleepLogic_ovr154_90B skips a stage
+                            //whose bit is set, at ovr154_9A5).
                             FoundStageVar2 = counter_var4;
                         }
                     }
                 }
                 if (FoundStageVar2 < 0)
                 {
-                    if (playerdat.DreamPlantCounter == 0)
-                    {//should always be the case.
+                    //only a 1 in (4 + 4 * sleepfactor) chance of a random dream (ovr154_9C0)
+                    if (Rng.r.Next(4 + (sleepfactor << 2)) == 0 && playerdat.DreamPlantCounter == 0)
+                    {
                         FoundStageVar2 = 4 + Rng.r.Next(3); //try and pic a random dream.
                         if (((1 << FoundStageVar2) & si_dreamflags) != 0)
                         {
