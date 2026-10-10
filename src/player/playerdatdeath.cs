@@ -51,10 +51,27 @@ namespace Underworld
             }
         }
 
+        /// <summary>
+        /// The experience change death costs the player, a negative number: an eighth in UW1
+        /// (player_get_exp(-(int)(player->exp >> 3)), uw1 SKILLS.C:832) and a ninth in UW2
+        /// (player_get_exp(-(int)(player->exp / 9)), uw2 SKILLS.C:844), truncated before it is negated.
+        /// </summary>
+        public static int DeathExperienceChange()
+        {
+            if (_RES == GAME_UW2)
+            {
+                return -(Exp / 9);
+            }
+            else
+            {
+                return -(Exp >> 3);
+            }
+        }
+
         public static void ResurrectAtSilverTree()
         {
             uimanager.EnableDisable(uimanager.instance.uwviewport,true); 
-            ChangeExperience(-Exp >> 3);
+            ChangeExperience(DeathExperienceChange());
             ResurrectionEffects();
             Teleportation.CodeToRunOnTeleport = TeleportToSilverTree;
             Teleportation.Teleport(
@@ -176,7 +193,7 @@ namespace Underworld
         /// </summary>
         static void ResurrectAtBlackrockGem()
         {
-            ChangeExperience(-Exp / 9);
+            ChangeExperience(DeathExperienceChange());
             Teleportation.CodeToRunOnTeleport = null;
             play_hp = max_hp;
             //PlayerInDeathMode = false;
@@ -192,7 +209,7 @@ namespace Underworld
         {
             Teleportation.CodeToRunOnTeleport = null;
             play_hp = max_hp;
-            ChangeExperience(-Exp / 9);//loss of exp
+            ChangeExperience(DeathExperienceChange());//loss of exp
             //PlayerInDeathMode = false;
             playerdat.playerObject.npc_animation = 1;
             XMIMusic.ChangeThemeMusic(0xA);//play depressed theme
