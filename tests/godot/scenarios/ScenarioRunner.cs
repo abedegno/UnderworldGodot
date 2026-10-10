@@ -255,6 +255,7 @@ public partial class ScenarioRunner : Node
         try
         {
             Rng.Source = new BorlandRandSource(s.Seed);
+            ResetProcessStatics();
 
             // The value a fresh process starts with. A previous scenario left it at GAME, and
             // the intro cutscene restores whatever mode it found when it ends.
@@ -291,6 +292,7 @@ public partial class ScenarioRunner : Node
         finally
         {
             Rng.Source = previousSource;
+            Guards.ReleaseHeldKeys();
             if (root != null && IsInstanceValid(root))
             {
                 await DrainAudio();
@@ -299,6 +301,28 @@ public partial class ScenarioRunner : Node
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             }
         }
+    }
+
+    /// <summary>
+    /// Puts back the statics a fresh process starts with that a new game does not reset and a
+    /// scenario may have moved: the player loop's tick counters (playerdatloop.cs:13-17; only
+    /// Load resets one of them) and the critters' free-path mask (npcai.cs:185, set only at
+    /// start-up). Without this a scenario's 20-second and 5-minute ticks fall where earlier
+    /// scenarios left them, and pathfinding runs with the paths an earlier scenario took.
+    /// </summary>
+    static void ResetProcessStatics()
+    {
+        SetStatic(typeof(playerdat), "playertimer", 0.0);
+        SetStatic(typeof(playerdat), "playerUpdateCounter", 0);
+        SetStatic(typeof(playerdat), "secondcounter", 0);
+        SetStatic(typeof(npc), "BitFieldForPathing_dseg_67d6_B4", 0xFFFF);
+    }
+
+    static void SetStatic(Type type, string name, object value)
+    {
+        var field = type.GetField(name, System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)
+            ?? throw new MissingFieldException(type.Name, name);
+        field.SetValue(null, value);
     }
 
     /// <summary>

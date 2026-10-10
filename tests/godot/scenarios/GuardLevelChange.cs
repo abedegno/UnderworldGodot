@@ -26,6 +26,7 @@ public sealed class GuardLevelChange : Scenario
 {
     const int MoveTrigger = 0x1A0, TeleportTrap = 0x181;
     const ulong WalkMs = 5000;
+    const int WalkFrames = 300;   // 5 s at --fixed-fps 60
     static readonly short[] Yaw = { 0, 16384, -32768, -16384 };
     static readonly int[] Dx = { 0, 1, 0, -1 }, Dy = { 1, 0, -1, 0 };
 
@@ -105,7 +106,8 @@ public sealed class GuardLevelChange : Scenario
             await c.Frames(5);
             Guards.Key(Key.W, true);
             ulong deadline = Time.GetTicksMsec() + WalkMs;
-            while (Time.GetTicksMsec() < deadline && playerdat.dungeon_level == _level0 && !uimanager.WaitingForFade)
+            // Bounded by frames, not real time, so a slow host walks just as far.
+            for (int f = 0; f < WalkFrames && playerdat.dungeon_level == _level0 && !uimanager.WaitingForFade; f++)
                 await c.Frames(1);
             Guards.Key(Key.W, false);
             int stable = 0;

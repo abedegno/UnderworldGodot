@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -145,8 +147,19 @@ static class Guards
     }
 
     /// <summary>Presses (or releases) a key as the keyboard does, through Godot's input.</summary>
-    public static void Key(Godot.Key key, bool pressed) =>
+    public static void Key(Godot.Key key, bool pressed)
+    {
+        if (pressed) held.Add(key); else held.Remove(key);
         Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = pressed });
+    }
+
+    static readonly HashSet<Godot.Key> held = new();
+
+    /// <summary>Releases every key Key left pressed, so a scenario that threw mid-press does not hold it for the next.</summary>
+    public static void ReleaseHeldKeys()
+    {
+        foreach (var key in held.ToArray()) Key(key, false);
+    }
 
     /// <summary>
     /// The port's AI and animations run only near playerdat.CameraTileX/Y, which a headless new

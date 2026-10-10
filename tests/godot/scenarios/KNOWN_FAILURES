@@ -21,7 +21,7 @@ uw1/allies-wear-off  ~allies after a slow tick expected fewer than 8  # no yearl
 uw2/allies-wear-off  ~allies after a slow tick expected fewer than 8  # no yearly_checkup in the slow tick: src/player/playerdatloop.cs:233; uw2 CRITTIME.C:76-87, PLAYTIME.C:144
 uw1/wandering-monsters-out-of-sight  ~create-object traps within 8 squares of the awake player that ran expected 0  # range test inverted: src/traps/a_create_object_trap.cs:236; uw1 TRIGGER.C:643-652, 667-668
 uw2/wandering-monsters-out-of-sight  ~create-object traps within 8 squares of the awake player that ran expected 0  # range test inverted: src/traps/a_create_object_trap.cs:236; uw2 TRIGGER.C:1020-1029, 1044-1045
-uw2/special-deaths-uw2  ~uw2 WORLDEV.C  # SetRaceAttitude args swapped, Bishop quest 100, Dorstag to quest 137, record/tally reversed: src/npc/npcdeath.cs:128, 189, 351, 510; uw2 WORLDEV.C:707-708, 789, 772-773, 905-906
+uw2/special-deaths-uw2  ~race 0xB kin's attitude after a Trilkhai's death  # SetRaceAttitude args swapped, Bishop quest 100, Dorstag to quest 137, record/tally reversed: src/npc/npcdeath.cs:128, 189, 351, 510; uw2 WORLDEV.C:707-708, 789, 772-773, 905-906
 uw2/poison-weapon-damage  ~poisoned blow of 10 with Casting 0 expected 17  # adds (Casting+30)/40, not damage*(Casting+30)/40: src/interaction/combat/combat.cs:422; uw2 COMBAT.C:325
 uw1/combat-equipment-wear  ~weapon wear from a door strike expected  # frp_check's three DamageInventory calls are debug prints: src/interaction/combat/combat.cs:452, 467, 488; uw1 COMBAT.C:290-320
 uw2/combat-equipment-wear  ~weapon wear from a door strike expected  # frp_check's three DamageInventory calls are debug prints: src/interaction/combat/combat.cs:452, 467, 488; uw2 COMBAT.C:310-345
@@ -52,8 +52,8 @@ uw2/britannia-spell-circle  ~mana spent on a circle 3 spell in Britannia  # refu
 uw2/academy-mana-level  ~mana restored on level 41 at x 30 expected 5  # 1 + dungeon_level % 8 on a 1-based level (src/player/playerdatloop.cs:291); uw2 SPELLS.C:159-161
 uw2/targeted-spell-mana  ~mana spent on a targeted spell before its target  # class 7 leaves applyCost true (src/magic/spellcasting.cs:77, 108); uw2 RUNES.C:247-251 holds it in mspell_mused
 uw1/uw1-casting-check  ~mana spent casting a circle 1 spell at Casting 13  # SkillCheck(Casting, circle * 3) for both games (src/magic/runicmagic.cs:339); uw1 RUNES.C:249 skill_check(Casting + 5, circle * 2)
-uw1/summon-monster  ~at Casting 10 expected  # picks 0..lvl-1 (src/magic/spellcasting_class_8.cs:84); uw1 SPELLS.C:605-612 picks lvl..2lvl-1
-uw2/summon-monster  ~at Casting 10 expected  # same (spellcasting_class_8.cs:84); uw2 SPELLS2.C:511-518
+uw1/summon-monster  ~creature summoned at Casting 10  # picks 0..lvl-1 (src/magic/spellcasting_class_8.cs:84); uw1 SPELLS.C:605-612 picks lvl..2lvl-1
+uw2/summon-monster  ~creature summoned at Casting 10  # same (spellcasting_class_8.cs:84); uw2 SPELLS2.C:511-518
 uw1/carry-capacity  ~carrying limit at Strength 15 expected 300  # 300 + Strength * 13 for both games (src/player/playerdat.cs:794); uw1 SKILLS.C:112 Strength * 20
 uw1/light-burn-rates  ~light 0x94 (period 10) quality after 40 steps  # class index as the burn period, out at quality 1 (src/player/playerdatloop.cs:378-380); uw1 PLAYTIME.C:166-181
 uw2/light-burn-rates  ~light 0x94 (period 10) quality after 40 steps  # same (playerdatloop.cs:378-380); uw2 PLAYTIME.C:191-206
