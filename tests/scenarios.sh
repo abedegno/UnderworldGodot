@@ -2,22 +2,29 @@
 # Runs the gameplay scenarios (tests/godot/scenarios) in headless Godot 4.3, one process per game.
 #
 #   tests/scenarios.sh [--game uw1|uw2] [--uw1-dir DIR] [--uw2-dir DIR] [name...]
+#   tests/scenarios.sh --find-godot
 #
 # No names runs every scenario (--all); names run just those, including ones --all leaves out.
-# Both games by default. Game data defaults to ~/UWGOG/UW1 and ~/UWGOG/UW2; a game whose folder
-# has no DATA is skipped.
+# Both games by default. Each game's folder (the one holding DATA) comes from --uwN-dir, else the
+# UW1_DIR / UW2_DIR environment variable, else pathuw1 / pathuw2 in the game's own settings.json,
+# read and never written. A game with no folder, or one with no DATA, is skipped.
 #
-# Exit 0 only when every game printed a verdict, no scenario failed that KNOWN_FAILURES does not
-# list, and no listed scenario passed. Godot 4.3 mono's exit status is ignored: it can fault or
-# hang on shutdown, so only the printed lines count, and no verdict within SCENARIO_TIMEOUT
-# seconds (default 300) is a failure.
+# Exit 0 only when every game printed a verdict, every requested scenario reported, no scenario
+# failed that KNOWN_FAILURES does not list (or failed for another reason than the listed one),
+# and no listed scenario passed. Godot 4.3 mono's exit status is ignored: it can fault or hang on
+# shutdown, so only the printed lines count, and no verdict within SCENARIO_TIMEOUT seconds
+# (default 300) is a failure.
 #
-# Godot runs with a temporary HOME, so the player's own user://settings.json and saves are never
-# read or written. The real home is passed to the runner only to find the game data.
+# Godot runs with a temporary HOME (and XDG, APPDATA and LOCALAPPDATA inside it), so the player's
+# user://settings.json, logs and screenshots are never touched; the runner refuses to run unless
+# Godot's user data folder is inside it. The game itself runs from a temporary game folder the
+# runner builds there (the real folder's contents linked, empty SAVEn folders), so a save never
+# lands in the real game folder.
 #
 # Environment: GODOT (the Godot 4.3 mono binary; set but not runnable is a failure, not a skip),
-# SCENARIO_TIMEOUT (whole seconds per game), SCENARIO_IMPORT_TIMEOUT (whole seconds for the
-# one-time import, default 180), DOTNET_ROOT, SCENARIO_NO_BUILD=1 to skip the C# build.
+# UW1_DIR, UW2_DIR, SCENARIO_TIMEOUT (whole seconds per game), SCENARIO_IMPORT_TIMEOUT (whole
+# seconds for the one-time import, default 180), DOTNET_ROOT (where the .NET runtime is, if dotnet
+# on the PATH does not say), SCENARIO_NO_BUILD=1 to skip the C# build.
 set -u
 
 repo="$(cd "$(dirname "$0")/.." && pwd)"
@@ -49,7 +56,7 @@ while [ $# -gt 0 ]; do
             # exits 1 (GODOT set but not runnable) or 3 (none found).
             find_mode=1; shift ;;
         -h|--help)
-            sed -n '2,8p' "$0"; exit 0 ;;
+            sed -n '2,10p' "$0"; exit 0 ;;
         -*)
             echo "scenarios: unknown option $1" >&2; exit 2 ;;
         *)
@@ -69,12 +76,14 @@ find_godot() {
         godot_why="GODOT=$godot is not an executable file"
         return 1
     fi
-    if [ -x "$home_real/Applications/Godot43_mono.app/Contents/MacOS/Godot" ]; then
-        godot="$home_real/Applications/Godot43_mono.app/Contents/MacOS/Godot"
-        return 0
-    fi
-    godot="$(command -v godot || true)"
-    [ -n "$godot" ] && [ -x "$godot" ] && return 0
+    # On the PATH first, then a few usual install places. These are examples, not requirements:
+    # anywhere else, set GODOT.
+    local c
+    for c in "$(command -v godot 2>/dev/null)" "$(command -v godot4 2>/dev/null)" \
+             "$home_real/Applications/Godot43_mono.app/Contents/MacOS/Godot" \
+             "/Applications/Godot43_mono.app/Contents/MacOS/Godot"; do
+        if [ -n "$c" ] && [ -x "$c" ] && [ ! -d "$c" ]; then godot="$c"; return 0; fi
+    done
     godot=""
     return 3
 }
@@ -96,15 +105,49 @@ if [ $found -eq 3 ]; then
     exit 0
 fi
 
-# The mono build cannot find the runtime without DOTNET_ROOT, and then hangs.
-if [ -z "${DOTNET_ROOT:-}" ] && [ -d "$home_real/.dotnet10" ]; then
-    export DOTNET_ROOT="$home_real/.dotnet10"
+# The mono build cannot find the runtime without DOTNET_ROOT when .NET is not installed in a
+# standard place, and then hangs. Taken from DOTNET_ROOT if set, else from where dotnet on the
+# PATH really lives (following its links); e.g. DOTNET_ROOT=$HOME/.dotnet for a user install.
+if [ -z "${DOTNET_ROOT:-}" ] && command -v dotnet >/dev/null 2>&1; then
+    d="$(command -v dotnet)"
+    for _ in 1 2 3 4 5 6 7 8; do
+        l="$(readlink "$d" 2>/dev/null)" || break
+        case "$l" in /*) d="$l" ;; *) d="$(dirname "$d")/$l" ;; esac
+    done
+    export DOTNET_ROOT="$(cd "$(dirname "$d")" && pwd -P)"
 fi
 if [ -n "${DOTNET_ROOT:-}" ]; then export PATH="$DOTNET_ROOT:$PATH"; fi
 
+# Each game's folder: --uwN-dir, else UWN_DIR, else the game's own settings (read only).
+# Godot keeps them in user://settings.json, which is under the real home on each platform.
+settings_file() {
+    local f
+    for f in "$home_real/Library/Application Support/Godot/app_userdata/Underworld/settings.json" \
+             "${XDG_DATA_HOME:-$home_real/.local/share}/godot/app_userdata/Underworld/settings.json" \
+             "${APPDATA:-$home_real/AppData/Roaming}/Godot/app_userdata/Underworld/settings.json"; do
+        [ -f "$f" ] && { printf '%s' "$f"; return 0; }
+    done
+    return 1
+}
+setting() {   # setting KEY: the string value of "KEY" in settings.json, JSON escapes for \ and /
+    local f; f="$(settings_file)" || return 0
+    grep -io "\"$1\" *: *\"[^\"]*\"" "$f" | head -1 | sed -E 's/^[^:]*: *"(.*)"$/\1/; s/\\\\/\\/g; s/\\\//\//g'
+}
+uw1_dir=""; uw2_dir=""
+i=0
+while [ $i -lt ${#dirs[@]} ]; do
+    case "${dirs[$i]}" in --uw1-dir) uw1_dir="${dirs[$((i + 1))]}" ;; --uw2-dir) uw2_dir="${dirs[$((i + 1))]}" ;; esac
+    i=$((i + 2))
+done
+[ -z "$uw1_dir" ] && uw1_dir="${UW1_DIR:-$(setting pathuw1)}"
+[ -z "$uw2_dir" ] && uw2_dir="${UW2_DIR:-$(setting pathuw2)}"
+
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/uw-scenarios.XXXXXX")"
 trap 'rm -rf "$tmp"' EXIT
-mkdir -p "$tmp/home" "$tmp/home/.local/share" "$tmp/home/.config" "$tmp/home/.cache"
+mkdir -p "$tmp/home"
+# The physical path, so the runner's "is Godot's user folder inside it" test compares like with like.
+home_tmp="$(cd "$tmp/home" && pwd -P)"
+mkdir -p "$home_tmp/.local/share" "$home_tmp/.config" "$home_tmp/.cache" "$home_tmp/AppData/Roaming" "$home_tmp/AppData/Local"
 
 # Runs a command in the background with output to $1, killing it after $2 seconds. With a third
 # argument, it also stops waiting a few seconds after that text appears in the output, because
@@ -113,9 +156,10 @@ mkdir -p "$tmp/home" "$tmp/home/.local/share" "$tmp/home/.config" "$tmp/home/.ca
 watch() {
     local out="$1" limit="$2" marker="$3"; shift 3
     # The XDG variables too: on Linux, Godot puts user data and editor settings under them
-    # when they are set, whatever HOME says.
-    HOME="$tmp/home" XDG_DATA_HOME="$tmp/home/.local/share" XDG_CONFIG_HOME="$tmp/home/.config" \
-        XDG_CACHE_HOME="$tmp/home/.cache" "$@" >"$out" 2>&1 &
+    # when they are set, whatever HOME says. APPDATA and LOCALAPPDATA are Windows' equivalents.
+    HOME="$home_tmp" XDG_DATA_HOME="$home_tmp/.local/share" XDG_CONFIG_HOME="$home_tmp/.config" \
+        XDG_CACHE_HOME="$home_tmp/.cache" APPDATA="$home_tmp/AppData/Roaming" \
+        LOCALAPPDATA="$home_tmp/AppData/Local" "$@" >"$out" 2>&1 &
     local pid=$! waited=0 seen=-1
     while kill -0 "$pid" 2>/dev/null; do
         if [ "$waited" -ge $((limit * 2)) ]; then
@@ -136,11 +180,15 @@ watch() {
 
 # Build the C# (the runner and scenarios compile into the game's Debug assembly) and import the
 # project once, or Godot runs stale code or cannot load the scene at all.
-if [ "${SCENARIO_NO_BUILD:-0}" != 1 ] && command -v dotnet >/dev/null 2>&1; then
-    if ! (cd "$repo" && dotnet build Underworld.csproj -nologo -v q >"$tmp/build.log" 2>&1); then
-        tail -20 "$tmp/build.log"
-        echo "scenarios: FAIL, the C# build failed"
-        exit 1
+if [ "${SCENARIO_NO_BUILD:-0}" != 1 ]; then
+    if command -v dotnet >/dev/null 2>&1; then
+        if ! (cd "$repo" && dotnet build Underworld.csproj -nologo -v q >"$tmp/build.log" 2>&1); then
+            tail -20 "$tmp/build.log"
+            echo "scenarios: FAIL, the C# build failed"
+            exit 1
+        fi
+    else
+        echo "scenarios: warning: no dotnet on the PATH, so the C# was not built and may be stale"
     fi
 fi
 # Imported means .godot/imported holds files: the folder alone can be left by an import that died.
@@ -148,9 +196,14 @@ imported() { [ -d "$repo/.godot/imported" ] && [ -n "$(ls -A "$repo/.godot/impor
 if ! imported; then
     echo "scenarios: importing the project (once; up to ${import_timeout_s}s)"
     if ! watch "$tmp/import.log" "$import_timeout_s" "" "$godot" --headless --path "$repo" --import; then
-        tail -15 "$tmp/import.log" | sed 's/^/    /'
-        echo "scenarios: FAIL, the import did not finish within ${import_timeout_s}s (SCENARIO_IMPORT_TIMEOUT)"
-        exit 1
+        # Godot 4.3 can hang on exit after the import has finished; only a missing import fails.
+        if imported; then
+            echo "scenarios: the import finished but Godot did not exit; carrying on"
+        else
+            tail -15 "$tmp/import.log" | sed 's/^/    /'
+            echo "scenarios: FAIL, the import did not finish within ${import_timeout_s}s (SCENARIO_IMPORT_TIMEOUT)"
+            exit 1
+        fi
     fi
     if ! imported; then
         tail -15 "$tmp/import.log" | sed 's/^/    /'
@@ -159,15 +212,25 @@ if ! imported; then
     fi
 fi
 
-# KNOWN_FAILURES: "<game>/<name>  # why". A malformed line fails the run rather than being ignored.
+# KNOWN_FAILURES: "<game>/<name>  [~reason substring]  # why". A malformed line fails the run
+# rather than being ignored. With a substring, only a FAIL whose reason contains it is the known
+# failure; any FAIL whose reason starts "precondition:" or names an exception is not, since the
+# scenario no longer reached the bug it tests.
 listed=" "
+reasons=""   # lines of "<game>/<name><TAB><substring>"
 bad=0
 problems=()
 npass=0; nknown=0; nskip=0
 if [ -f "$known" ]; then
     while IFS= read -r line || [ -n "$line" ]; do
-        entry="$(printf '%s' "${line%%#*}" | tr -d '[:space:]')"
-        [ -z "$entry" ] && continue
+        body="${line%%#*}"
+        entry="$(printf '%s' "${body%%~*}" | tr -d '[:space:]')"
+        [ -z "$entry" ] && [ -z "$(printf '%s' "$body" | tr -d '[:space:]')" ] && continue
+        substr=""
+        case "$body" in *"~"*)
+            substr="$(printf '%s' "${body#*~}" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+            [ -z "$substr" ] && entry="" ;;   # an empty ~ is malformed
+        esac
         if ! printf '%s' "$entry" | grep -Eq '^uw[12]/[a-z0-9-]+$'; then
             echo "KNOWN_FAILURES: not <game>/<name>: $line"
             problems+=("KNOWN_FAILURES: not <game>/<name>: $line")
@@ -175,6 +238,8 @@ if [ -f "$known" ]; then
             continue
         fi
         listed="$listed$entry "
+        [ -n "$substr" ] && reasons="$reasons$entry	$substr
+"
     done <"$known"
 fi
 
@@ -188,7 +253,7 @@ for g in "${games[@]}"; do
     out="$tmp/$g.log"
     watch "$out" "$timeout_s" "GODOT-TEST-VERDICT" \
         "$godot" --headless --fixed-fps 60 --path "$repo" res://tests/godot/scenarios/scenario_runner.tscn \
-        -- --game "$g" "${sel[@]}" --data-home "$home_real" ${dirs[@]+"${dirs[@]}"}
+        -- --game "$g" "${sel[@]}" --temp-home "$home_tmp" --uw1-dir "$uw1_dir" --uw2-dir "$uw2_dir"
 
     grep -E '^SCENARIO |^    note: ' "$out"
 
@@ -229,7 +294,21 @@ for g in "${games[@]}"; do
                 # A failure outside any scenario, "(runner)", can never be listed.
                 case "$id" in */"(runner)") problems+=("$sline"); bad=1; continue ;; esac
                 case "$listed" in
-                    *" $id "*) echo "  ($id is a known failure: KNOWN_FAILURES)"; nknown=$((nknown + 1)) ;;
+                    *" $id "*)
+                        reason="${sline#* FAIL }"
+                        want="$(printf '%s' "$reasons" | awk -F'\t' -v id="$id" '$1 == id { print $2; exit }')"
+                        other=""
+                        case "$reason" in precondition:*) other="its precondition failed" ;; esac
+                        if [ -z "$other" ] && printf '%s' "$reason" | grep -Eq '[A-Za-z]+Exception:'; then other="it threw"; fi
+                        if [ -z "$other" ] && [ -n "$want" ]; then
+                            case "$reason" in *"$want"*) ;; *) other="its reason lacks '$want'" ;; esac
+                        fi
+                        if [ -z "$other" ]; then
+                            echo "  ($id is a known failure: KNOWN_FAILURES)"; nknown=$((nknown + 1))
+                        else
+                            echo "  $id is listed, but $other: it no longer tests its known bug"
+                            problems+=("$sline (listed in KNOWN_FAILURES, but $other)"); bad=1
+                        fi ;;
                     *) problems+=("$sline"); bad=1 ;;
                 esac ;;
             PASS)

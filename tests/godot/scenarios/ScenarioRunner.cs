@@ -11,11 +11,12 @@ namespace Underworld.Scenarios;
 /// Runs gameplay scenarios inside the real game, one game per process:
 ///
 ///   Godot --headless --fixed-fps 60 --path . res://tests/godot/scenarios/scenario_runner.tscn \
-///     -- --game uw1|uw2 --scenarios a,b|--all --data-home REAL_HOME [--uw1-dir D] [--uw2-dir D]
+///     -- --game uw1|uw2 --scenarios a,b|--all --temp-home TMP [--uw1-dir D] [--uw2-dir D]
 ///
-/// Run it through tests/scenarios.sh, which gives Godot a temporary HOME. The runner refuses
-/// to run when Godot's user data folder lies under --data-home, so it can never write the
-/// player's own settings.json or saves.
+/// Run it through tests/scenarios.sh, which gives Godot a temporary HOME and passes it as
+/// --temp-home. The runner refuses to run unless Godot's user data folder is inside --temp-home,
+/// so it cannot touch the player's own settings.json, and it runs the game from a temporary game
+/// folder it builds there (TempGameFolder), so a save cannot land in the real game folder.
 ///
 /// Per scenario: point the game at the data the way LaunchMenu.OnLaunchInput does (without
 /// its Save), install a seeded BorlandRandSource, instantiate Underworld.tscn, stop the intro
@@ -85,7 +86,7 @@ public partial class ScenarioRunner : Node
         if (game != "uw1" && game != "uw2")
         {
             _fail++;
-            GD.PrintErr("usage: -- --game uw1|uw2 --scenarios a,b|--all --data-home DIR [--uw1-dir DIR] [--uw2-dir DIR]");
+            GD.PrintErr("usage: -- --game uw1|uw2 --scenarios a,b|--all --temp-home DIR [--uw1-dir DIR] [--uw2-dir DIR]");
             return;
         }
 
@@ -114,22 +115,40 @@ public partial class ScenarioRunner : Node
         }
         if (applicable.Count == 0) return;
 
-        // Never run against the real user data folder: settings.json and saves live there.
-        string dataHome = args.GetValueOrDefault("--data-home", OS.GetEnvironment("HOME"));
+        // Run only inside the temporary home: Godot's user data folder (settings.json, logs,
+        // screenshots) must be in it. A positive test, so a platform where Godot puts that folder
+        // somewhere the script did not redirect is refused rather than trusted.
+        string tempHome = args.GetValueOrDefault("--temp-home", "");
         string userDir = OS.GetUserDataDir();
-        if (!string.IsNullOrEmpty(dataHome) && IsUnder(userDir, dataHome))
+        if (string.IsNullOrEmpty(tempHome) || !IsUnder(userDir, tempHome))
         {
             foreach (var s in applicable)
-                Line(game, s.Name, "FAIL not isolated: Godot's user data folder is under the real home; run through tests/scenarios.sh");
+                Line(game, s.Name, $"FAIL not isolated: Godot's user data folder is not inside --temp-home ({(string.IsNullOrEmpty(tempHome) ? "none given" : tempHome)}); run through tests/scenarios.sh");
             return;
         }
 
-        string gameDir = args.GetValueOrDefault($"--{game}-dir",
-            Path.Combine(dataHome ?? "", "UWGOG", game.ToUpperInvariant()));
-        if (!Directory.Exists(Path.Combine(gameDir, "DATA")))
+        string realDir = args.GetValueOrDefault($"--{game}-dir", "");
+        if (string.IsNullOrEmpty(realDir))
         {
             foreach (var s in applicable)
-                Line(game, s.Name, $"SKIP no game data: {gameDir} has no DATA folder");
+                Line(game, s.Name, $"SKIP no game folder: pass --{game}-dir, set {game.ToUpperInvariant()}_DIR, or set path{game} in the game's settings");
+            return;
+        }
+        if (!Directory.Exists(Path.Combine(realDir, "DATA")))
+        {
+            foreach (var s in applicable)
+                Line(game, s.Name, $"SKIP no game data: {realDir} has no DATA folder");
+            return;
+        }
+        string gameDir;
+        try
+        {
+            gameDir = TempGameFolder(realDir, Path.Combine(tempHome, "game-" + game));
+        }
+        catch (Exception ex)
+        {
+            foreach (var s in applicable)
+                Line(game, s.Name, $"FAIL could not build the temporary game folder: {ex.GetType().Name}: {ex.Message.Split('\n')[0]}");
             return;
         }
 
@@ -289,11 +308,41 @@ public partial class ScenarioRunner : Node
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
     }
 
+    /// <summary>
+    /// Builds the folder the game runs from: a real directory holding a symbolic link to each
+    /// entry of the real game folder, except the save slots (SAVE0 to SAVE9, and anything else
+    /// whose name starts SAVE), which are empty real directories. The game writes saves into
+    /// BasePath/SAVEn and its transaction files beside them (src/savegame/SaveGame.cs,
+    /// SlotTransaction.cs), so with BasePath here a save stays in the temporary home; the shipped
+    /// data is read through the links and never copied. Symbolic links need no privilege on
+    /// macOS and Linux; on Windows they need Developer Mode, and without it this throws and every
+    /// scenario fails rather than run against the real folder.
+    /// </summary>
+    static string TempGameFolder(string realDir, string dir)
+    {
+        if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+        Directory.CreateDirectory(dir);
+        foreach (var entry in Directory.EnumerateFileSystemEntries(realDir))
+        {
+            string name = Path.GetFileName(entry);
+            string target = Path.Combine(dir, name);
+            if (name.StartsWith("SAVE", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Directory.Exists(entry)) Directory.CreateDirectory(target);
+                continue;   // a stray SAVE file is left out: nothing of the player's is reachable
+            }
+            if (Directory.Exists(entry)) Directory.CreateSymbolicLink(target, entry);
+            else File.CreateSymbolicLink(target, entry);
+        }
+        for (int n = 0; n <= 4; n++) Directory.CreateDirectory(Path.Combine(dir, $"SAVE{n}"));
+        return dir;
+    }
+
+    /// <summary>Whether path is inside dir, comparing separators and case loosely (Windows, macOS).</summary>
     static bool IsUnder(string path, string dir)
     {
-        string p = Path.GetFullPath(path).TrimEnd('/') + "/";
-        string d = Path.GetFullPath(dir).TrimEnd('/') + "/";
-        return p.StartsWith(d, StringComparison.Ordinal);
+        static string Norm(string x) => Path.GetFullPath(x).Replace('\\', '/').TrimEnd('/').ToLowerInvariant() + "/";
+        return Norm(path).StartsWith(Norm(dir), StringComparison.Ordinal);
     }
 
     /// <summary>"--key value" pairs; a flag with no value (e.g. --all) maps to "".</summary>

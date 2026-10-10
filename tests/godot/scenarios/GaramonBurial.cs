@@ -18,14 +18,17 @@ namespace Underworld.Scenarios;
 /// DATA\LEV.ARK at run time (the one level whose object list holds such a grave, and its square),
 /// teleports there through the game's own Teleportation.Teleport, finds the same grave among the
 /// live level objects, puts a pile of bones (0xC6) with owner 0x3E in the player's hand, and uses
-/// them on the grave: first the player's "use" (use.Use), then the target click's call,
-/// useon.UseOn, which is what pickup.PickUp makes when an item is waiting for a target
-/// (src/interaction/pickup.cs:235). The port's use.Use has no bones case, so it never asks for a
-/// target; the scenario then sets useon.CurrentItemBeingUsed itself, as every port item with a
-/// target does (src/objects/lockpick.cs:10 and others), and notes it.
+/// them on the grave as a player does: the "use" (use.Use), which must ask for a target as the
+/// original's UseUtil does for bones 0xC2..0xC6 (uw1/src/obj/USEITEMS.C:396-399), then the click
+/// on the grave, pickup.PickUp, which hands an item waiting for a target to useon.UseOn
+/// (src/interaction/pickup.cs:235). Asking for the target is asserted, so a fix that buries
+/// Garamon in useon but leaves the bones unusable still fails. When the use asks for nothing,
+/// the scenario sets useon.CurrentItemBeingUsed itself, as every port item with a target does
+/// (src/objects/lockpick.cs:10 and others), so the burial itself is still tested, and notes it.
 ///
-/// UW1 only. Known failure today: useon.UseOn has no bones case (src/interaction/useon.cs:32)
-/// and nothing sets CanTalismansBeDestroyed true.
+/// UW1 only. Known failure today, two reasons: use.Use has no bones case, so no target is asked
+/// for (src/interaction/use.cs:268, UseMajorClass3); and useon.UseOn has no bones case
+/// (src/interaction/useon.cs:32), so nothing sets CanTalismansBeDestroyed true.
 /// </summary>
 public sealed class GaramonBurial : Scenario
 {
@@ -36,12 +39,12 @@ public sealed class GaramonBurial : Scenario
 
     public override string Name => "garamon-burial";
     public override string[] Games => new[] { "uw1" };
-    public override string Cites => "underworld-exhumed uw1/src/obj/USEITEMS.C:327-363 (UseBonesOn)";
+    public override string Cites => "underworld-exhumed uw1/src/obj/USEITEMS.C:327-363 (UseBonesOn), 396-399 (UseUtil)";
 
     string _problem;
     int _level, _gx, _gy;
     uwObject _grave, _bones;
-    bool _askedForTarget, _talismanOk, _garamon;
+    bool _askedForTarget, _useOnReached, _talismanOk, _garamon;
     int _graveLinkAfter;
 
     public override async Task Setup(ScenarioContext c)
@@ -94,7 +97,10 @@ public sealed class GaramonBurial : Scenario
             c.Note("using the bones asked for no target (use.Use has no bones case); setting useon.CurrentItemBeingUsed as a port item with a target does");
             useon.CurrentItemBeingUsed = new useon(_bones, true);
         }
-        useon.UseOn(_grave, useon.CurrentItemBeingUsed, WorldObject: true);
+        // The click on the grave: PickUp passes it to the item waiting for a target.
+        var objects = UWTileMap.current_tilemap.LevelObjects;
+        pickup.PickUp(_grave.index, objects, WorldObject: true);
+        _useOnReached = useon.CurrentItemBeingUsed == null;   // UseOn clears it as it finishes
         await c.Frames(2);
         _talismanOk = playerdat.CanTalismansBeDestroyed;
         _garamon = playerdat.IsGaramonBuried;
@@ -105,7 +111,9 @@ public sealed class GaramonBurial : Scenario
     public override string Assert(ScenarioContext c)
     {
         if (_problem != null) return "precondition: " + _problem;
+        if (!_useOnReached) return "precondition: the click on the grave (pickup.PickUp) did not reach the use-on (useon.CurrentItemBeingUsed still set)";
         var k = new Checks();
+        k.True(_askedForTarget, "using the bones expected to ask for a target, asked for none (USEITEMS.C:396-399)");
         k.True(_talismanOk, "talisman_ok (CanTalismansBeDestroyed) expected set after Garamon's bones (0xC6, owner 0x3E) were used on his grave (0x165, link 0x221), got clear (USEITEMS.C:340)");
         k.True(_garamon, "garamon (IsGaramonBuried) expected set, got clear (USEITEMS.C:341)");
         k.Equal("grave link", 0x222, _graveLinkAfter, "USEITEMS.C:342");

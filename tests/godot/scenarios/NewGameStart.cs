@@ -37,8 +37,8 @@ namespace Underworld.Scenarios;
 /// the record as it stands (level 1, STR 20, INT 20, mana skill 0) the original gives max HP
 /// 30 + 1 * 20 / 5 = 34 and max mana (0 + 1) * 20 >> 3 = 2, with mana filled to it
 /// (uw1 SKILLS.C:106-114, uw2 SKILLS.C:78-83). Carrying capacity is left out: UW1's is
-/// STR * 20 (uw1 SKILLS.C:112) and the port uses UW2's STR * 13 + 300 in both, a known gap
-/// (top-30 UW1 entry 14).
+/// STR * 20 (uw1 SKILLS.C:112) and the port uses UW2's STR * 13 + 300 in both
+/// (src/player/playerdat.cs:794), a separate known gap.
 /// </summary>
 public sealed class NewGameStart : Scenario
 {

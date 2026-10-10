@@ -10,7 +10,7 @@ namespace Underworld.Scenarios;
 ///
 /// The port's death paths make the same call (ChangeExperience(-Exp >> 3) and
 /// ChangeExperience(-Exp / 9), src/player/playerdatdeath.cs:57, 179), and this scenario makes
-/// it directly, from 1800 experience: a loss of 225 in UW1 and 200 in UW2. Known failure today:
+/// it directly with the original's amount, from 1800 experience: a loss of 225 in UW1 and 200 in UW2. Known failure today:
 /// the negative branch computes Exp - newEXP with newEXP already negative
 /// (src/player/playerdat.cs:729), so experience rises by the loss instead.
 /// </summary>
@@ -32,8 +32,10 @@ public sealed class ExperienceLoss : Scenario
 
     public override Task Act(ScenarioContext c)
     {
-        // The death penalty's own expression, as each game computes it.
-        int change = c.Game == "uw1" ? -playerdat.Exp >> 3 : -playerdat.Exp / 9;
+        // The death penalty as the original computes it: -(exp >> 3) in UW1 (SKILLS.C:832),
+        // -(exp / 9) in UW2 (SKILLS.C:844). (The port's death path writes -Exp >> 3, which
+        // rounds the other way when experience is not a multiple of 8; 1800 is, so the two agree.)
+        int change = c.Game == "uw1" ? -(playerdat.Exp >> 3) : -(playerdat.Exp / 9);
         _loss = -change;
         playerdat.ChangeExperience(change);
         _after = playerdat.Exp;
