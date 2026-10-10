@@ -50,7 +50,7 @@ public class SlopeStepFaceTests : System.IDisposable
         data[p] = (byte)((data[p] & 0x0F) | (height << 4));
     }
 
-    [Fact]
+    [GameDataFact]
     public void MatchingSlopes_OneUnitStep_IsNotDrawn()
     {
         var tm = BuildEscherLevel();
@@ -67,7 +67,7 @@ public class SlopeStepFaceTests : System.IDisposable
         Assert.False(tm.Tiles[47, 4].VisibleFaces[UWTileMap.vSOUTH]);
     }
 
-    [Fact]
+    [GameDataFact]
     public void MatchingSlopes_LargerStep_IsStillDrawn()
     {
         // Raise (43,2) to 15: its west edge is now three above (42,2)'s east edge of 13,
@@ -77,7 +77,7 @@ public class SlopeStepFaceTests : System.IDisposable
         Assert.False(tm.Tiles[42, 2].VisibleFaces[UWTileMap.vEAST]);
     }
 
-    [Fact]
+    [GameDataFact]
     public void DifferentSlopeTypes_AreNotAffected()
     {
         // (46,2) is an east slope and (47,2) a north slope: DOS gives no bonus there, and
