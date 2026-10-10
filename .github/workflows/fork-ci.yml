@@ -16,7 +16,7 @@ jobs:
           dotnet-version: '10.0.x'
       - name: check
         run: |
-          if [ -x tools/check.sh ]; then tools/check.sh; else
+          if [ -x tests/check.sh ]; then tests/check.sh; else
             dotnet build Underworld.csproj -nologo -v q
             for p in tests/*/*.csproj; do dotnet test "$p" -nologo -v q; done
           fi
