@@ -82,3 +82,6 @@ uw2/trap-chain-flow  ~ward trap -> set variable: variable 10 (the chain ends) ex
 uw1/teleport-occupied-square  ~expected to land on another square  # no find_good_x_and_y: TeleportUW1 stores the square as given: teleportation.cs:394; uw1 WORLDEV.C:76-168, 183-190
 uw2/teleport-occupied-square  ~expected to land on another square  # no find_good_x_and_y: teleportation.cs:169; uw2 WORLDEV.C:65-157, 199-205
 uw1/hack-trap-tybal-talk  ~hack trap 0x32 expected the 0xD8 critter to talk  # no UW1 hack 0x32: hack_trap.cs:456; uw1 TRIGGER.C:486-493, 526-527
+# batch D: guards
+uw1/guard-light  ~torch quality after 15 ticks  # a lit light burns a point when the tick count is a multiple of its class index (src/player/playerdatloop.cs:378), not of its burn rate Lights[inclass].duration from OBJECTS.DAT (uw1/src/game/PLAYTIME.C:166-170): the torch burns at 1 in 5 ticks, not 1 in 3; UW1 lights also go out at quality 1 (playerdatloop.cs:380), not 0 (PLAYTIME.C:177-181)
+uw2/guard-light  ~torch quality after 15 ticks  # as uw1: the class index (src/player/playerdatloop.cs:378) where uw2/src/game/PLAYTIME.C:192-196 uses Lights[inclass].duration
