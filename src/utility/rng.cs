@@ -18,7 +18,7 @@ namespace Underworld
     {
         readonly Random random = new();
         public int Rand() => random.Next(0x8000);
-        public int Next(int max) => max <= 0 ? 0 : random.Next(max);
+        public int Next(int max) => random.Next(max);
     }
 
     /// <summary>
@@ -119,9 +119,8 @@ namespace Underworld
         }
 
         /// <summary>
-        /// An RNG result is obtained by multipying Seed * Constant Multipler. 
-        /// The multiplication result is stored as the next seed.
-        /// The max value is mod divided into the (result & 0x7FFF) to get the RNG number
+        /// Returns a value 0 to max - 1 from Rng.Source. By default that is .NET's generator, as before;
+        /// a test can set a BorlandRandSource to get Turbo C++'s rand() instead.
         /// </summary>
         /// <param name="max"></param>
         /// <returns></returns>
