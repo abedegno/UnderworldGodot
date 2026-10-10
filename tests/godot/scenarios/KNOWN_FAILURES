@@ -1,0 +1,4 @@
+# Scenarios UnderworldGodot does not pass yet: "<game>/<name>  # the finding, with the port's
+# file:line and the original's". A listed scenario still runs and prints its failure but does not
+# fail the run; one that starts passing fails the run until its line is removed, in the piece that
+# fixes it.
