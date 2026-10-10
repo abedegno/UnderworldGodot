@@ -42,7 +42,7 @@ public class ScdArkRoundTripTests : IDisposable
         Assert.Equal(original, rewritten);
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw2Scd_ShrunkLiveBlock_AvailableSpaceMatchesItsLength()
     {
         // A live SCD block shrinks as its events are consumed. DOS overwrites a block that

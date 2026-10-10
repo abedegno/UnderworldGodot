@@ -265,7 +265,7 @@ public class SaveGameOrchestratorTests : IDisposable
     /// Both DOS-written UW2 saves we have store the record count plus one at 0x37E and
     /// head 1 at the player object's link, 0x380 + 6, with records starting at slot 1.
     /// </summary>
-    [Fact]
+    [GameDataFact]
     public void Save_Uw2_EmptyInventory_WritesCountOneAndHeadZero()
     {
         SetupUw2State();
@@ -291,7 +291,7 @@ public class SaveGameOrchestratorTests : IDisposable
     /// drift from play_hp, so the save sets it. Checked in both stores that carry the
     /// object: PLAYER.DAT at 0x380 + 8 and slot 1 of the level block.
     /// </summary>
-    [Fact]
+    [GameDataFact]
     public void Save_Uw2_PlayerObjectHitPointsFollowVitality()
     {
         SetupUw2State();

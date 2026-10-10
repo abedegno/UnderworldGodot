@@ -129,7 +129,7 @@ public class LevArkRoundTripTests : IDisposable
                 (int)Underworld.Loader.getAt(ark, 6 + n * 12 + block * 4, 32));
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw2VisitedLevel_Serialize_WritesTheBlockTheWayDosDoes()
     {
         // DOS reads an uncompressed block by copying its recorded length into a tilemap
@@ -152,7 +152,7 @@ public class LevArkRoundTripTests : IDisposable
         Assert.Equal(0x7E08, avail);
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw2UnchangedBlocks_Serialize_CopiedExactlyWithTheirSlack()
     {
         // A block the port did not change must reach the file as the source held it,
@@ -214,7 +214,7 @@ public class LevArkRoundTripTests : IDisposable
         Underworld.Loader.setAt(ark, 6 + table * n * 4 + block * 4, 32, value);
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw2OversizedUncompressedLevel_Serialize_TrimmedToDosBuffer()
     {
         // Earlier port builds wrote 0x8000-byte level blocks, and DOS sometimes leaves a
@@ -259,7 +259,7 @@ public class LevArkRoundTripTests : IDisposable
         }
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw2TruncatedSourceBlock_Serialize_Throws()
     {
         // A block whose data runs past the end of the source must fail the save, which
@@ -283,7 +283,7 @@ public class LevArkRoundTripTests : IDisposable
         Assert.Throws<InvalidDataException>(() => LevArkWriter.Serialize());
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw2LoadedLevel_Serialize_WritesTheLiveAutomap()
     {
         // Issue #69: the UW2 writer never wrote automaps, so everything explored since the
@@ -356,7 +356,7 @@ public class LevArkRoundTripTests : IDisposable
         Assert.Equal(56, data[1 * 6 + 5]);        // the whole record moved, not just the link
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw1LevelLoad_DropsOverlayRecordsPastTheEndOfTheList()
     {
         // Seen in a real DOS save: slot 0 live, slot 1 empty, old records in slots 2 and up.
