@@ -5,7 +5,8 @@ namespace Underworld
 {
     /// <summary>
     /// Where Rng's random numbers come from. Rand() is a raw value 0 to 32767, as Turbo C++'s
-    /// rand() returns; Next(max) is 0 to max - 1, and 0 when max is 0 or less.
+    /// rand() returns; Next(max) is 0 to max - 1, and 0 when max is 0 (a negative max is the source's own business:
+    /// .NET's throws, Turbo C++'s returns 0).
     /// </summary>
     public interface IRandSource
     {
