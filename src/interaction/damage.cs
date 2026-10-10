@@ -612,7 +612,14 @@ namespace Underworld
         /// <returns></returns>
         static int VulnerableDamage(ref int basedamage)
         {
-            basedamage = Math.Min(127, basedamage << 1);
+            if (basedamage < 0x7F)
+            {
+                basedamage = basedamage << 1;
+            }
+            else
+            {
+                basedamage = 0xFF;
+            }
             return basedamage;
         }
 
