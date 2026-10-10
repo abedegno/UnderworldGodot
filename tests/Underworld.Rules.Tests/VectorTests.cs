@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Underworld;
@@ -45,10 +46,18 @@ public class VectorTests
         var key = $"{game}/{table}";
         foreach (var f in failures.Take(10)) output.WriteLine(f);
         output.WriteLine($"{key}: {n - failures.Count} of {n} rows match");
+        Assert.True(n > 0, $"{key} has no rows");
         if (Known.Contains(key))
             Assert.True(failures.Count > 0, $"{key} now matches every row: remove it from vectors/KNOWN_FAILURES");
         else
             Assert.True(failures.Count == 0, $"{key}: {failures.Count} of {n} rows differ; first: {failures.FirstOrDefault()}");
+    }
+
+    [Fact]
+    public void Known_failures_name_existing_tables()
+    {
+        var missing = Known.Where(k => !File.Exists(Path.Combine(VectorTable.Dir, k + ".csv"))).ToList();
+        Assert.True(missing.Count == 0, "KNOWN_FAILURES names no such table: " + string.Join(", ", missing));
     }
 
     static string Expect(string what, long expected, long actual) =>
