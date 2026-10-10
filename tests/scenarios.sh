@@ -33,6 +33,7 @@ done
 home_real="$HOME"
 
 games=(uw1 uw2)
+find_mode=0
 names=()
 dirs=()
 while [ $# -gt 0 ]; do
@@ -43,6 +44,10 @@ while [ $# -gt 0 ]; do
         --uw1-dir|--uw2-dir)
             [ $# -ge 2 ] || { echo "scenarios: $1 needs a folder" >&2; exit 2; }
             dirs+=("$1" "$2"); shift 2 ;;
+        --find-godot)
+            # Prints the Godot 4.3 this script would use and exits 0; or prints why not and
+            # exits 1 (GODOT set but not runnable) or 3 (none found).
+            find_mode=1; shift ;;
         -h|--help)
             sed -n '2,8p' "$0"; exit 0 ;;
         -*)
@@ -54,16 +59,39 @@ done
 
 # Find Godot 4.3. One asked for by $GODOT that cannot run is a failure: skipping would hide a
 # broken setup, in CI above all. Only a Godot nobody asked for and nobody has is a skip.
-godot="${GODOT:-}"
-if [ -n "$godot" ] && [ ! -x "$godot" ]; then
-    echo "scenarios: FAIL, GODOT=$godot is not an executable file"
+# tests/check.sh asks through --find-godot, so the two scripts cannot disagree.
+# Sets $godot. Returns 0 found, 1 asked for but not runnable ($godot_why says why), 3 none.
+find_godot() {
+    godot="${GODOT:-}"
+    godot_why=""
+    if [ -n "$godot" ]; then
+        if [ -x "$godot" ] && [ ! -d "$godot" ]; then return 0; fi
+        godot_why="GODOT=$godot is not an executable file"
+        return 1
+    fi
+    if [ -x "$home_real/Applications/Godot43_mono.app/Contents/MacOS/Godot" ]; then
+        godot="$home_real/Applications/Godot43_mono.app/Contents/MacOS/Godot"
+        return 0
+    fi
+    godot="$(command -v godot || true)"
+    [ -n "$godot" ] && [ -x "$godot" ] && return 0
+    godot=""
+    return 3
+}
+find_godot; found=$?
+if [ "$find_mode" = 1 ]; then
+    case $found in
+        0) echo "$godot" ;;
+        1) echo "$godot_why" ;;
+        3) echo "no Godot 4.3" ;;
+    esac
+    exit $found
+fi
+if [ $found -eq 1 ]; then
+    echo "scenarios: FAIL, $godot_why"
     exit 1
 fi
-if [ -z "$godot" ] && [ -x "$home_real/Applications/Godot43_mono.app/Contents/MacOS/Godot" ]; then
-    godot="$home_real/Applications/Godot43_mono.app/Contents/MacOS/Godot"
-fi
-if [ -z "$godot" ]; then godot="$(command -v godot || true)"; fi
-if [ -z "$godot" ] || [ ! -x "$godot" ]; then
+if [ $found -eq 3 ]; then
     echo "scenarios: no Godot 4.3, skipped"
     exit 0
 fi
@@ -134,12 +162,15 @@ fi
 # KNOWN_FAILURES: "<game>/<name>  # why". A malformed line fails the run rather than being ignored.
 listed=" "
 bad=0
+problems=()
+npass=0; nknown=0; nskip=0
 if [ -f "$known" ]; then
     while IFS= read -r line || [ -n "$line" ]; do
         entry="$(printf '%s' "${line%%#*}" | tr -d '[:space:]')"
         [ -z "$entry" ] && continue
         if ! printf '%s' "$entry" | grep -Eq '^uw[12]/[a-z0-9-]+$'; then
             echo "KNOWN_FAILURES: not <game>/<name>: $line"
+            problems+=("KNOWN_FAILURES: not <game>/<name>: $line")
             bad=1
             continue
         fi
@@ -175,6 +206,7 @@ for g in "${games[@]}"; do
             [ -n "$plan" ] && IFS=, read -r -a expected <<<"$plan"
         elif grep -q '^GODOT-TEST-VERDICT ' "$out"; then
             echo "SCENARIO $g FAIL the runner printed no SCENARIO-PLAN"
+            problems+=("SCENARIO $g FAIL the runner printed no SCENARIO-PLAN")
             bad=1
         fi
     fi
@@ -182,26 +214,32 @@ for g in "${games[@]}"; do
         for n in ${expected[@]+"${expected[@]}"}; do
             if ! grep -Eq "^SCENARIO $g/$n (PASS|FAIL|SKIP)" "$out"; then
                 echo "SCENARIO $g/$n FAIL never reported"
+                problems+=("SCENARIO $g/$n FAIL never reported")
                 bad=1
             fi
         done
     fi
 
     fails=0
-    while read -r _ id verdict _; do
+    while read -r sline; do
+        read -r _ id verdict _ <<<"$sline"
         case "$verdict" in
             FAIL)
                 fails=$((fails + 1))
                 # A failure outside any scenario, "(runner)", can never be listed.
-                case "$id" in */"(runner)") bad=1; continue ;; esac
+                case "$id" in */"(runner)") problems+=("$sline"); bad=1; continue ;; esac
                 case "$listed" in
-                    *" $id "*) echo "  ($id is a known failure: KNOWN_FAILURES)" ;;
-                    *) bad=1 ;;
+                    *" $id "*) echo "  ($id is a known failure: KNOWN_FAILURES)"; nknown=$((nknown + 1)) ;;
+                    *) problems+=("$sline"); bad=1 ;;
                 esac ;;
             PASS)
+                npass=$((npass + 1))
                 case "$listed" in
-                    *" $id "*) echo "  $id now passes: remove it from KNOWN_FAILURES"; bad=1 ;;
+                    *" $id "*) echo "  $id now passes: remove it from KNOWN_FAILURES"
+                               problems+=("$id now passes: remove it from KNOWN_FAILURES"); bad=1 ;;
                 esac ;;
+            SKIP)
+                nskip=$((nskip + 1)) ;;
         esac
     done < <(grep -E '^SCENARIO ' "$out")
 
@@ -209,17 +247,22 @@ for g in "${games[@]}"; do
     if [ -z "$verdict" ]; then
         echo "SCENARIO $g FAIL no verdict: crashed or timed out (limit ${timeout_s}s); last lines:"
         tail -15 "$out" | sed 's/^/    /'
+        problems+=("SCENARIO $g FAIL no verdict: crashed or timed out (limit ${timeout_s}s)")
         bad=1
     elif [ "$verdict" = FAIL ] && [ "$fails" -eq 0 ]; then
         echo "SCENARIO $g FAIL the runner failed outside any scenario; last lines:"
         grep -v '^\s*at: ' "$out" | tail -15 | sed 's/^/    /'
+        problems+=("SCENARIO $g FAIL the runner failed outside any scenario")
         bad=1
     fi
 done
 
+# The last lines are the summary tests/check.sh reads: the counts, then each problem.
+counts="$npass pass, $nknown known failures, $nskip skipped"
 if [ "$bad" -ne 0 ]; then
-    echo "scenarios: FAIL"
+    echo "scenarios: FAIL ($counts)"
+    for p in ${problems[@]+"${problems[@]}"}; do echo "  problem: $p"; done
     exit 1
 fi
-echo "scenarios: ok"
+echo "scenarios: ok ($counts)"
 exit 0

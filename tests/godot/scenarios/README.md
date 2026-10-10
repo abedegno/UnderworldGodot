@@ -19,6 +19,8 @@ Each game runs in its own Godot process. The script prints one line per scenario
 
 Godot 4.3 mono can crash or hang on shutdown, so its exit status is ignored. Only the printed lines count. A game that prints no verdict within `SCENARIO_TIMEOUT` seconds (a whole number, default 300) fails the run with "no verdict: crashed or timed out".
 
+`tests/check.sh` runs them after the test projects and prints `ok    scenarios  N pass, M known failures, K skipped` (the counts from the `scenarios: ok|FAIL (...)` summary line of `scenarios.sh`) or `FAIL  scenarios  ...` with each problem beneath. It asks `tests/scenarios.sh --find-godot` whether there is a Godot, so the two scripts agree: no Godot at all prints `skip  scenarios  (no Godot 4.3)`, a `$GODOT` that cannot run fails, and `CHECK_SKIP_SCENARIOS=1` skips them on purpose.
+
 ## Your settings are never touched
 
 Godot runs with a temporary `HOME`, removed afterwards, and with `XDG_DATA_HOME`, `XDG_CONFIG_HOME` and `XDG_CACHE_HOME` pointed inside it, because on Linux Godot uses those when they are set, so `user://settings.json`, saves and logs all go there and the player's own settings folder is never read or written. The runner sets the game paths in memory only and never saves them. As a second guard, the runner refuses to run (every scenario fails with "not isolated") when Godot's user data folder lies under the real home, which it is given as `--data-home`. So do not run `scenario_runner.tscn` by hand with your own `HOME`: Godot itself would write its log into your real user data folder before the runner could refuse.
