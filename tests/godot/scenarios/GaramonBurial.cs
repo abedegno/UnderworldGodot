@@ -17,18 +17,26 @@ namespace Underworld.Scenarios;
 /// The scenario finds Garamon's grave the way UseBonesOn identifies it, from the shipped
 /// DATA\LEV.ARK at run time (the one level whose object list holds such a grave, and its square),
 /// teleports there through the game's own Teleportation.Teleport, finds the same grave among the
-/// live level objects, puts a pile of bones (0xC6) with owner 0x3E in the player's hand, and uses
-/// them on the grave as a player does: the "use" (use.Use), which must ask for a target as the
-/// original's UseUtil does for bones 0xC2..0xC6 (uw1/src/obj/USEITEMS.C:396-399), then the click
-/// on the grave, pickup.PickUp, which hands an item waiting for a target to useon.UseOn
-/// (src/interaction/pickup.cs:235). Asking for the target is asserted, so a fix that buries
-/// Garamon in useon but leaves the bones unusable still fails. When the use asks for nothing,
-/// the scenario sets useon.CurrentItemBeingUsed itself, as every port item with a target does
-/// (src/objects/lockpick.cs:10 and others), so the burial itself is still tested, and notes it.
+/// live level objects, puts a pile of bones (0xC6) with owner 0x3E in the player's backpack, and
+/// uses them on the grave as a player does: the "use" from the inventory (use.Use with
+/// WorldObject false, as uimanager's UseInventoryObject calls it), which must ask for a target as
+/// the original's UseUtil does for bones 0xC2..0xC6 when how is set (uw1/src/obj/USEITEMS.C:396-399;
+/// how is 1 for a use in the inventory, uw1/src/inv/BAGS.C:104, and 0 in the world,
+/// uw1/src/ui/INTERACT.C:545), then the click on the grave, pickup.PickUp, which hands an item
+/// waiting for a target to useon.UseOn (src/interaction/pickup.cs:235). Asking for the target is
+/// asserted, so a fix that buries Garamon in useon but leaves the bones unusable still fails. When
+/// the use asks for nothing, the scenario sets useon.CurrentItemBeingUsed itself, as every port
+/// item with a target does (src/objects/lockpick.cs:10 and others), so the burial itself is still
+/// tested, and notes it.
 ///
-/// UW1 only. Known failure today, two reasons: use.Use has no bones case, so no target is asked
-/// for (src/interaction/use.cs:268, UseMajorClass3); and useon.UseOn has no bones case
-/// (src/interaction/useon.cs:32), so nothing sets CanTalismansBeDestroyed true.
+/// After the burial the bones must be gone from the backpack: UseBonesOn ends in
+/// using_punt(ObjectActing, how, 1) (USEITEMS.C:364), which with how set takes the object out of
+/// the inventory (InvRemoveOneObject, USEITEMS.C:189-191). Garamon's conversation must have started
+/// (TalkTo with a stand-in of whoami 0x1B, USEITEMS.C:343-348).
+///
+/// UW1 only. The port once failed it twice over: use.Use had no bones case, so no target was asked
+/// for (src/interaction/use.cs, UseMajorClass3); and useon.UseOn had no bones case
+/// (src/interaction/useon.cs, UseOnMajorClass3), so nothing set CanTalismansBeDestroyed true.
 /// </summary>
 public sealed class GaramonBurial : Scenario
 {
@@ -39,13 +47,14 @@ public sealed class GaramonBurial : Scenario
 
     public override string Name => "garamon-burial";
     public override string[] Games => new[] { "uw1" };
-    public override string Cites => "underworld-exhumed uw1/src/obj/USEITEMS.C:327-363 (UseBonesOn), 396-399 (UseUtil)";
+    public override string Cites => "underworld-exhumed uw1/src/obj/USEITEMS.C:327-365 (UseBonesOn), 182-201 (using_punt), 396-399 (UseUtil); uw1/src/inv/BAGS.C:104 (how 1 in the inventory)";
 
     string _problem;
     int _level, _gx, _gy;
     uwObject _grave, _bones;
-    bool _askedForTarget, _useOnReached, _talismanOk, _garamon;
-    int _graveLinkAfter;
+    int _bonesIndex, _bonesSlot;
+    bool _askedForTarget, _useOnReached, _talismanOk, _garamon, _bonesGone, _talking;
+    int _graveLinkAfter, _talkerWhoami;
 
     public override async Task Setup(ScenarioContext c)
     {
@@ -74,13 +83,21 @@ public sealed class GaramonBurial : Scenario
         if (playerdat.playerObject.tileX != _gx || playerdat.playerObject.tileY != _gy)
         { _problem = $"the player is at ({playerdat.playerObject.tileX}, {playerdat.playerObject.tileY}), not at the grave"; return; }
 
-        // 4. Garamon's bones in hand.
+        // 4. Garamon's bones in the backpack: made in the hand, then put in a free backpack
+        //    slot the way the inventory does it (uimanager.MoveObjectInHandOutOfOpenedContainer).
         int slot = ObjectCreator.SpawnObjectInHand(Bones);
         if (slot == 0) { _problem = "no pile of bones could be made"; return; }
-        _bones = UWTileMap.current_tilemap.LevelObjects[slot];
-        _bones.owner = (short)GaramonOwner;
-        if (playerdat.ObjectInHand != slot || _bones.item_id != Bones || _bones.owner != GaramonOwner)
-        { _problem = "the bones in hand are not item 0xC6 with owner 0x3E"; return; }
+        UWTileMap.current_tilemap.LevelObjects[slot].owner = (short)GaramonOwner;
+        _bonesSlot = uimanager.FreePaperDollSlot;
+        if (_bonesSlot == -1) { _problem = "no free backpack slot for the bones"; return; }
+        _bonesIndex = playerdat.AddObjectToPlayerInventory(slot, false);
+        playerdat.SetInventorySlotListHead(_bonesSlot, _bonesIndex);
+        playerdat.ObjectInHand = -1;
+        uimanager.instance.mousecursor.SetCursorToCursor();
+        uimanager.UpdateInventoryDisplay();
+        _bones = playerdat.InventoryObjects[_bonesIndex];
+        if (_bones == null || playerdat.GetInventorySlotListHead(_bonesSlot) != _bonesIndex || _bones.item_id != Bones || _bones.owner != GaramonOwner)
+        { _problem = "the bones in the backpack are not item 0xC6 with owner 0x3E"; return; }
 
         if (playerdat.CanTalismansBeDestroyed || playerdat.IsGaramonBuried)
             _problem = "talisman_ok or garamon was already set before the burial";
@@ -90,22 +107,28 @@ public sealed class GaramonBurial : Scenario
     {
         if (_problem != null) return;
         useon.CurrentItemBeingUsed = null;
-        use.Use(_bones, playerdat.playerObject, UWTileMap.current_tilemap.LevelObjects, WorldObject: true);
+        // A use click on the bones in the backpack (uimanager's UseInventoryObject; how 1 in the
+        // original, uw1/src/inv/BAGS.C:104).
+        use.Use(_bones, playerdat.playerObject, playerdat.InventoryObjects, WorldObject: false);
         _askedForTarget = useon.CurrentItemBeingUsed != null && useon.CurrentItemBeingUsed.index == _bones.index;
         if (!_askedForTarget)
         {
             c.Note("using the bones asked for no target (use.Use has no bones case); setting useon.CurrentItemBeingUsed as a port item with a target does");
-            useon.CurrentItemBeingUsed = new useon(_bones, true);
+            useon.CurrentItemBeingUsed = new useon(_bones, false);
         }
         // The click on the grave: PickUp passes it to the item waiting for a target.
         var objects = UWTileMap.current_tilemap.LevelObjects;
+        c.Note($"the grave weighs {container.GetTotalMass(objectToWeight: _grave, objList: objects, IgnoreNext: true)} against a capacity of {playerdat.WeightCapacity} (pickup.PickUp checks weight before the use-on; DOS checks it only to pick up, uw1/src/ui/INTERACT.C:459, not for a target, 598-601)");
         pickup.PickUp(_grave.index, objects, WorldObject: true);
         _useOnReached = useon.CurrentItemBeingUsed == null;   // UseOn clears it as it finishes
         await c.Frames(2);
         _talismanOk = playerdat.CanTalismansBeDestroyed;
         _garamon = playerdat.IsGaramonBuried;
         _graveLinkAfter = _grave.link;
-        c.Note($"after use-on: talisman_ok {_talismanOk}, garamon {_garamon}, grave link 0x{_graveLinkAfter:X}");
+        _bonesGone = playerdat.InventoryObjects[_bonesIndex] == null && playerdat.GetInventorySlotListHead(_bonesSlot) == 0;
+        _talking = uimanager.CurrentGameMode == uimanager.GameModes.CONVERSATION;
+        _talkerWhoami = ConversationVM.currentTalker?.npc_whoami ?? -1;
+        c.Note($"after use-on: talisman_ok {_talismanOk}, garamon {_garamon}, grave link 0x{_graveLinkAfter:X}, bones gone {_bonesGone}, in conversation {_talking} with whoami {(_talkerWhoami < 0 ? "none" : $"0x{_talkerWhoami:X}")}");
     }
 
     public override string Assert(ScenarioContext c)
@@ -117,6 +140,8 @@ public sealed class GaramonBurial : Scenario
         k.True(_talismanOk, "talisman_ok (CanTalismansBeDestroyed) expected set after Garamon's bones (0xC6, owner 0x3E) were used on his grave (0x165, link 0x221), got clear (USEITEMS.C:340)");
         k.True(_garamon, "garamon (IsGaramonBuried) expected set, got clear (USEITEMS.C:341)");
         k.Equal("grave link", 0x222, _graveLinkAfter, "USEITEMS.C:342");
+        k.True(_bonesGone, $"the bones expected used up, out of the backpack, still in slot {_bonesSlot} (using_punt(ObjectActing, how, 1), USEITEMS.C:364, 189-191)");
+        k.True(_talking && _talkerWhoami == 0x1B, $"Garamon's conversation (whoami 0x1B) expected started, got in conversation {_talking} with whoami {_talkerWhoami} (TalkTo, USEITEMS.C:343-348)");
         return k.Result;
     }
 
