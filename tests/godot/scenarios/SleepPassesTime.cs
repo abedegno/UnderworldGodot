@@ -10,7 +10,9 @@ namespace Underworld.Scenarios;
 /// the clock itself (uw1/src/game/SKILLS.C:545-546, 580-583), UW2 calls
 /// pass_time(hours * 3600), which adds seconds << 8 (uw2/src/game/SKILLS.C:463-466, 507-510;
 /// uw2/src/event/WORLDEV.C:163-166). The clock is in 1/256 s, so an hour is 0xE1000, and an
-/// uninterrupted night at full health moves it on by 7 to 10 hours.
+/// uninterrupted night at full health moves it on by 7 to 10 hours. In UW2 pass_time also sets
+/// the time of day, X clock 0 (XC_TIME), to clock / 0x4B000 modulo 72 (uw2/src/event/WORLDEV.C:167);
+/// the scenario checks it against the clock after the sleep. UW1 has no X clocks.
 ///
 /// The scenario sleeps the way a player does, by using a bedroll (item 0x121, the port's
 /// use.Use, which calls sleep.Sleep(1); DOS player_sleep(1)), then lets frames pass until any
@@ -31,9 +33,9 @@ public sealed class SleepPassesTime : Scenario
     const ulong SettleMs = 30000;              // dreams are cutscenes with real-time waits
 
     public override string Name => "sleep-passes-time";
-    public override string Cites => "underworld-exhumed uw1/src/game/SKILLS.C:545-546, 580-583; uw2/src/game/SKILLS.C:463-466, 507-510, uw2/src/event/WORLDEV.C:163-166";
+    public override string Cites => "underworld-exhumed uw1/src/game/SKILLS.C:545-546, 580-583; uw2/src/game/SKILLS.C:463-466, 507-510, uw2/src/event/WORLDEV.C:163-167";
 
-    int _clockBefore, _clockAfter, _hungerBefore, _hungerAfter, _fatigueAfter, _hpBefore, _frames;
+    int _clockBefore, _clockAfter, _hungerBefore, _hungerAfter, _fatigueAfter, _hpBefore, _frames, _timeOfDayAfter;
     bool _bedroll, _settled, _usedOk;
 
     public override Task Setup(ScenarioContext c)
@@ -67,6 +69,7 @@ public sealed class SleepPassesTime : Scenario
         _clockAfter = playerdat.ClockValue;
         _hungerAfter = playerdat.play_hunger;
         _fatigueAfter = playerdat.play_fatigue;
+        if (c.Game == "uw2") _timeOfDayAfter = playerdat.GetXClock(0);
         c.Note($"clock rose {_clockAfter - _clockBefore} over {_frames} frames; fatigue 0x30 -> 0x{_fatigueAfter:X}, hunger 0x{_hungerBefore:X} -> 0x{_hungerAfter:X}");
     }
 
@@ -86,6 +89,9 @@ public sealed class SleepPassesTime : Scenario
         k.Within("clock advance over the night", 7 * Hour, 10 * Hour + play, (long)_clockAfter - _clockBefore,
             uw1 ? "7 to 10 hours of 0xE1000: uw1 SKILLS.C:545-546, 580-583"
                 : "7 to 10 hours through pass_time: uw2 SKILLS.C:463-466, 507-510, WORLDEV.C:163-166");
+        if (!uw1)
+            k.Equal("time of day (X clock 0) after the night", (_clockAfter / 0x4B000) % 0x48, _timeOfDayAfter,
+                "pass_time sets xclock[XC_TIME] = (game_clock / 0x4B000) % 0x48: uw2 WORLDEV.C:167");
         return k.Result;
     }
 }
