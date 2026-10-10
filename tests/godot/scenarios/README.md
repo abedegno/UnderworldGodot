@@ -25,7 +25,7 @@ Godot runs with a temporary `HOME`, removed afterwards, and with `XDG_DATA_HOME`
 
 ## How a new game is started
 
-For each scenario the runner points the game at the data the way `LaunchMenu.OnLaunchInput` does, installs `Rng.Source = new BorlandRandSource(scenario.Seed)`, adds `Underworld.tscn` to the tree (its `uimanager._Ready` calls `main.StartGame`, which queues the intro cutscene), stops that cutscene and waits for it to reach the main menu, then makes the calls `main.LaunchUWDemo` makes: `playerdat.InitEmptyPlayer()`, the demo's stand-in stats (30 hit points, 20 in each attribute), and `uimanager.instance.JourneyOnwards("DATA")`. It checks the game is then in game, on level 1, with the Avatar alive. Without the stand-in stats the Avatar has 0 hit points and dies on the first frame. The character creation screens are skipped, so anything they would roll is not there.
+For each scenario the runner points the game at the data the way `LaunchMenu.OnLaunchInput` does, installs `Rng.Source = new BorlandRandSource(scenario.Seed)`, adds `Underworld.tscn` to the tree (its `uimanager._Ready` calls `main.StartGame`, which queues the intro cutscene), stops that cutscene and waits for it to reach the main menu, then makes the calls `main.LaunchUWDemo` makes: `playerdat.InitEmptyPlayer()`, the demo's stand-in stats (30 hit points, 20 in each attribute), and `uimanager.instance.JourneyOnwards("DATA")`. It checks the game is then in game, on level 1, with the Avatar alive. Without the stand-in stats the Avatar has 0 hit points and dies on the first frame. The character creation screens are skipped, so anything they would roll is not there. The runner then installs a fresh `BorlandRandSource(scenario.Seed)` again, so `Setup` starts from exactly the scenario's seed (the first one makes the new game's own draws repeatable).
 
 After the scenario the runner restores `Rng.Source`, lets the audio server release the game's music and sound (as the game's own quit path does, or Godot hangs on exit, issue #78), and frees the scene. The next scenario starts a fresh new game. Static game state that a new game does not reset can still carry over between scenarios in one process, so a scenario must not rely on anything it did not set up.
 
@@ -39,7 +39,7 @@ Add a class that derives from `Scenario` in this folder and add it to `Registry`
 - `Seed`: the random seed (1 by default).
 - `Setup(c)`: put the game in the state you need and record what you will compare against.
 - `Act(c)`: do the thing. `await c.Frames(n)` lets n physics frames pass, which is n/60 seconds of game time under `--fixed-fps 60`.
-- `Assert(c)`: return `null` for a pass or the reason for a failure.
+- `Assert(c)`: return `null` for a pass or the reason for a failure. `Checks` collects several expected-against-actual comparisons, each with its citation, and reports every mismatch.
 
 Assert the precondition as well as the effect. A scenario must fail if Setup did not get the game where it meant to, or if the action never happened, rather than pass by accident. `clock-runs` shows the shape: it records whether the game was in game when it read the clock, and fails if not. `c.Note(text)` prints a line above the verdict to help explain a failure.
 

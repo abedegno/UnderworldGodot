@@ -65,3 +65,36 @@ public sealed class ScenarioContext
     /// <summary>Prints an indented note, which appears above the scenario's verdict line, for diagnosis.</summary>
     public void Note(string message) => GD.Print("    note: " + message);
 }
+
+/// <summary>
+/// Collects expected-against-actual mismatches, each with the original's citation, so a
+/// scenario that checks several values reports every one that is wrong, not just the first.
+/// </summary>
+public sealed class Checks
+{
+    private readonly System.Collections.Generic.List<string> _fails = new();
+
+    /// <summary>Records a mismatch unless actual equals expected.</summary>
+    public void Equal(string what, long expected, long actual, string cite)
+    {
+        if (expected != actual)
+            _fails.Add($"{what} expected {Hex(expected)}, got {Hex(actual)} ({cite})");
+    }
+
+    /// <summary>Records a mismatch unless lo &lt;= actual &lt;= hi.</summary>
+    public void Within(string what, long lo, long hi, long actual, string cite)
+    {
+        if (actual < lo || actual > hi)
+            _fails.Add($"{what} expected {Hex(lo)}..{Hex(hi)}, got {Hex(actual)} ({cite})");
+    }
+
+    public void True(bool ok, string failure)
+    {
+        if (!ok) _fails.Add(failure);
+    }
+
+    /// <summary>Null when everything matched, else every mismatch joined.</summary>
+    public string Result => _fails.Count == 0 ? null : string.Join("; ", _fails);
+
+    private static string Hex(long v) => v >= 10 || v <= -10 ? $"{v} (0x{v:X})" : v.ToString();
+}

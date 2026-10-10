@@ -2,3 +2,10 @@
 # file:line and the original's". A listed scenario still runs and prints its failure but does not
 # fail the run; one that starts passing fails the run until its line is removed, in the piece that
 # fixes it.
+uw1/garamon-burial      # top-30 UW1 entry 1: no use-on case for bones (src/interaction/useon.cs:32), so talisman_ok, garamon and the grave's link 0x222 are never set; underworld-exhumed uw1/src/obj/USEITEMS.C:337-342
+uw1/experience-loss     # top-30 UW1 below the cut, "Death adds experience": the loss branch is Exp - newEXP with newEXP negative (src/player/playerdat.cs:729), so 1800 - 225 gives 2025; uw1/src/game/SKILLCHK.C:76-82
+uw2/experience-loss     # top-30 UW2 below the cut, "Death adds experience": same line (src/player/playerdat.cs:729), 1800 - 200 gives 2000; uw2/src/game/SKILLCHK.C:71-77
+uw1/sleep-passes-time   # top-30 UW1 below the cut, "Sleep and repair take no time": AdvanceTime only prints (src/player/playerdatclock.cs:86); uw1/src/game/SKILLS.C:545-546, 580-583
+uw2/sleep-passes-time   # top-30 UW2 entry 2: AdvanceTime only prints (src/player/playerdatclock.cs:86); uw2/src/game/SKILLS.C:463-466, 507-510, uw2/src/event/WORLDEV.C:163-166
+uw1/new-game-record     # not in the top 30 (new): InitEmptyPlayer sets fatigue 0x30 and food_heal 0 (src/player/playerdatainit.cs:152, 166); uw1/src/game/CHARGEN.C:120-121 has 0x40 and 0x40
+uw2/new-game-record     # not in the top 30 (new): food_heal 0 (src/player/playerdatainit.cs:166), and SetMoonstone(1, 3) then SetMoonstone(1, 45) leave moonstone 0 at 0 (src/player/playerdatainit.cs:212-213); uw2/src/game/CHARGEN.C:87-88, 106

@@ -32,6 +32,12 @@ public partial class ScenarioRunner : Node
     static readonly (Func<Scenario> Make, bool InAll)[] Registry =
     {
         (() => new ClockRuns(), true),
+        (() => new SkillCheckSeeded(), true),
+        (() => new NewGameStart(), true),
+        (() => new NewGameRecord(), true),
+        (() => new ExperienceLoss(), true),
+        (() => new SleepPassesTime(), true),
+        (() => new GaramonBurial(), true),
         (() => new HarnessFails(), false),
     };
 
@@ -182,6 +188,10 @@ public partial class ScenarioRunner : Node
 
             string notStarted = await StartNewGame();
             if (notStarted != null) return "FAIL " + notStarted;
+
+            // Seeded again, so Setup starts from exactly Seed: the seeding above makes the new
+            // game's own draws repeatable, and they have moved the generator on since.
+            Rng.Source = new BorlandRandSource(s.Seed);
 
             var c = new ScenarioContext(this, game, root);
             await s.Setup(c);
