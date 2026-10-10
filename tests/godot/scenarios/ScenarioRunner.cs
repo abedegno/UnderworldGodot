@@ -41,6 +41,7 @@ public partial class ScenarioRunner : Node
     const ulong CutsceneStopMs = 20000;
 
     int _pass, _fail, _skip;
+    string _game;
 
     public override void _Ready() => Callable.From(Run).CallDeferred();
 
@@ -60,8 +61,10 @@ public partial class ScenarioRunner : Node
         }
         catch (Exception ex)
         {
-            _fail++;
+            // Its own line, so a failure outside any scenario cannot hide behind a scenario
+            // that KNOWN_FAILURES lists. "(runner)" is not a scenario name and cannot be listed.
             GD.PrintErr("runner failed: " + ex);
+            Line(_game ?? "?", "(runner)", "FAIL " + (ex.GetType().Name + ": " + ex.Message).Split('\n')[0]);
         }
         string overall = _fail > 0 ? "FAIL" : _pass > 0 ? "PASS" : "SKIP";
         GD.Print($"GODOT-TEST-VERDICT {overall}");
@@ -72,6 +75,7 @@ public partial class ScenarioRunner : Node
     {
         var args = ParseArgs(OS.GetCmdlineUserArgs());
         string game = args.GetValueOrDefault("--game", "");
+        _game = game;
         if (game != "uw1" && game != "uw2")
         {
             _fail++;
@@ -91,6 +95,10 @@ public partial class ScenarioRunner : Node
             if (found == null) Line(game, n, "FAIL no such scenario");
             else if (!chosen.Any(s => s.Name == n)) chosen.Add(found);
         }
+
+        // What this run will report on. tests/scenarios.sh checks that every one of these
+        // gets a SCENARIO line, so a scenario that silently never ran fails the run.
+        GD.Print("SCENARIO-PLAN " + string.Join(",", chosen.Select(s => s.Name)));
 
         var applicable = new List<Scenario>();
         foreach (var s in chosen)

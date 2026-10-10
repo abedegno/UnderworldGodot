@@ -15,13 +15,21 @@
 # Godot runs with a temporary HOME, so the player's own user://settings.json and saves are never
 # read or written. The real home is passed to the runner only to find the game data.
 #
-# Environment: GODOT (the Godot 4.3 mono binary), SCENARIO_TIMEOUT, DOTNET_ROOT,
-# SCENARIO_NO_BUILD=1 to skip the C# build.
+# Environment: GODOT (the Godot 4.3 mono binary; set but not runnable is a failure, not a skip),
+# SCENARIO_TIMEOUT (whole seconds per game), SCENARIO_IMPORT_TIMEOUT (whole seconds for the
+# one-time import, default 180), DOTNET_ROOT, SCENARIO_NO_BUILD=1 to skip the C# build.
 set -u
 
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 known="$repo/tests/godot/scenarios/KNOWN_FAILURES"
 timeout_s="${SCENARIO_TIMEOUT:-300}"
+import_timeout_s="${SCENARIO_IMPORT_TIMEOUT:-180}"
+for v in "SCENARIO_TIMEOUT=$timeout_s" "SCENARIO_IMPORT_TIMEOUT=$import_timeout_s"; do
+    if ! printf '%s' "${v#*=}" | grep -Eq '^[1-9][0-9]*$'; then
+        echo "scenarios: ${v%%=*} must be a whole number of seconds, not '${v#*=}'" >&2
+        exit 2
+    fi
+done
 home_real="$HOME"
 
 games=(uw1 uw2)
@@ -44,8 +52,13 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-# Find Godot 4.3.
+# Find Godot 4.3. One asked for by $GODOT that cannot run is a failure: skipping would hide a
+# broken setup, in CI above all. Only a Godot nobody asked for and nobody has is a skip.
 godot="${GODOT:-}"
+if [ -n "$godot" ] && [ ! -x "$godot" ]; then
+    echo "scenarios: FAIL, GODOT=$godot is not an executable file"
+    exit 1
+fi
 if [ -z "$godot" ] && [ -x "$home_real/Applications/Godot43_mono.app/Contents/MacOS/Godot" ]; then
     godot="$home_real/Applications/Godot43_mono.app/Contents/MacOS/Godot"
 fi
@@ -63,7 +76,7 @@ if [ -n "${DOTNET_ROOT:-}" ]; then export PATH="$DOTNET_ROOT:$PATH"; fi
 
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/uw-scenarios.XXXXXX")"
 trap 'rm -rf "$tmp"' EXIT
-mkdir -p "$tmp/home"
+mkdir -p "$tmp/home" "$tmp/home/.local/share" "$tmp/home/.config" "$tmp/home/.cache"
 
 # Runs a command in the background with output to $1, killing it after $2 seconds. With a third
 # argument, it also stops waiting a few seconds after that text appears in the output, because
@@ -71,7 +84,10 @@ mkdir -p "$tmp/home"
 # Returns 0 if the process ended by itself, 1 if it was killed.
 watch() {
     local out="$1" limit="$2" marker="$3"; shift 3
-    HOME="$tmp/home" "$@" >"$out" 2>&1 &
+    # The XDG variables too: on Linux, Godot puts user data and editor settings under them
+    # when they are set, whatever HOME says.
+    HOME="$tmp/home" XDG_DATA_HOME="$tmp/home/.local/share" XDG_CONFIG_HOME="$tmp/home/.config" \
+        XDG_CACHE_HOME="$tmp/home/.cache" "$@" >"$out" 2>&1 &
     local pid=$! waited=0 seen=-1
     while kill -0 "$pid" 2>/dev/null; do
         if [ "$waited" -ge $((limit * 2)) ]; then
@@ -99,8 +115,20 @@ if [ "${SCENARIO_NO_BUILD:-0}" != 1 ] && command -v dotnet >/dev/null 2>&1; then
         exit 1
     fi
 fi
-if [ ! -d "$repo/.godot/imported" ]; then
-    watch "$tmp/import.log" "$timeout_s" "" "$godot" --headless --path "$repo" --import
+# Imported means .godot/imported holds files: the folder alone can be left by an import that died.
+imported() { [ -d "$repo/.godot/imported" ] && [ -n "$(ls -A "$repo/.godot/imported" 2>/dev/null)" ]; }
+if ! imported; then
+    echo "scenarios: importing the project (once; up to ${import_timeout_s}s)"
+    if ! watch "$tmp/import.log" "$import_timeout_s" "" "$godot" --headless --path "$repo" --import; then
+        tail -15 "$tmp/import.log" | sed 's/^/    /'
+        echo "scenarios: FAIL, the import did not finish within ${import_timeout_s}s (SCENARIO_IMPORT_TIMEOUT)"
+        exit 1
+    fi
+    if ! imported; then
+        tail -15 "$tmp/import.log" | sed 's/^/    /'
+        echo "scenarios: FAIL, the import ended but .godot/imported is empty"
+        exit 1
+    fi
 fi
 
 # KNOWN_FAILURES: "<game>/<name>  # why". A malformed line fails the run rather than being ignored.
@@ -133,11 +161,39 @@ for g in "${games[@]}"; do
 
     grep -E '^SCENARIO |^    note: ' "$out"
 
+    # Every requested scenario must report. Named runs are checked against the names asked
+    # for; --all against the runner's own SCENARIO-PLAN line, whose absence is itself a failure
+    # once the runner has printed a verdict (no verdict is reported below).
+    if [ ${#names[@]} -gt 0 ]; then
+        expected=("${names[@]}")
+    else
+        plan="$(grep -E '^SCENARIO-PLAN' "$out" | tail -1)"
+        expected=()
+        if [ -n "$plan" ]; then
+            plan="${plan#SCENARIO-PLAN}"
+            plan="${plan# }"
+            [ -n "$plan" ] && IFS=, read -r -a expected <<<"$plan"
+        elif grep -q '^GODOT-TEST-VERDICT ' "$out"; then
+            echo "SCENARIO $g FAIL the runner printed no SCENARIO-PLAN"
+            bad=1
+        fi
+    fi
+    if grep -q '^GODOT-TEST-VERDICT ' "$out"; then
+        for n in ${expected[@]+"${expected[@]}"}; do
+            if ! grep -Eq "^SCENARIO $g/$n (PASS|FAIL|SKIP)" "$out"; then
+                echo "SCENARIO $g/$n FAIL never reported"
+                bad=1
+            fi
+        done
+    fi
+
     fails=0
     while read -r _ id verdict _; do
         case "$verdict" in
             FAIL)
                 fails=$((fails + 1))
+                # A failure outside any scenario, "(runner)", can never be listed.
+                case "$id" in */"(runner)") bad=1; continue ;; esac
                 case "$listed" in
                     *" $id "*) echo "  ($id is a known failure: KNOWN_FAILURES)" ;;
                     *) bad=1 ;;
