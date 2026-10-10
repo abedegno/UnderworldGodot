@@ -34,8 +34,6 @@ uw1/smite-undead  ~undead (resist bit 0x80) hit points after Smite Undead  # UW1
 uw2/smite-undead  ~living critter (no resist bit 0x80) hit points  # tests a value ScaleDamage never changes, so every critter takes 255 (spellcasting_class_7.cs:417-418); skull stub (:448); uw2 SPELLS.C:331-347, WORLDEV.C:1649
 uw1/kill-experience  ~experience for a kill (exp * 4  # exp + 2d(exp), paid whoever kills, every gain halved, no 0x17700 stop (src/player/playerdat.cs:657, 687, 767; src/interaction/damage.cs:170); uw1 COMBAT.C:838, AI.C:1494, SKILLCHK.C:85-89
 uw2/kill-experience  ~experience for a kill (exp * 4  # exp + 2d(exp), powerful bonus added, paid whoever kills (src/player/playerdat.cs:767, 770; src/interaction/damage.cs:170); uw2 COMBAT.C:942-944, AI.C:1505
-uw1/skill-point-gain  ~skill 10 (attribute 24) raised from 4  # IncreaseSkill compares the skill with the attribute's index, nests the third point (src/player/playerdatskills.cs:531-541); uw1 SKILLS.C:200-212
-uw2/skill-point-gain  ~skill 10 (attribute 24) raised from 4  # same, and UW1's ranges (playerdatskills.cs:513); uw2 SKILLS.C:149, 168-180
 uw2/quest-flag-set-zero  ~after operation 2 with right 0 from 1 expected 0  # sets the bit for every op but 1 and 5 whatever the right value (src/traps/a_set_variable_trap.cs:171); uw2 TRIGGER.C:188-191 sets it to right > 0
 uw1/natural-healing  ~hit points regained in one regeneration step  # Strength vs 10 and HPRegenerationChange(result) (src/player/playerdatloop.cs:240-243); uw1 PLAYTIME.C:139-140 vs 15, restore_hp(-1)
 uw2/natural-healing  ~hit points regained in one regeneration step  # same (playerdatloop.cs:240-243); uw2 PLAYTIME.C:148-149
