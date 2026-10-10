@@ -66,6 +66,7 @@ public sealed class KillExperience : Scenario
     long Expected(bool uw2, bool powerful, uint seed)
     {
         var d = new BatchB.DosRand(seed);
+        if (!uw2) d.Rand();   // uw1 COMBAT.C:836 set_screen_frame(4, 2) first picks a dragon, rand() & 1 when both are idle (uw1 PANELS.C:304-305)
         long n = _exp * 4 + d.Rollem(2, _exp);                       // COMBAT.C:942 / 838
         if (powerful) n = n * (d.Rand() % 24 + 24) / 16;            // COMBAT.C:943-944 / 839-840
         if (uw2) n = (n + d.Rand() % 2) / 2;                         // uw2 SKILLCHK.C:72-73
