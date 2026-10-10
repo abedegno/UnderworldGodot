@@ -1,0 +1,22 @@
+# Fork-only: never upstreamed. Builds and runs every test project on each push to the
+# integration branch (piece branches do not carry this file, so they are checked locally). No game data here: tests that need it skip.
+name: fork-ci
+on:
+  push:
+    branches: [integration, 'fork-only/**']
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: check
+        run: |
+          if [ -x tools/check.sh ]; then tools/check.sh; else
+            dotnet build Underworld.csproj -nologo -v q
+            for p in tests/*/*.csproj; do dotnet test "$p" -nologo -v q; done
+          fi
