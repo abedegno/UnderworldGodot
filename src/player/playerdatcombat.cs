@@ -54,6 +54,11 @@ namespace Underworld
         public static int[] LocationalProtectionValues = new int[4];//Affects to hit chance for a body part.
 
         /// <summary>
+        /// The player's defence, playerdat->defence: the Defence skill plus half the skill of the weapon in hand, set by FixPlayerEquips (uw2 PLAYDATA.C:370-385, uw1 PLAYDATA.C:409-425)
+        /// </summary>
+        public static int PlayerDefence;
+
+        /// <summary>
         /// Bit flags to indicate what damage types the player is resistant to. 
         /// These bits will be the same for NPCs resistances. See the "scale" value in critter object.dat
         /// </summary>
