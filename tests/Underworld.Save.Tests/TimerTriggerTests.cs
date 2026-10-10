@@ -34,7 +34,7 @@ public class TimerTriggerTests : System.IDisposable
         for (int t = 0; t < 64; t++) timers.SetTimer(t, 0);
     }
 
-    [Fact]
+    [GameDataFact]
     public void RemoveTimer_MovesTheLastEntryIntoThePlaceOfTheRemovedOne()
     {
         LoadUw2Level0();
@@ -52,7 +52,7 @@ public class TimerTriggerTests : System.IDisposable
         Assert.Equal(0, timers.GetTimer(3));
     }
 
-    [Fact]
+    [GameDataFact]
     public void RemoveTimer_LastEntryAndUnknownObject()
     {
         LoadUw2Level0();
