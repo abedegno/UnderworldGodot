@@ -86,7 +86,7 @@ namespace Underworld
         /// <summary>
         /// Lets a span of seconds of game time pass (sleeping, repairing, jail).
         /// The clock is in 1/256 seconds so the span is shifted by 8.
-        /// UW2 is pass_time (uw2/src/event/WORLDEV.C:163-170): the time of day xclock 0 is then
+        /// UW2 is pass_time (uw2/src/event/WORLDEV.C:163-169, the X clock line is 167): the time of day xclock 0 is then
         /// recalculated from the clock in 20 minute steps (0x4B000), 72 to the day, and the SCD schedules
         /// are brought up to date (Sched_SetAllClocks(1)). pass_time also sets lastDurCheck to the clock
         /// so the duration checks do not catch up on the skipped time; the port's duration checks
