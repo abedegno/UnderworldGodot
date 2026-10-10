@@ -29,7 +29,7 @@ public class LevArkRoundTripTests : IDisposable
         Underworld.UWTileMap.dungeons = _origDungeons;
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw2Level0_LoadExtractReserialize_TilemapBlockIdentical()
     {
         Underworld.UWClass.BasePath = Path.Combine(TestData.UW2GogRoot, "UW2");
@@ -53,7 +53,7 @@ public class LevArkRoundTripTests : IDisposable
         }
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw2FullArk_Reassemble_BlocksAtDocumentedOffsetsReadBackIdentically()
     {
         Underworld.UWClass.BasePath = Path.Combine(TestData.UW2GogRoot, "UW2");
@@ -87,7 +87,7 @@ public class LevArkRoundTripTests : IDisposable
         }
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw2VisitedLevel_Serialize_UsesLiveDungeonBuffer()
     {
         Underworld.UWClass.BasePath = Path.Combine(TestData.UW2GogRoot, "UW2");
@@ -120,7 +120,7 @@ public class LevArkRoundTripTests : IDisposable
         Assert.Equal(modifiedByte, reloadedBlock0.Data[SafeOffset]);
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw1FullArk_Reassemble_Block0ReadBackIdentically()
     {
         Underworld.UWClass.BasePath = Path.Combine(TestData.UW2GogRoot, "UW1");
@@ -165,7 +165,7 @@ public class LevArkRoundTripTests : IDisposable
     //
     // The constructor just calls LoadLevArkBlock — if this test fails, the
     // problem is earlier than any gameplay code.
-    [Fact]
+    [GameDataFact]
     public void Uw1DungeonCtor_FromData_SerializeBlock0_IdenticalToDataBytes()
     {
         Underworld.UWClass.BasePath = Path.Combine(TestData.UW2GogRoot, "UW1");
@@ -202,7 +202,7 @@ public class LevArkRoundTripTests : IDisposable
     // BuildObjectListUW, propagates obj.tileX/tileY from the tile chains, and
     // runs CleanUp. If this step introduces byte mutations, the culprit is
     // inside BuildTileMapUW.
-    [Fact]
+    [GameDataFact]
     public void Uw1DungeonCtor_AndBuildTileMap_SerializeBlock0_IdenticalToDataBytes()
     {
         Underworld.UWClass.BasePath = Path.Combine(TestData.UW2GogRoot, "UW1");
@@ -245,7 +245,7 @@ public class LevArkRoundTripTests : IDisposable
     // performs (copying 27 bytes of pdat back into playerObject's DataBuffer).
     // Uses InitEmptyPlayer so pdat is all zeros (which itself is a hypothetical
     // "empty character" scenario); the copy writes those zeros into slot 1.
-    [Fact]
+    [GameDataFact]
     public void Uw1_AddPlayerStashToSlot1_DiffsLocalisedToMobile1()
     {
         Underworld.UWClass.BasePath = Path.Combine(TestData.UW2GogRoot, "UW1");
@@ -302,7 +302,7 @@ public class LevArkRoundTripTests : IDisposable
     // Next step: add PlacePlayerInTile. Expect this to modify the target tile's
     // indexObjectList (bytes 2-3 of that tile's entry) and the player slot's
     // .next field — but nothing else. Anything outside those regions is a bug.
-    [Fact]
+    [GameDataFact]
     public void Uw1_AddPlacePlayerInTile_DiffsLocalisedToPlayerAndOneTile()
     {
         Underworld.UWClass.BasePath = Path.Combine(TestData.UW2GogRoot, "UW1");
@@ -367,7 +367,7 @@ public class LevArkRoundTripTests : IDisposable
     // the tilemap produces a save whose two halves disagree: a moving-door object
     // with no matching overlay. The writer used to pass blocks 9..17 straight
     // through from the source ARK, so any live overlay state was silently lost.
-    [Fact]
+    [GameDataFact]
     public void Uw1_LiveOverlayBlock_SurvivesFullSerializeAndReextract()
     {
         Underworld.UWClass.BasePath = Path.Combine(TestData.UW2GogRoot, "UW1");
@@ -459,7 +459,7 @@ public class LevArkRoundTripTests : IDisposable
     // the helper returns its own hard-coded size would keep passing even if the
     // format assumption were wrong, so read the container's own offset table and
     // confirm every UW1 overlay block really is that long.
-    [Fact]
+    [GameDataFact]
     public void Uw1_OverlayBlocksInRealArk_AreEach384Bytes()
     {
         string ark = Path.Combine(TestData.UW2GogRoot, "UW1", "DATA", "LEV.ARK");
