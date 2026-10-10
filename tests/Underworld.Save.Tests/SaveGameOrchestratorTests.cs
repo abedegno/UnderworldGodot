@@ -267,7 +267,7 @@ public class SaveGameOrchestratorTests : IDisposable
     /// (0x3E3 versus 0x138) and the derived record count would be computed against the
     /// wrong base.
     /// </summary>
-    [Fact]
+    [GameDataFact]
     public void Save_Uw2_PlayerObjectLinkUnchangedByUw1InventoryRule()
     {
         SetupUw2State();
@@ -285,7 +285,7 @@ public class SaveGameOrchestratorTests : IDisposable
         Assert.Equal(1, head);
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_Uw2_WritesAllFiveFiles()
     {
         SetupUw2State();
@@ -301,7 +301,7 @@ public class SaveGameOrchestratorTests : IDisposable
         Assert.True(File.Exists(Path.Combine(saveDir, "SCD.ARK")),      "SCD.ARK missing for UW2");
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_Uw2_AllFilesNonZeroSize()
     {
         SetupUw2State();
@@ -316,7 +316,7 @@ public class SaveGameOrchestratorTests : IDisposable
         }
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_Uw2_OverwritesExistingFiles()
     {
         // UW2 writes the same file set as UW1, DESC included, so it takes the same rule.
