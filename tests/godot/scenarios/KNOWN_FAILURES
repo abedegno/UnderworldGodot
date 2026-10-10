@@ -7,3 +7,7 @@
 # "precondition:" or name an exception (then the scenario no longer reaches the bug it tests, and
 # the run fails). One that starts passing fails the run until its line is removed, in the piece that
 # fixes it. Original sources: https://github.com/abedegno/underworld-exhumed (uw1/src, uw2/src).
+
+# batch D: guards
+uw1/guard-light  ~torch quality after 15 ticks  # a lit light burns a point when the tick count is a multiple of its class index (src/player/playerdatloop.cs:378), not of its burn rate Lights[inclass].duration from OBJECTS.DAT (uw1/src/game/PLAYTIME.C:166-170): the torch burns at 1 in 5 ticks, not 1 in 3; UW1 lights also go out at quality 1 (playerdatloop.cs:380), not 0 (PLAYTIME.C:177-181)
+uw2/guard-light  ~torch quality after 15 ticks  # as uw1: the class index (src/player/playerdatloop.cs:378) where uw2/src/game/PLAYTIME.C:192-196 uses Lights[inclass].duration
