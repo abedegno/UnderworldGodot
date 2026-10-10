@@ -7,3 +7,38 @@
 # "precondition:" or name an exception (then the scenario no longer reaches the bug it tests, and
 # the run fails). One that starts passing fails the run until its line is removed, in the piece that
 # fixes it. Original sources: https://github.com/abedegno/underworld-exhumed (uw1/src, uw2/src).
+
+# batch B: player and magic rules
+uw1/smite-undead  ~undead (resist bit 0x80) hit points after Smite Undead  # UW1 sends every target to the SmiteUndeadObject stub (src/magic/spellcasting_class_7.cs:407, 448); uw1 SPELLS.C:347-350 kills the undead
+uw2/smite-undead  ~living critter (no resist bit 0x80) hit points  # tests a value ScaleDamage never changes, so every critter takes 255 (spellcasting_class_7.cs:417-418); skull stub (:448); uw2 SPELLS.C:331-347, WORLDEV.C:1649
+uw1/kill-experience  ~experience for a kill (exp * 4  # exp + 2d(exp), paid whoever kills, every gain halved, no 0x17700 stop (src/player/playerdat.cs:657, 687, 767; src/interaction/damage.cs:170); uw1 COMBAT.C:838, AI.C:1494, SKILLCHK.C:85-89
+uw2/kill-experience  ~experience for a kill (exp * 4  # exp + 2d(exp), powerful bonus added, paid whoever kills (src/player/playerdat.cs:767, 770; src/interaction/damage.cs:170); uw2 COMBAT.C:942-944, AI.C:1505
+uw1/skill-point-gain  ~skill 10 (attribute 24) raised from 4  # IncreaseSkill compares the skill with the attribute's index, nests the third point (src/player/playerdatskills.cs:531-541); uw1 SKILLS.C:200-212
+uw2/skill-point-gain  ~skill 10 (attribute 24) raised from 4  # same, and UW1's ranges (playerdatskills.cs:513); uw2 SKILLS.C:149, 168-180
+uw2/quest-flag-set-zero  ~after operation 2 with right 0 from 1 expected 0  # sets the bit for every op but 1 and 5 whatever the right value (src/traps/a_set_variable_trap.cs:171); uw2 TRIGGER.C:188-191 sets it to right > 0
+uw1/natural-healing  ~hit points regained in one regeneration step  # Strength vs 10 and HPRegenerationChange(result) (src/player/playerdatloop.cs:240-243); uw1 PLAYTIME.C:139-140 vs 15, restore_hp(-1)
+uw2/natural-healing  ~hit points regained in one regeneration step  # same (playerdatloop.cs:240-243); uw2 PLAYTIME.C:148-149
+uw1/player-armour  ~player's defence (Defence + weapon skill / 2)  # armour ignores quality and +1, no shield, bare Defence (src/player/playerdatloop.cs:653, src/objectdata/critterObjectDat.cs:358); uw1 PLAYDATA.C:364-425
+uw2/player-armour  ~player's defence (Defence + weapon skill / 2)  # same (playerdatloop.cs:653, critterObjectDat.cs:358); uw2 PLAYDATA.C:322-385
+uw1/item-protection  ~slot 2 protection minor 0x3  # class 12 only for slots 0 and 1, no +1, toughness to protection (src/magic/spellcasting_objects.cs:61-77); uw1 PLAYDATA.C:271-286
+uw2/item-protection  ~slot 2 protection minor 0x3  # same (spellcasting_objects.cs:61-77); uw2 PLAYDATA.C:249-264
+uw1/sleep-night  ~hit points after the night  # heals HPRegenerationChange(regen * comfort), 2..32 hunger, 16 drunkenness, lights as a counter (src/World/sleep.cs:117, 163, 192, 197); uw1 SKILLS.C:549, 584-605
+uw2/sleep-night  ~hit points after the night  # same (sleep.cs:117, 163, 192, 197); uw2 SKILLS.C:472, 511-532
+uw2/sleep-killorn-crash  ~quest 50 set and 54 clear (Killorn crashes) expected 0  # needs world 2 and quest 54 set, the reverse (src/World/sleep.cs:105); uw2 SKILLS.C:467-471
+uw1/sleep-in-void  ~fatigue after trying to sleep in the Void  # no level 9 test (src/World/sleep.cs:25); uw1 SKILLS.C:525-528 refuses
+uw2/map-area-radius  ~open squares mapped within the radius 7 circle at Casting 20  # radius Max(Casting - 13, 0) / 5 + 2, flood-filled square (src/magic/spellcasting_class_13.cs:71); uw2 SPELLS.C:996-1002 circle
+uw2/britannia-spell-circle  ~mana spent on a circle 3 spell in Britannia  # refuses SpellLevel >= 3 (src/magic/runicmagic.cs:476); uw2 RUNES.C:232 refuses level > 3
+uw2/academy-mana-level  ~mana restored on level 41 at x 30 expected 5  # 1 + dungeon_level % 8 on a 1-based level (src/player/playerdatloop.cs:291); uw2 SPELLS.C:159-161
+uw2/targeted-spell-mana  ~mana spent on a targeted spell before its target  # class 7 leaves applyCost true (src/magic/spellcasting.cs:77, 108); uw2 RUNES.C:247-251 holds it in mspell_mused
+uw1/uw1-casting-check  ~mana spent casting a circle 1 spell at Casting 13  # SkillCheck(Casting, circle * 3) for both games (src/magic/runicmagic.cs:339); uw1 RUNES.C:249 skill_check(Casting + 5, circle * 2)
+uw1/summon-monster  ~at Casting 10 expected  # picks 0..lvl-1 (src/magic/spellcasting_class_8.cs:84); uw1 SPELLS.C:605-612 picks lvl..2lvl-1
+uw2/summon-monster  ~at Casting 10 expected  # same (spellcasting_class_8.cs:84); uw2 SPELLS2.C:511-518
+uw1/carry-capacity  ~carrying limit at Strength 15 expected 300  # 300 + Strength * 13 for both games (src/player/playerdat.cs:794); uw1 SKILLS.C:112 Strength * 20
+uw1/light-burn-rates  ~light 0x94 (period 10) quality after 40 steps  # class index as the burn period, out at quality 1 (src/player/playerdatloop.cs:378-380); uw1 PLAYTIME.C:166-181
+uw2/light-burn-rates  ~light 0x94 (period 10) quality after 40 steps  # same (playerdatloop.cs:378-380); uw2 PLAYTIME.C:191-206
+uw1/repair-critical-failure  ~repair result on a critical failure (seed 1  # destroys when the roll is <= quality + skill (src/interaction/repair.cs:208); uw1 WORLDEV.C:643 when above
+uw2/repair-critical-failure  ~repair result on a critical failure (seed 1  # same (repair.cs:208); uw2 WORLDEV.C:1024
+uw1/uw1-create-object-trap  ~objects made by a quality 32 create object trap  # two chance rolls, random placement (src/traps/a_create_object_trap.cs:18, 59, 194); uw1 TRIGGER.C:299-314
+uw1/uw1-sounds-dat-length  ~UW1 effects whose length is read other than high byte first  # low byte first (src/audio/sfx/SoundsDatLoader.cs:45); uw1 SOUND.C:708 high byte first
+uw1/uw1-area-spells  ~critters upset by Mass Confusion  # UW1 count 2, radius 0 (src/magic/spellcasting_class_6.cs:23, 64-66, 85); uw1 SPELLS.C:549, 509 (3d4, radius 2)
+# end batch B
