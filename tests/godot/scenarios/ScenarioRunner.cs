@@ -40,6 +40,22 @@ public partial class ScenarioRunner : Node
         (() => new SleepPassesTime(), true),
         (() => new GaramonBurial(), true),
         (() => new GaramonDeathClearsTalismans(), true),
+        // batch C
+        (() => new TimeOfDayHourlyStep(), true),
+        (() => new NewGameTimeOfDay(), true),
+        (() => new RepairTime(), true),
+        (() => new JailTerm(), true),
+        (() => new AltarasWand(), true),
+        (() => new ScdSetQuestBit(), true),
+        (() => new QbertGate(), true),
+        (() => new CastleSchedule(), true),
+        (() => new EnchantWeaponTier(), true),
+        (() => new EnchantRechargeWand(), true),
+        (() => new GivePtrNpc(), true),
+        (() => new EndBarter(), true),
+        (() => new TrapChainFlow(), true),
+        (() => new TeleportOccupied(), true),
+        (() => new TybalTalkTrap(), true),
         (() => new HarnessFails(), false),
     };
 
