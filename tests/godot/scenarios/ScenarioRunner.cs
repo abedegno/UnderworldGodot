@@ -40,6 +40,18 @@ public partial class ScenarioRunner : Node
         (() => new SleepPassesTime(), true),
         (() => new GaramonBurial(), true),
         (() => new GaramonDeathClearsTalismans(), true),
+        // batch A: combat and critters
+        (() => new SwingChargeResets(), true),
+        (() => new CritterMeleeChoice(), true),
+        (() => new FleeingCritterSteers(), true),
+        (() => new AlliesJoinFight(), true),
+        (() => new AlliesWearOff(), true),
+        (() => new WanderingMonsters(), true),
+        (() => new SpecialDeathsUW2(), true),
+        (() => new PoisonWeaponDamage(), true),
+        (() => new CombatEquipmentWear(), true),
+        (() => new CritterLineOfSight(), true),
+        (() => new PathsFreedOnLevelChange(), true),
         (() => new HarnessFails(), false),
     };
 
