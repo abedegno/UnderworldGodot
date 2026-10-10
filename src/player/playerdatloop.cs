@@ -215,8 +215,8 @@ namespace Underworld
                                     ManaRegenChange(-manaskillcheck);
                                 }
                             }//end every 60 seconds update
-                            if ((playerUpdateCounter % 30) == 0)
-                            {//every 5 minutes
+                            if ((playerUpdateCounter % (_RES == GAME_UW2 ? 30 : 24)) == 0)
+                            {//every 5 minutes in UW2 (uw2 PLAYTIME.C:137), every 8 minutes in UW1 (uw1 PLAYTIME.C:128)
                                 var hungerchange = -3 - Rng.r.Next(0, 3);
                                 play_hunger = (byte)Math.Max(play_hunger + hungerchange, 0);
 
@@ -242,8 +242,12 @@ namespace Underworld
                                 {//regular health regen
                                     HPRegenerationChange(hpskillcheck);
                                 }
+                                if (_RES != GAME_UW2)
+                                {//uw1 restarts the count here and has no 20 minute block: uw1 PLAYTIME.C:141
+                                    playerUpdateCounter = 0;
+                                }
                             }//end every 5 mins update
-                            if ((playerUpdateCounter % 60) == 0)//every 20 mins
+                            if ((_RES == GAME_UW2) && ((playerUpdateCounter % 60) == 0))//every 20 mins: uw2 PLAYTIME.C:151-165
                             {
                                 Debug.Print("TODO Update 'day' value");
                                 Debug.Print("TODO something with scd.ark");
@@ -288,7 +292,7 @@ namespace Underworld
             {
                 if (worlds.GetWorldNo(dungeon_level) == 5)//Academy
                 {
-                    var academylevel = 1 + dungeon_level % 8;
+                    var academylevel = 1 + (dungeon_level - 1) % 8;//dungeon_level is 1-based: uw2 SPELLS.C:159-161 (PlayerLevel - 1) % 8 + 1
                     if ((academylevel > 1) && (academylevel < 8))
                     {
                         return;
