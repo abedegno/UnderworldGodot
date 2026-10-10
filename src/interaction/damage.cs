@@ -447,7 +447,7 @@ namespace Underworld
         /// <returns>item id of debris to spawn.</returns>
         public static int GetObjectTypeDebris(uwObject objToDestroy, int damagetype)
         {//only used in uw2
-            if ((objToDestroy.majorclass != 0) || (damagetype == 8))
+            if ((objToDestroy.OneF0Class != 0) || (damagetype == 8))
             {
                 if (objToDestroy.OneF0Class == 0x15)
                 {//wood chips
