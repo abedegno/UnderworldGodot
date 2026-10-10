@@ -1,0 +1,140 @@
+# Fork-only: never upstreamed. Builds and runs every test project on each push to the
+# integration branch (piece branches do not carry this file, so they are checked locally). No game data here: tests that need it skip.
+name: fork-ci
+on:
+  push:
+    branches: [integration, 'fork-only/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: check
+        run: |
+          if [ -x tests/check.sh ]; then tests/check.sh; else
+            dotnet build Underworld.csproj -nologo -v q
+            for p in tests/*/*.csproj; do dotnet test "$p" -nologo -v q; done
+          fi
+
+  # The gameplay scenarios (tests/godot/scenarios/README.md) in headless Godot 4.3 mono, with
+  # the owner's game files from the private, age-encrypted bundles abedegno/uw1-ci-assets and
+  # abedegno/uw2-ci-assets (each holds game/UWn, the GOG copy). Without the four secrets it
+  # skips. Nothing under the decrypted folders is ever listed, printed, cached or uploaded, and
+  # the last step removes them and the key files whatever happened.
+  scenarios:
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GODOT_VERSION: 4.3-stable
+      GODOT_ZIP: Godot_v4.3-stable_mono_linux_x86_64.zip
+      # From the release's own SHA512-SUMS.txt (godotengine/godot-builds, tag 4.3-stable)
+      GODOT_SHA512: 33d0539bc368ff6f30b5f15d64ec893da8639bd607df83050b5df746c3d30da99238c26dd03a16d7fe31b3a3e58680aeb5545af8784d8ce01edeff07b061ac80
+      GODOT_HOME: /home/runner/godot-4.3-stable-mono
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Gate on the asset secrets
+        id: gate
+        env:
+          K1: ${{ secrets.UW1_ASSETS_DEPLOY_KEY }}
+          K2: ${{ secrets.UW2_ASSETS_DEPLOY_KEY }}
+          A1: ${{ secrets.UW1_ASSETS_AGE_KEY }}
+          A2: ${{ secrets.UW2_ASSETS_AGE_KEY }}
+        run: |
+          if [ ! -x tests/scenarios.sh ]; then
+            echo "scenarios: this branch has no tests/scenarios.sh, skipped"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "$K1" ] || [ -z "$K2" ] || [ -z "$A1" ] || [ -z "$A2" ]; then
+            echo "scenarios: no asset secrets, skipped"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-dotnet@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          dotnet-version: '10.0.x'
+      - name: Cache Godot
+        id: godot-cache
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.GODOT_HOME }}
+          key: godot-${{ env.GODOT_VERSION }}-mono-linux-x86_64-${{ env.GODOT_SHA512 }}
+      - name: Download Godot (checked against the pinned SHA-512)
+        if: steps.gate.outputs.run == 'true' && steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          zip="$RUNNER_TEMP/$GODOT_ZIP"
+          curl -fsSL --retry 3 -o "$zip" "https://github.com/godotengine/godot-builds/releases/download/$GODOT_VERSION/$GODOT_ZIP"
+          echo "$GODOT_SHA512  $zip" | sha512sum -c --quiet -
+          rm -rf "$GODOT_HOME"; mkdir -p "$GODOT_HOME"
+          unzip -q "$zip" -d "$GODOT_HOME"
+          rm -f "$zip"
+      - name: Find Godot
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          godot="$GODOT_HOME/Godot_v4.3-stable_mono_linux_x86_64/Godot_v4.3-stable_mono_linux.x86_64"
+          [ -f "$godot" ] || { echo "scenarios: no Godot binary at $godot"; exit 1; }
+          chmod +x "$godot"
+          echo "GODOT=$godot" >> "$GITHUB_ENV"
+      - name: Install age
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends age >/dev/null
+      # As underworld-exhumed's uwN-assets actions: the deploy key in a 0600 file, a clone that
+      # trusts only GitHub's published host key, the key deleted, then decrypted with
+      # tools/ci-assets.sh (the age key on age's standard input; it prints only counts and paths).
+      - name: Fetch and decrypt the game files
+        if: steps.gate.outputs.run == 'true'
+        env:
+          UW1_DEPLOY_KEY: ${{ secrets.UW1_ASSETS_DEPLOY_KEY }}
+          UW2_DEPLOY_KEY: ${{ secrets.UW2_ASSETS_DEPLOY_KEY }}
+          UW1_ASSETS_AGE_KEY: ${{ secrets.UW1_ASSETS_AGE_KEY }}
+          UW2_ASSETS_AGE_KEY: ${{ secrets.UW2_ASSETS_AGE_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          hosts="$RUNNER_TEMP/github-known-hosts"
+          # GitHub's published host key (api.github.com/meta)
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "$hosts"
+          for n in 1 2; do
+            key="$RUNNER_TEMP/uw$n-assets-deploy-key"
+            keyvar="UW${n}_DEPLOY_KEY"
+            printf '%s\n' "${!keyvar}" | tr -d '\r' > "$key"
+            GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o UserKnownHostsFile=$hosts -o StrictHostKeyChecking=yes" \
+              git clone -q --depth 1 "git@github.com:abedegno/uw$n-ci-assets.git" "$RUNNER_TEMP/uw$n-ci-assets"
+            rm -f "$key"
+            if [ "$n" = 1 ]; then exe=UW.EXE; else exe=UW2.EXE; fi
+            AGE_KEY_ENV="UW${n}_ASSETS_AGE_KEY" sh tools/ci-assets.sh \
+              "$RUNNER_TEMP/uw$n-ci-assets/uw$n-ci-assets.tar.gz.age" "$RUNNER_TEMP/assets-uw$n" \
+              --require "game/UW$n/$exe" --export "UW${n}_DIR=game/UW$n"
+            rm -rf "$RUNNER_TEMP/uw$n-ci-assets"
+          done
+          rm -f "$hosts"
+      - name: tests/scenarios.sh
+        if: steps.gate.outputs.run == 'true'
+        env:
+          SCENARIO_IMPORT_TIMEOUT: '300'
+        run: |
+          set -euo pipefail
+          # scenarios.sh skips a game whose folder has no DATA, which here would hide a bad bundle
+          for d in "$UW1_DIR" "$UW2_DIR"; do
+            [ -d "$d/DATA" ] || { echo "scenarios: the bundle's $(basename "$d") has no DATA folder"; exit 1; }
+          done
+          dotnet_root="${DOTNET_ROOT:-$(dirname "$(readlink -f "$(command -v dotnet)")")}"
+          DOTNET_ROOT="$dotnet_root" tests/scenarios.sh --uw1-dir "$UW1_DIR" --uw2-dir "$UW2_DIR"
+      - name: Remove the game files and keys
+        if: always()
+        run: rm -rf "$RUNNER_TEMP"/assets-uw1 "$RUNNER_TEMP"/assets-uw2 "$RUNNER_TEMP"/uw1-ci-assets "$RUNNER_TEMP"/uw2-ci-assets "$RUNNER_TEMP"/uw1-assets-deploy-key "$RUNNER_TEMP"/uw2-assets-deploy-key "$RUNNER_TEMP"/github-known-hosts

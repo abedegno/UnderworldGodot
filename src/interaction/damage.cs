@@ -447,7 +447,7 @@ namespace Underworld
         /// <returns>item id of debris to spawn.</returns>
         public static int GetObjectTypeDebris(uwObject objToDestroy, int damagetype)
         {//only used in uw2
-            if ((objToDestroy.majorclass != 0) || (damagetype == 8))
+            if ((objToDestroy.OneF0Class != 0) || (damagetype == 8))
             {
                 if (objToDestroy.OneF0Class == 0x15)
                 {//wood chips
@@ -612,7 +612,14 @@ namespace Underworld
         /// <returns></returns>
         static int VulnerableDamage(ref int basedamage)
         {
-            basedamage = Math.Min(127, basedamage << 1);
+            if (basedamage < 0x7F)
+            {
+                basedamage = basedamage << 1;
+            }
+            else
+            {
+                basedamage = 0xFF;
+            }
             return basedamage;
         }
 

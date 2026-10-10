@@ -39,7 +39,6 @@ namespace Underworld
         // The composite is wider (horizontal) or taller (vertical) than 320x200.
         // See CutsceneBitmap_ovr108_33E0 (line 446657) for LBACK loading.
         static Godot.Image vpComposite;
-        static Godot.Image vpCompositeClean;  // pristine LBACK for per-frame reset
         static bool vpIsHorizontal;
         static System.Collections.Generic.List<(int pos, int extent, int fileIdx, byte[] rawPixels)> vpFileMappings = new();
 
@@ -48,67 +47,29 @@ namespace Underworld
         static CutsLoader vpSpriteLoader;
         static int vpSpriteFrame;
 
-        // === Panorama horizontal-scroll fixes ===
+        // === Animation during a panorama scroll ===
         //
-        // Original symptom: CS000's horizontal scroll (cart heading to bridge)
-        // showed two carts — one pre-rendered in LBACK000 and a second animating
-        // via N03. N03 is a cart-only sprite with no background-erase writes, so
-        // it couldn't paint over LBACK's cart.
+        // While a panorama scrolls, DOS does not keep the LPF frame in a buffer
+        // of its own. Each frame's delta is decoded straight onto the screen at
+        // the current view position (ovr108_24AB: record type 1 goes to
+        // DRAW_RELATED_ovr108_189F, which writes through the row table that
+        // seg003_0272_2A0D rebuilds at every pan step). Skipped pixels leave
+        // the scrolled picture alone, and written pixels become part of the
+        // picture and scroll with it from then on.
         //
-        // Secondary symptom: once (a) was fixed, the cart drifted left 1,2,3,4
-        // pixels every 4 frames before snapping back on the 5th frame.
+        // The sprite LPFs are authored for that. CS000.N06 (castle flags)
+        // redraws one of its two flags every 4th frame, alternating, with the
+        // 1 pixel per frame scroll already built in, and each delta repaints
+        // the background where that flag was drawn 8 frames (8 pixels) earlier.
+        // CS000.N03 (the cart) likewise paints the background over the cart
+        // that LBACK000 holds at rest. So we write each delta's pixels into
+        // vpComposite at the view position and crop, as DOS does.
         //
-        // Root causes:
-        //   (a) LBACK000.BYT contains the cart at rest. During scroll the DOS
-        //       engine substitutes a cart-less backdrop (CS000.N04's frame 0).
-        //       We couldn't locate the exact engine mechanism in the disassembly
-        //       — `Cutscene_23_Unk_ovr108_1393` (start-scroll) only stores scroll
-        //       state and doesn't touch the panorama buffer — but empirically
-        //       N04's frame 0 is what DOSBox ends up with as the scroll backdrop.
-        //       We reproduce this visually by swapping the LBACK000 region of
-        //       vpComposite with N04's frame 0 at the moment the sprite first
-        //       writes pixels (see vpPendingBackdropSwap).
-        //
-        //   (b) N03's LPF is delta-encoded: roughly every 5th frame carries a
-        //       real RLE payload (recordSize > 4), the intervening 4 frames are
-        //       empty deltas (recordSize ≤ 4) that keep the pixel buffer as-is.
-        //       The panorama, however, pans 1 pixel per display frame. Without
-        //       compensation, the sprite image stays pinned at the viewport
-        //       origin while the scene drifts under it, producing the 1,2,3,4
-        //       pixel drift. Between LPF keyframes we offset the sprite draw by
-        //       `vpSpriteStaleOffset` pixels in the pan direction; the offset
-        //       resets to 0 at each keyframe, at which point the new sprite
-        //       image's internal cart position is already authored to align
-        //       with the panned scene (see CutsLoader.IsKeyFrame).
-        //
-        // This only applies to horizontal scrolls (CS000 intro's cart, and
-        // CS002's later scroll). Vertical scenes (N05/N06/N07) have dense
-        // sprites with their own erase writes and align naturally.
-        //
-        // Verification:
-        //   - DOSBox per-capture-frame pixel diff from frame 1796 (scroll start)
-        //     through 2310 (fade): content changes every 5 capture frames at
-        //     70 fps = 14 fps effective render rate, matching N03's authored
-        //     fps header and our frameTime.
-        //   - Our dump frames 1-69 compared against DOSBox frames 1851+N*5
-        //     align with zero horizontal offset and <1% pixel diff (palette
-        //     conversion variance).
-
-        // Deferred backdrop swap: set true at start-scroll; swap triggers on the
-        // first sprite frame that has any RLE writes (non-empty mask). N03's
-        // first few frames are all-Skip so LBACK's cart remains visible during
-        // that grace window — a seamless hand-off between LBACK's cart and the
-        // sprite's cart.
-        static bool vpPendingBackdropSwap;
-        static bool vpBackdropSwapped;
-
-        // Sprite-stale offset: pixel offset applied to sprite draw position on
-        // null-delta LPF frames, to keep the sprite scene-aligned while the
-        // panorama pans underneath. See the block comment above for why.
-        // Resets to 0 on each LPF keyframe; increments by 1 on each null-delta
-        // frame. Offset direction = opposite of scroll direction (sprite slides
-        // in the same direction the scene is panning).
-        static int vpSpriteStaleOffset;
+        // Earlier versions reset the sprite to the backdrop on every keyframe,
+        // pasted it over each crop and nudged it between keyframes. That tore
+        // the castle flags, because whichever flag a keyframe did not redraw
+        // fell back to the one baked into LBACK002, and it needed a
+        // substitute backdrop (N04 frame 0) for the cart.
 
         // CutsceneNo accessible to ExecuteCommand for sprite path construction
         static int currentCutsceneNo;
@@ -120,15 +81,18 @@ namespace Underworld
             vpCanvasWidth != 0 && vpCanvasHeight != 0 &&
             (vpCanvasWidth != 320 || vpCanvasHeight != 200);
 
+        // Rows at the bottom of the screen kept for subtitles, which DOS
+        // keeps in CutsRelated_dseg_67d6_107C (FM Towns _splity). Set by splity
+        // (func 24, Cutscene_24_Unk_ovr108_BF1) and by viewport-setup
+        // (func 20, via ovr108_33A8); 999 means no bar. 0 until either runs.
+        static int subtitleBarRows;
+
         /// <summary>
-        /// Height of the scene area on the 320x200 display.
-        /// When a panorama viewport is active and vpOffsetY is set, the scene
-        /// occupies 200 - vpOffsetY pixels, with the remainder reserved for
-        /// subtitles. Otherwise the full 200 pixels are used.
-        /// Derived from viewport-setup (func 20) bytecode parameters.
+        /// Height of the scene area on the 320x200 display. DOS draws every
+        /// frame, full or delta, only above the subtitle bar (the clip height
+        /// passed at ovr108_24AB), whether or not a panorama is active.
         /// </summary>
-        static int SceneDisplayH =>
-            PanoramaActive && vpOffsetY > 0 ? 200 - vpOffsetY : 200;
+        static int SceneDisplayH => 200 - System.Math.Clamp(subtitleBarRows, 0, 200);
 
         // Palette interpolation state (func 19).
         // Linear interpolation matching InterpolatePaletteRange_ovr108_32CC (line 446461):
@@ -146,7 +110,9 @@ namespace Underworld
         // which calls RotatePaletteEntry_seg023_9 (line 98009).
         static Palette crngPalette;  // working copy of palette for cycling
         static CutsLoader.CrngEntry[] crngRanges;
-        static int[] crngCounters;   // per-range accumulator (mirrors disasm pad field)
+        static long[] crngLastRotation; // per range, when it last rotated (DOS keeps this in the pad field)
+        static readonly System.Diagnostics.Stopwatch crngClock = System.Diagnostics.Stopwatch.StartNew();
+        static long CrngTicks => crngClock.ElapsedTicks * 256 / System.Diagnostics.Stopwatch.Frequency; // DOS 256 Hz clock
 
         static int StringBlock;
         static bool cancelRequested;
@@ -163,7 +129,9 @@ namespace Underworld
         static void InitCrngCycling(CutsLoader loader)
         {
             crngRanges = loader?.CrngRanges;
-            crngCounters = crngRanges != null ? new int[crngRanges.Length] : null;
+            crngLastRotation = crngRanges != null ? new long[crngRanges.Length] : null;
+            if (crngLastRotation != null)
+                System.Array.Fill(crngLastRotation, CrngTicks);
             if (loader?.EmbeddedPalette != null)
             {
                 // Take a working copy of the palette for cycling
@@ -176,6 +144,23 @@ namespace Underworld
             {
                 crngPalette = null;
             }
+        }
+
+        /// <summary>
+        /// Blank everything below the scene, as DisplayCutsImage does, for the
+        /// paths that build a full 320x200 frame themselves (palette
+        /// interpolation and colour cycling). Otherwise the picture shows
+        /// through the subtitle bar, eg CS000.N05, whose colour cycling sends
+        /// every frame down this path.
+        /// </summary>
+        static ImageTexture CropToScene(ImageTexture frame)
+        {
+            int sceneH = SceneDisplayH;
+            if (frame == null || sceneH >= 200) return frame;
+            var img = frame.GetImage();
+            var cropped = Image.Create(img.GetWidth(), 200, false, img.GetFormat());
+            cropped.BlitRect(img, new Rect2I(0, 0, img.GetWidth(), sceneH), Vector2I.Zero);
+            return ImageTexture.CreateFromImage(cropped);
         }
 
         /// <summary>
@@ -194,15 +179,17 @@ namespace Underworld
         }
 
         /// <summary>
-        /// Apply one tick of CRNG colour cycling to the working palette.
-        /// Mirrors UpdatePaletteFadeTimers_ovr108_934 (line 438583):
-        /// for each range with rate > 0, accumulate the counter and rotate
-        /// when it overflows. RotatePaletteEntry_seg023_9 (line 98009)
-        /// rotates forward: save first, shift entries down, wrap to end.
+        /// Rotate every colour-cycling range that is due, as DOS does in
+        /// UpdatePaletteFadeTimers_ovr108_934: a range with a non-zero rate
+        /// rotates once 0x38E / rate ticks of the 256 Hz clock have passed since
+        /// it last rotated (integer division). The flags are not checked.
+        /// RotatePaletteEntry_seg023_9 rotates forward: save first, shift
+        /// entries down, wrap to end.
         /// </summary>
         static void ApplyCrngCycling()
         {
-            if (crngRanges == null || crngPalette == null || crngCounters == null) return;
+            if (crngRanges == null || crngPalette == null || crngLastRotation == null) return;
+            long now = CrngTicks;
             for (int i = 0; i < crngRanges.Length; i++)
             {
                 if (crngRanges[i].Rate <= 0) continue;
@@ -210,22 +197,30 @@ namespace Underworld
                 int high = crngRanges[i].High;
                 if (low < 0 || high < 0 || high >= 256 || low >= high) continue;
 
-                crngCounters[i] += crngRanges[i].Rate;
-                // The disasm accumulates rate per tick; rotate when counter >= threshold.
-                // From DOSBox frame capture analysis (frames 425-750):
-                //   CRNG 0 (rate 18): 1 step every 14 DOSBox frames at ~70fps = 5.0 steps/sec
-                //   CRNG 3 (rate 14): 1 step every 17 DOSBox frames at ~70fps = 4.1 steps/sec
-                // At PIT timer rate 18.2 Hz, threshold = 65 gives:
-                //   rate 18: 18/65 * 18.2 = 5.04/sec ✓
-                //   rate 14: 14/65 * 18.2 = 3.92/sec ✓
-                while (crngCounters[i] >= 65)
+                // DOS polls this continuously; we are called about 18 times a
+                // second, so step the schedule by whole periods to keep DOS's
+                // average rate, without a burst after a long pause.
+                long period = 0x38E / crngRanges[i].Rate;
+                if (now - crngLastRotation[i] > 4 * period)
+                    crngLastRotation[i] = now - period;
+                while (now - crngLastRotation[i] >= period)
                 {
-                    crngCounters[i] -= 65;
-                    // Forward rotation: save first, shift down, wrap to end
-                    // Matches RotatePaletteEntry_seg023_9 (line 98009)
                     Palette.cyclePalette(crngPalette, low, high - low + 1);
+                    crngLastRotation[i] += period;
                 }
             }
+        }
+
+        /// <summary>
+        /// DOS refreshes the music on every cutscene frame (ovr108_162B calls
+        /// ovr108_13D6, which calls RefreshMusic_seg016_1E73_2BB2). That is what
+        /// repeats the intro theme (0x18) when it finishes, since the XMI has no
+        /// loop of its own. UW2 only: UW1's cutscene loop has not been checked.
+        /// </summary>
+        static void RefreshCutsceneMusic()
+        {
+            if (_RES == GAME_UW2 && MusicStreamPlayer.Instance != null)
+                XMIMusic.RefreshMusic();
         }
 
         public static void StopCutscene()
@@ -233,6 +228,50 @@ namespace Underworld
             cancelRequested = true;
             //MusicStreamPlayer.Instance?.Stop();
             //XMIMusic.CurrentlyPlayingThemeNo = 0;
+        }
+
+        /// <summary>
+        /// Fade the picture, and the subtitle drawn over it, in or out as DOS
+        /// does. DOS fades the palette linearly in arg * 8 steps and waits 8
+        /// ticks of its 256 Hz clock between steps (fade-in ovr118_330, both
+        /// via FadeInRelated_ovr108_B1A; FM Towns fadein_ and fadeout_), so a
+        /// fade lasts arg / 4 seconds and the cutscene waits for it. An
+        /// argument of 0 sets the end state at once.
+        /// </summary>
+        static IEnumerator DosFade(TextureRect cutscontrol, int arg, bool fadeIn)
+        {
+            if (fadeIn)
+            {
+                // A subtitle given on this frame or the one before is not drawn
+                // yet, so DOS shows it once the fade is over; an older one is
+                // erased by the fade-in.
+                if (subtitleStoredAt >= commandFrames - 1)
+                    subtitleHiddenDuringFade = true;
+                else
+                    uimanager.instance.CutsSubtitle.Text = "";
+            }
+            if (arg > 0)
+            {
+                int steps = arg * 8;
+                for (int i = 1; i <= steps && !cancelRequested; i++)
+                {
+                    yield return new WaitForSeconds(8 / 256f);
+                    float level = (float)i / steps;
+                    SetFadeLevel(cutscontrol, fadeIn ? level : 1f - level);
+                }
+            }
+            subtitleHiddenDuringFade = false;
+            SetFadeLevel(cutscontrol, fadeIn ? 1f : 0f);
+        }
+
+        static bool subtitleHiddenDuringFade;
+
+        // DOS fades the whole palette, so the subtitle text dims with the picture.
+        static void SetFadeLevel(TextureRect cutscontrol, float level)
+        {
+            var colour = new Color(level, level, level, 1f);
+            cutscontrol.Modulate = colour;
+            uimanager.instance.CutsSubtitle.Modulate = subtitleHiddenDuringFade ? Colors.Transparent : colour;
         }
 
         /// <summary>
@@ -244,7 +283,7 @@ namespace Underworld
         {
             cancelRequested = false;
             crngRanges = null;
-            crngCounters = null;
+            crngLastRotation = null;
             crngPalette = null;
             if (CutsceneNo >= 256)
             {
@@ -274,6 +313,59 @@ namespace Underworld
             _ = Coroutine.Run(
                 RunCutscene(CutsceneNo: CutsceneNo, callBackMethod: callBackMethod, useSingleRedChannel: useSingleRedChannel),
                 main.instance);
+        }
+
+        // FONTBIG.SYS cell height, which DOS uses as the subtitle line spacing.
+        const int SubtitleLineHeight = 15;
+
+        // DOS draws subtitles through the VGA row table, and the two routines
+        // that build it map the subtitle bar one row apart. A viewport-setup
+        // with a bar (func 20 -> seg003_0272_2977) maps bottom-up row y to
+        // screen row 198 - y. Set-start (func 21 -> seg003_0272_4A7F ->
+        // seg003_0272_2A0D, also run by every pan step) maps it to 199 - y, as
+        // does a viewport-setup without a bar. True while the last build was
+        // the first kind.
+        static bool subtitleRowsFromViewportSetup;
+
+        // DOS only stores a subtitle when its command runs. The frame loop
+        // draws it later, after the next frame's commands and the frame wait
+        // (ovr108_27BD), so a fade-in on that next frame, which starts by
+        // filling the subtitle bar with pen 0x1B (FadeInRelated_ovr108_B1A,
+        // ovr108_A55), erases older text but not the new line. Counts frames
+        // whose commands have run; subtitleStoredAt is the count when the
+        // current subtitle was given.
+        static int commandFrames;
+        static int subtitleStoredAt = int.MinValue;
+
+        /// <summary>
+        /// Show a subtitle laid out as DOS draws it (ProbablyCutsSubtitle_ovr108_157B).
+        /// FONTBIG at one source pixel per screen pixel, in the palette colour
+        /// given as the command's first argument (stored at ovr108_C6D). Lines
+        /// wrap at 320 pixels and are drawn bottom-up one font height apart from
+        /// a fixed base (the +2 at ovr108_15CE), so the block always ends on the
+        /// same row: 197, or 198 depending on how the row table was last built
+        /// (see subtitleRowsFromViewportSetup). So a one-line subtitle sits
+        /// where the second line of a two-line one would.
+        /// </summary>
+        static void ShowSubtitle(TextureRect cutscontrol, int colourIndex, string text)
+        {
+            subtitleStoredAt = commandFrames;
+            var label = uimanager.instance.CutsSubtitle;
+            float scale = cutscontrol.Size.Y / 200f;
+            label.AddThemeFontSizeOverride("normal_font_size", Mathf.RoundToInt(16 * scale));
+            var pal = cuts?.EmbeddedPalette;
+            if (pal != null && colourIndex >= 0 && colourIndex < 256)
+            {
+                label.AddThemeColorOverride("default_color",
+                    Color.Color8(pal.red[colourIndex], pal.green[colourIndex], pal.blue[colourIndex]));
+            }
+            label.Size = new Vector2(320 * scale, 200 * scale);
+            label.Text = $"[center]{text}[/center]";
+            int lines = System.Math.Max(1, label.GetLineCount());
+            int blockEnd = subtitleRowsFromViewportSetup ? 197 : 198;
+            float top = (blockEnd - SubtitleLineHeight * lines) * scale;
+            label.Position = new Vector2(label.Position.X, top);
+            label.Size = new Vector2(320 * scale, 200 * scale - top);
         }
 
         /// <summary>
@@ -342,131 +434,83 @@ namespace Underworld
             }
 
             vpComposite = img;
-            vpCompositeClean = (Godot.Image)img.Duplicate();
             Debug.Print($"  Composite: {compW}x{compH}, scroll={(vpIsHorizontal ? "horizontal" : "vertical")}");
         }
 
         /// <summary>
-        /// Extract the visible viewport region from the panorama composite at the
-        /// current scroll position. Implements the scroll formula from
+        /// Top-left of the view within the panorama composite at the given
+        /// frame. Implements the scroll formula from
         /// AnimateViewportScroll_ovr108_B8E (line 439098 in uw2_asm.asm):
         ///   pos = start + (frame+1) * delta * direction_table[index]
-        /// The (frame+1) comes from `inc ax` at line 439116 before the multiply.
+        /// The (frame+1) comes from `inc ax` at line 439116 before the multiply,
+        /// and applies to both axes.
         /// Direction tables at dseg_67d6+0x1068 (DX) and +0x1070 (DY) (line 358318).
         /// VGA hardware wraps the CRT start address; we use linear equivalents.
         /// </summary>
-        static Godot.Image GetScrollFrame(int totalFrame)
+        static Vector2I ScrollOrigin(int totalFrame)
         {
-            if (vpComposite == null) return null;
-
             int frameAdj = totalFrame + 1; // assembly uses frame+1 (ovr108_B9E, line 439116)
-            int displayH = SceneDisplayH;
-
-            Godot.Image region;
             if (vpIsHorizontal)
             {
                 int scrollX = vpStartX + vpScrollDX * frameAdj;
                 int maxScroll = vpComposite.GetWidth() - 320;
-                int scrollPos = System.Math.Clamp(scrollX, 0, maxScroll);
-                region = Godot.Image.Create(320, vpComposite.GetHeight(), false, vpComposite.GetFormat());
-                region.BlitRect(vpComposite,
-                    new Rect2I(scrollPos, 0, 320, vpComposite.GetHeight()),
-                    Vector2I.Zero);
+                return new Vector2I(System.Math.Clamp(scrollX, 0, maxScroll), 0);
             }
-            else
-            {
-                // Vertical scroll: convert VGA wrapping start position to composite Y.
-                // initial_y = (vp_start_y + 1) % canvas_h maps VGA start to composite.
-                // DY direction is inverted for composite: DY=-1 → pos increases,
-                // DY=+1 → pos decreases. This inversion occurs because VGA CRT start
-                // address increase pans content upward on screen.
-                // Examples from bytecode:
-                //   CS000: set-start [0,359], scroll Up (DY=-1): initial=0, increases 0→200
-                //   CS002: set-start [0,199], scroll Down (DY=+1): initial=200, decreases 200→0
-                int initialY = (vpStartY + 1) % vpComposite.GetHeight();
-                int scrollPos = initialY + (-vpScrollDY) * totalFrame;
-                int maxScroll = vpComposite.GetHeight() - displayH;
-                scrollPos = System.Math.Clamp(scrollPos, 0, maxScroll);
-                region = Godot.Image.Create(320, displayH, false, vpComposite.GetFormat());
-                region.BlitRect(vpComposite,
-                    new Rect2I(0, scrollPos, 320, displayH),
-                    Vector2I.Zero);
-            }
+            // Vertical scroll: convert VGA wrapping start position to composite Y.
+            // initial_y = (vp_start_y + 1) % canvas_h maps VGA start to composite.
+            // DY direction is inverted for composite: DY=-1 → pos increases,
+            // DY=+1 → pos decreases. This inversion occurs because VGA CRT start
+            // address increase pans content upward on screen.
+            // Examples from bytecode:
+            //   CS000: set-start [0,359], scroll Up (DY=-1): top row = frame+1
+            //   CS002: set-start [0,199], scroll Down (DY=+1): top row = 200-(frame+1)
+            int initialY = (vpStartY + 1) % vpComposite.GetHeight();
+            int scrollPos = initialY + (-vpScrollDY) * frameAdj;
+            int maxScrollY = vpComposite.GetHeight() - SceneDisplayH;
+            return new Vector2I(0, System.Math.Clamp(scrollPos, 0, maxScrollY));
+        }
 
+        /// <summary>
+        /// Extract the visible viewport region from the panorama composite at the
+        /// current scroll position.
+        /// </summary>
+        static Godot.Image GetScrollFrame(int totalFrame)
+        {
+            if (vpComposite == null) return null;
+            var origin = ScrollOrigin(totalFrame);
+            int w = 320;
+            int h = vpIsHorizontal ? vpComposite.GetHeight() : SceneDisplayH;
+            var region = Godot.Image.Create(w, h, false, vpComposite.GetFormat());
+            region.BlitRect(vpComposite, new Rect2I(origin.X, origin.Y, w, h), Vector2I.Zero);
             return region;
         }
 
         /// <summary>
-        /// Overlay animated sprite pixels (cart, flags) onto a scroll viewport
-        /// region. Uses the sprite LPF's per-frame RLE write mask so we only
-        /// paint pixels explicitly written by the sprite animation, preserving
-        /// the scrolling LBACK background under RLE Skip regions.
-        ///
-        /// (offX, offY) shift the sprite's draw position within the region. For
-        /// horizontal scroll this is the stale-offset compensation for null-delta
-        /// LPF frames (see the panorama-scroll block comment at the top of the
-        /// file). For the unshifted call path it defaults to (0, 0).
-        ///
-        /// `advance` controls whether vpSpriteFrame increments — retained for
-        /// the (currently unused) sub-tick path where multiple display frames
-        /// render the same sprite frame during a finer pan interpolation.
-        ///
-        /// Also hosts the one-shot deferred-backdrop swap: on the first sprite
-        /// frame whose RLE actually writes pixels we replace the LBACK000 half
-        /// of the panorama with the next LPF's frame 0 (e.g. CS000.N04 for the
-        /// cart scroll), removing the at-rest cart that was baked into LBACK.
+        /// Write the current sprite frame's delta into the panorama composite at
+        /// the view position, as DOS decodes it onto the scrolled screen (see the
+        /// block comment at the top of the file). Only keyframes carry pixels;
+        /// the sprite LPF's per-frame RLE write mask says which pixels the delta
+        /// wrote. Advances vpSpriteFrame.
         /// </summary>
-        static void ApplySpriteOverlay(Godot.Image region, bool advance = true)
-        {
-            ApplySpriteOverlay(region, 0, 0, advance);
-        }
-
-        static void ApplySpriteOverlay(Godot.Image region, int offX, int offY, bool advance)
+        static void WriteSpriteDelta(int totalFrame)
         {
             if (vpSpriteLoader == null || vpSpriteLoader.WriteMasks == null) return;
-            if (vpSpriteFrame >= vpSpriteLoader.ImageCache.Length) return;
-
-            var spriteTex = vpSpriteLoader.ImageCache[vpSpriteFrame];
-            var mask = vpSpriteLoader.WriteMasks[vpSpriteFrame];
-            if (spriteTex == null || mask == null) { if (advance) vpSpriteFrame++; return; }
-
-            // Trigger deferred backdrop swap on first non-empty sprite frame.
-            if (vpPendingBackdropSwap && !vpBackdropSwapped)
-            {
-                bool hasWrites = false;
-                for (int i = 0; i < mask.Length; i++) { if (mask[i] != 0) { hasWrites = true; break; } }
-                if (hasWrites)
-                {
-                    SwapBackdropToNextFile();
-                    vpBackdropSwapped = true;
-                    // Rebuild this frame's region from the swapped composite.
-                    var rebuilt = GetScrollFrame(vpFrameOffset + vpSpriteFrame);
-                    if (rebuilt != null)
-                        region.BlitRect(rebuilt,
-                            new Rect2I(0, 0, rebuilt.GetWidth(), rebuilt.GetHeight()),
-                            Vector2I.Zero);
-                }
-            }
+            int f = vpSpriteFrame++;
+            if (f >= vpSpriteLoader.ImageCache.Length || !vpSpriteLoader.IsKeyFrame[f]) return;
+            var mask = vpSpriteLoader.WriteMasks[f];
+            var spriteTex = vpSpriteLoader.ImageCache[f];
+            if (spriteTex == null || mask == null) return;
 
             var spriteImg = spriteTex.GetImage();
-            int rw = region.GetWidth();
-            int rh = region.GetHeight();
+            var origin = ScrollOrigin(totalFrame);
             int sw = spriteImg.GetWidth();
-            int sh = spriteImg.GetHeight();
-            int h = System.Math.Min(sh, rh);
-            int w = System.Math.Min(sw, rw);
-
+            int viewH = vpIsHorizontal ? vpComposite.GetHeight() : SceneDisplayH;
+            int h = System.Math.Min(spriteImg.GetHeight(), viewH);
+            int w = System.Math.Min(sw, 320);
             for (int y = 0; y < h; y++)
                 for (int x = 0; x < w; x++)
-                {
-                    int rx = x + offX;
-                    int ry = y + offY;
-                    if (rx < 0 || rx >= rw || ry < 0 || ry >= rh) continue;
                     if (mask[y * sw + x] != 0)
-                        region.SetPixel(rx, ry, spriteImg.GetPixel(x, y));
-                }
-
-            if (advance) vpSpriteFrame++;
+                        vpComposite.SetPixel(origin.X + x, origin.Y + y, spriteImg.GetPixel(x, y));
         }
 
         // --- Debug: dump composited scroll frames for pixel-perfect comparison
@@ -483,32 +527,6 @@ namespace Underworld
             string dirAbs = Godot.ProjectSettings.GlobalizePath($"user://cuts_dump/{subdir}");
             Godot.DirAccess.MakeDirRecursiveAbsolute(dirAbs);
             img.SavePng($"{dirAbs}/frame_{totalFrame:D3}.png");
-        }
-
-        /// <summary>
-        /// Replace the LBACK000 region of the panorama composite with the next
-        /// LPF file's frame 0 content. Called on the first sprite frame that
-        /// actually writes pixels, to remove the at-rest cart baked into
-        /// LBACK000 so the animated sprite cart is the only cart visible.
-        /// Horizontal scroll only; see the block comment at the top of the file.
-        /// </summary>
-        static void SwapBackdropToNextFile()
-        {
-            if (vpComposite == null) return;
-            int nextExt = currentFileExt + 1;
-            var backdropPath = System.IO.Path.Combine(
-                BasePath, "CUTS", GetsCutsceneFileName(currentCutsceneNo, nextExt));
-            if (!System.IO.File.Exists(backdropPath)) return;
-            var backdrop = new CutsLoader(GetsCutsceneFileName(currentCutsceneNo, nextExt));
-            var tex = backdrop.LoadImageAt(0);
-            if (tex == null) return;
-            var img = tex.GetImage();
-            int blitH = System.Math.Min(img.GetHeight(), vpComposite.GetHeight());
-            int blitW = System.Math.Min(320, vpComposite.GetWidth());
-            vpComposite.BlitRect(img, new Rect2I(0, 0, blitW, blitH), Vector2I.Zero);
-            if (vpCompositeClean != null)
-                vpCompositeClean.BlitRect(img, new Rect2I(0, 0, blitW, blitH), Vector2I.Zero);
-            Debug.Print($"  Backdrop swap: N{nextExt:D2} frame 0 -> composite[0:{blitW}]");
         }
 
         /// <summary>
@@ -573,15 +591,18 @@ namespace Underworld
             switch (cmd.functionNo)
             {
                 case 0: // show-text with colour (palette index)
-                    uimanager.instance.CutsSubtitle.Text = $"[center]{GameStrings.GetString(StringBlock, cmd.functionParams[1])}[/center]";
+                    if ((short)cmd.functionParams[1] >= 0) // -1 erases nothing, as for text-play
+                        ShowSubtitle(cutscontrol, cmd.functionParams[0], GameStrings.GetString(StringBlock, cmd.functionParams[1]));
                     break;
 
                 case 1: // set-flag — clears internal animation flag
                     break;
 
                 case 6: // end-cutsc
-                    uimanager.EnableDisable(cutscontrol, false);
-                    uimanager.EnableDisable(uimanager.instance.CutsSubtitle, false);
+                    // Only ends the cutscene after this segment: DOS clears the loop
+                    // flags and nothing else (FM Towns cutsop_end_). The picture and
+                    // subtitle stay up for the closing commands, such as the dreams'
+                    // audio-wait and fade-out, and are put away in cleanup.
                     break;
 
                 case 8: // open-file
@@ -620,24 +641,13 @@ namespace Underworld
 
                 case 9: // fade-out
                     {
-                        var rate = cmd.functionParams[0];
-                        if (rate > 0)
-                        {
-                            float duration = 2.0f / rate;
-                            // Modulate to black
-                            cutscontrol.Modulate = new Color(0f, 0f, 0f, 1f);
-                        }
-                        else
-                        {
-                            cutscontrol.Modulate = new Color(0f, 0f, 0f, 1f);
-                        }
+                        yield return DosFade(cutscontrol, cmd.functionParams[0], fadeIn: false);
                         break;
                     }
 
                 case 10: // fade-in
                     {
-                        var rate = cmd.functionParams[0];
-                        cutscontrol.Modulate = new Color(1f, 1f, 1f, 1f);
+                        yield return DosFade(cutscontrol, cmd.functionParams[0], fadeIn: true);
                         break;
                     }
 
@@ -663,8 +673,15 @@ namespace Underworld
                         //   bottom margin = 2px (inc dx; inc dx at ovr108_15CE, lines 441401-441403)
                         //   word wrap at 320px, no inter-character spacing
                         // NOTE: game uses underscore-as-dot convention: "_." should render as " ."
+                        // A speech argument of 998 marks a line that continues the speech
+                        // already playing: DOS starts no clip for it
+                        // (CutsceneTextAndSound_ovr108_FDA; FM Towns cutsop_say_ checks
+                        // 0x3E6). Only the UW2 dreams use it, where one clip speaks
+                        // several lines, so show those lines on their frame rather than
+                        // after the whole clip has finished.
+                        bool continuesSpeech = cmd.functionParams[2] == 998;
                         var audioPlayer = main.instance?.DigitalAudioPlayer;
-                        while (audioPlayer != null && audioPlayer.Playing)
+                        while (!continuesSpeech && audioPlayer != null && audioPlayer.Playing)
                         {
                             if (cancelRequested)
                             {
@@ -676,12 +693,11 @@ namespace Underworld
 
                         if ((short)cmd.functionParams[1] >= 0)
                         {
-                            uimanager.instance.CutsSubtitle.Text = $"[center]{GameStrings.GetString(StringBlock, cmd.functionParams[1])}[/center]";
+                            ShowSubtitle(cutscontrol, cmd.functionParams[0], GameStrings.GetString(StringBlock, cmd.functionParams[1]));
                         }
-                        else
-                        {
-                            uimanager.instance.CutsSubtitle.Text = ""; // clear subtitle (0xFFFF = -1)
-                        }
+                        // -1 (0xFFFF) draws nothing more but does not erase what is
+                        // on screen: cutsop_say_ -> cutsop_txt_ only zeroes the line
+                        // count, so the line stays until the next subtitle replaces it.
                         if (cmd.functionParams[2] != 999)
                         {
                             string vocfile;
@@ -698,7 +714,7 @@ namespace Underworld
                                     BasePath, "SOUND",
                                     $"{cmd.functionParams[2]:0#}.VOC");
                             }
-                            var sound = vocLoader.Load(vocfile);
+                            var sound = continuesSpeech ? null : vocLoader.Load(vocfile);
                             if (sound != null)
                             {
                                 main.instance.DigitalAudioPlayer.Stream = sound.toWav();
@@ -777,35 +793,22 @@ namespace Underworld
                         vpCanvasWidth = cmd.functionParams[0];
                         vpCanvasHeight = cmd.functionParams[1];
                         vpOffsetY = cmd.NoOfParams > 2 ? cmd.functionParams[2] : 0;
+                        subtitleRowsFromViewportSetup = cmd.NoOfParams > 2 && cmd.functionParams[2] != 999;
 
-                        // Position subtitle label in the black bar area.
-                        // From RenderCutsceneText_ovr108_157B (line 441321):
-                        //   text is bottom-aligned with 2px margin (ovr108_15CE lines 441401-441403)
-                        //   scene height = 200 - vpOffsetY
-                        // The fullscreen cutscene renders at 4x scale (1280x800 for 320x200).
-                        if (PanoramaActive && vpOffsetY > 0)
-                        {
-                            float scale = cutscontrol.Size.Y / 200f;
-                            float subtitleTop = (200 - vpOffsetY) * scale;
-                            float subtitleBottom = cutscontrol.Size.Y;
-                            uimanager.instance.CutsSubtitle.Position = new Vector2(
-                                uimanager.instance.CutsSubtitle.Position.X, subtitleTop);
-                            uimanager.instance.CutsSubtitle.Size = new Vector2(
-                                uimanager.instance.CutsSubtitle.Size.X, subtitleBottom - subtitleTop);
-                        }
                         vpScrollActive = false;
                         vpFrameOffset = 0;
                         vpFileMappings.Clear();
                         vpComposite = null;
-                        vpCompositeClean = null;
                         vpSpriteLoader = null;
                         vpSpriteFrame = 0;
+                        subtitleBarRows = vpOffsetY == 999 ? 0 : vpOffsetY;
                         Debug.Print($"  Viewport: {vpCanvasWidth}x{vpCanvasHeight} offsetY={vpOffsetY}");
                         break;
                     }
 
                 case 21: // set-start
                     {
+                        subtitleRowsFromViewportSetup = false;
                         vpStartX = cmd.functionParams[0];
                         vpStartY = cmd.NoOfParams > 1 ? cmd.functionParams[1] : 0;
                         Debug.Print($"  Start: x={vpStartX} y={vpStartY}");
@@ -834,6 +837,7 @@ namespace Underworld
 
                 case 23: // start-scroll — direction table lookup
                     {
+                        subtitleRowsFromViewportSetup = false;
                         // Scroll direction from table (disassembly dseg_67d6+0x1068/0x1070)
                         // Index 0=Down, 1=Right, 2=Up, 3=Left
                         var tableIdx = cmd.functionParams[0];
@@ -866,24 +870,13 @@ namespace Underworld
                             }
                         }
 
-                        // Backdrop swap (horizontal only): LBACK000 has the cart at its
-                        // rest position; the next LPF (N04) is a cart-less variant and
-                        // N03 is the cart-only sprite overlay. N03's first 3 frames are
-                        // all-Skip (no writes) so LBACK shows through unchanged — cart
-                        // stays visible. When the sprite starts writing (frame 3+), the
-                        // backdrop flips to N04 and the sprite picks up the cart from
-                        // ~the same rest position, giving a seamless hand-off.
-                        // Vertical scenes (N06) include erase writes so no swap needed.
-                        vpPendingBackdropSwap = vpIsHorizontal;
-                        vpBackdropSwapped = false;
-                        vpSpriteStaleOffset = 0;
                         break;
                     }
 
-                case 24: // audio-setup
+                case 24: // splity: height of the subtitle bar (FM Towns cutsop_splity_)
                     {
-                        var fileNo = cmd.functionParams[0];
-                        Debug.Print($"  Audio setup: {(fileNo == 999 ? "none" : $"file {fileNo - 1}")}");
+                        subtitleBarRows = cmd.functionParams[0] == 999 ? 0 : cmd.functionParams[0];
+                        Debug.Print($"  Splity: {subtitleBarRows} rows");
                         break;
                     }
 
@@ -952,6 +945,39 @@ namespace Underworld
         }
 
         /// <summary>
+        /// Seconds per LPF frame as DOS paces it. After each frame the engine
+        /// waits until its 256 Hz clock (IncrementPITTimer_seg016_1E73_12C5,
+        /// registered at 100h Hz in seg016_1E73_12FB) has advanced by
+        /// 256 / fps ticks, integer division (ovr108_277E, UW1 ovr105_E55).
+        /// </summary>
+        static float DosFrameTime(CutsLoader lpf)
+        {
+            if (lpf == null || lpf.FramesPerSecond <= 0)
+                return 0.1f; // default 10fps fallback
+            return (256 / lpf.FramesPerSecond) / 256f;
+        }
+
+        // When the last frame wait ended (DOS keeps this in seg049_3EE2_2C).
+        static readonly System.Diagnostics.Stopwatch frameClock = System.Diagnostics.Stopwatch.StartNew();
+        static double lastFrameWaitEnd;
+
+        /// <summary>
+        /// Wait until frameTime has passed since the previous frame wait ended,
+        /// as DOS does, rather than for frameTime after this frame's work. A
+        /// frame that is already late does not wait, and later frames do not
+        /// try to catch up. Keeping the schedule also averages out Godot's
+        /// per-frame rounding of short waits.
+        /// </summary>
+        static WaitForSeconds WaitForNextFrame(float frameTime)
+        {
+            double now = frameClock.Elapsed.TotalSeconds;
+            double due = System.Math.Max(lastFrameWaitEnd + frameTime, now);
+            lastFrameWaitEnd = due;
+            // Always yield so the frame gets displayed, even when already late.
+            return new WaitForSeconds((float)System.Math.Max(due - now, 0.001));
+        }
+
+        /// <summary>
         /// Main cutscene playback coroutine. Processes commands in segments.
         /// Each segment ends at a frame-set (func 5) or end-cutsc (func 6).
         /// </summary>
@@ -962,6 +988,7 @@ namespace Underworld
             MessageDisplay.WaitingForMore = false;
             Debug.Print($"Running cutscene {CutsceneNo}");
             IsPlaying = true;
+            subtitleBarRows = 0;
             TextureRect cutscontrol;
             if (FullScreen)
                 cutscontrol = uimanager.CutsFullscreen;
@@ -971,6 +998,9 @@ namespace Underworld
             uimanager.EnableDisable(cutscontrol, true);
             uimanager.EnableDisable(uimanager.instance.CutsSubtitle, true);
             uimanager.instance.CutsSubtitle.Text = "";
+            subtitleRowsFromViewportSetup = false; // no bar set up yet in this cutscene
+            subtitleStoredAt = int.MinValue;
+            subtitleHiddenDuringFade = false;
 
             FrameNo = 0;
             currentFileExt = 1;
@@ -1057,8 +1087,8 @@ namespace Underworld
             }
             InitCrngCycling(cuts);
 
-            // Set initial frame to black
-            cutscontrol.Modulate = new Color(0f, 0f, 0f, 1f);
+            // Set initial frame, and any subtitle, to black
+            SetFadeLevel(cutscontrol, 0f);
             uimanager.FlashColour(
                 colour: 0, targetControl: cutscontrol, duration: 1, IgnoreDelay: true);
 
@@ -1159,11 +1189,7 @@ namespace Underworld
                 {
                     // Frame timing from LPF file header fps field (offset 0x44).
                     // Each LPF specifies its own playback rate (e.g. N03: 14fps, N06: 40fps).
-                    float frameTime = 0.1f; // default 10fps fallback
-                    if (cuts != null && cuts.FramesPerSecond > 0)
-                    {
-                        frameTime = 1.0f / cuts.FramesPerSecond;
-                    }
+                    float frameTime = DosFrameTime(cuts);
 
                     for (int frame = 0; frame < segmentFrameCount; frame++)
                     {
@@ -1171,6 +1197,7 @@ namespace Underworld
                         {
                             goto cleanup;
                         }
+                        RefreshCutsceneMusic();
 
                         // Fire commands scheduled for this frame
                         foreach (var cmd in scheduledCmds)
@@ -1186,46 +1213,25 @@ namespace Underworld
                                     fileChanged = true;
                             }
                         }
+                        commandFrames++;
 
                         // Display animation frame.
                         // When panorama mode is active ([si+4Fh]!=0, set by func 20
                         // when canvas != 320x200), the normal DrawBitMap call is SKIPPED
                         // (ovr108_24AB, line 443935). Instead:
                         // 1. AnimateViewportScroll shifts the VGA CRT start address
-                        // 2. LPF frame decoded into persistent buffer (delta chaining)
-                        // 3. DrawArtToScreen draws at fixed screen position
-                        // We simulate this by cropping the LBACK composite and
-                        // overlaying sprite pixels via the LPF's RLE write mask.
-                        // See the panorama-scroll block comment at the top of the
-                        // file for the horizontal-scroll fixes layered on top.
+                        // 2. A delta record (type 1) is decoded straight onto the
+                        //    screen at the view position by DRAW_RELATED_ovr108_189F
+                        // We simulate this by writing the frame's delta into the
+                        // LBACK composite at the view position and cropping it.
+                        // See the panorama block comment at the top of the file.
                         if (vpScrollActive && vpComposite != null)
                         {
                             int totalFrame = vpFrameOffset + frame;
+                            WriteSpriteDelta(totalFrame);
                             var scrollRegion = GetScrollFrame(totalFrame);
                             if (scrollRegion != null)
                             {
-                                // Null-delta stale-offset: keep the sprite
-                                // scene-aligned while the panorama pans between
-                                // LPF keyframes. Resets on each LPF keyframe;
-                                // increments on each null-delta frame. Offset
-                                // direction is opposite the scroll delta so the
-                                // sprite slides in the same direction the scene
-                                // is moving.
-                                int offX = 0, offY = 0;
-                                if (vpSpriteLoader != null
-                                    && vpSpriteLoader.IsKeyFrame != null
-                                    && vpSpriteFrame < vpSpriteLoader.IsKeyFrame.Length)
-                                {
-                                    if (vpSpriteLoader.IsKeyFrame[vpSpriteFrame])
-                                        vpSpriteStaleOffset = 0;
-                                    else
-                                        vpSpriteStaleOffset++;
-                                    if (vpIsHorizontal)
-                                        offX = -vpSpriteStaleOffset * vpScrollDX;
-                                    else
-                                        offY = vpSpriteStaleOffset * vpScrollDY;
-                                }
-                                ApplySpriteOverlay(scrollRegion, offX, offY, advance: true);
                                 uimanager.DisplayScrollFrame(scrollRegion, cutscontrol);
                                 DumpFrame(scrollRegion, CutsceneNo, currentFileExt, totalFrame);
                             }
@@ -1269,7 +1275,7 @@ namespace Underworld
                                     useAlphaChannel: false,
                                     useSingleRedChannel: false,
                                     crop: false);
-                                cutscontrol.Texture = rerendered;
+                                cutscontrol.Texture = CropToScene(rerendered);
                                 FrameNo++;
                             }
                             else if (HasActiveCrng()
@@ -1300,7 +1306,7 @@ namespace Underworld
                                         useAlphaChannel: false,
                                         useSingleRedChannel: false,
                                         crop: false);
-                                    cutscontrol.Texture = rerendered;
+                                    cutscontrol.Texture = CropToScene(rerendered);
                                     if (tick < cycleTicksPerFrame - 1)
                                         yield return new WaitForSeconds(tickTime);
                                 }
@@ -1317,7 +1323,7 @@ namespace Underworld
                         {
                             goto cleanup;
                         }
-                        yield return new WaitForSeconds(frameTime);
+                        yield return WaitForNextFrame(frameTime);
                         if (cancelRequested)
                         {
                             goto cleanup;
@@ -1354,17 +1360,17 @@ namespace Underworld
                     if (maxFrame > 0)
                     {
                         // Frame timing from LPF fps
-                        float frameTime = 0.1f;
-                        if (cuts != null && cuts.FramesPerSecond > 0)
-                            frameTime = 1.0f / cuts.FramesPerSecond;
+                        float frameTime = DosFrameTime(cuts);
 
                         for (int frame = 0; frame <= maxFrame; frame++)
                         {
+                            RefreshCutsceneMusic();
                             foreach (var cmd in scheduledCmds)
                             {
                                 if (cmd.frame == frame)
                                     yield return ExecuteCommand(cmd, cutscontrol, CutsceneNo);
                             }
+                            commandFrames++;
 
                             // Display frame
                             if (cuts != null)
@@ -1378,7 +1384,7 @@ namespace Underworld
                                         cropHeight: SceneDisplayH, useSingleRedChannel: useSingleRedChannel);
                                 }
                             }
-                            yield return new WaitForSeconds(frameTime);
+                            yield return WaitForNextFrame(frameTime);
                             if (cancelRequested)
                             {
                                 goto cleanup;
@@ -1424,46 +1430,6 @@ namespace Underworld
                                     goto cleanup;
                                 }
                             }
-                            else if (cmd.functionNo == 9 && cmd.functionParams[0] > 0) // blocking fade-out
-                            {
-                                float duration = 2.0f / cmd.functionParams[0];
-                                int steps = 10;
-                                float stepTime = duration / steps;
-                                for (int i = 1; i <= steps; i++)
-                                {
-                                    float t = (float)i / steps;
-                                    cutscontrol.Modulate = new Color(1f - t, 1f - t, 1f - t, 1f);
-                                    if (cancelRequested)
-                                    {
-                                        goto cleanup;
-                                    }
-                                    yield return new WaitForSeconds(stepTime);
-                                    if (cancelRequested)
-                                    {
-                                        goto cleanup;
-                                    }
-                                }
-                            }
-                            else if (cmd.functionNo == 10 && cmd.functionParams[0] > 0) // blocking fade-in
-                            {
-                                float duration = 2.0f / cmd.functionParams[0];
-                                int steps = 10;
-                                float stepTime = duration / steps;
-                                for (int i = 1; i <= steps; i++)
-                                {
-                                    float t = (float)i / steps;
-                                    cutscontrol.Modulate = new Color(t, t, t, 1f);
-                                    if (cancelRequested)
-                                    {
-                                        goto cleanup;
-                                    }
-                                    yield return new WaitForSeconds(stepTime);
-                                    if (cancelRequested)
-                                    {
-                                        goto cleanup;
-                                    }
-                                }
-                            }
                             else if (cmd.functionNo == 4) // to-frame (inline)
                             {
                                 for (int i = 0; i < cmd.functionParams[0]; i++)
@@ -1473,7 +1439,8 @@ namespace Underworld
                                         if (FrameNo > cuts.ImageCache.GetUpperBound(0))
                                             FrameNo = 0;
                                         uimanager.DisplayCutsImage(
-                                            cuts: cuts, imageNo: FrameNo++, targetControl: cutscontrol, useSingleRedChannel: useSingleRedChannel);
+                                            cuts: cuts, imageNo: FrameNo++, targetControl: cutscontrol,
+                                            cropHeight: SceneDisplayH, useSingleRedChannel: useSingleRedChannel);
                                     }
                                     if (cancelRequested)
                                     {
@@ -1509,50 +1476,6 @@ namespace Underworld
                     {
                         goto cleanup;
                     }
-                    if (cmd.functionNo == 9 && cmd.functionParams[0] > 0) // fade-out
-                    {
-                        float duration = 2.0f / cmd.functionParams[0];
-                        int steps = 10;
-                        float stepTime = duration / steps;
-                        for (int i = 1; i <= steps; i++)
-                        {
-                            float t = (float)i / steps;
-                            cutscontrol.Modulate = new Color(1f - t, 1f - t, 1f - t, 1f);
-                            if (cancelRequested)
-                            {
-                                goto cleanup;
-                            }
-                            yield return new WaitForSeconds(stepTime);
-                            if (cancelRequested)
-                            {
-                                goto cleanup;
-                            }
-                        }
-                    }
-                    else if (cmd.functionNo == 10 && cmd.functionParams[0] > 0) // fade-in
-                    {
-                        if (cancelRequested)
-                        {
-                            goto cleanup;
-                        }
-                        float duration = 2.0f / cmd.functionParams[0];
-                        int steps = 10;
-                        float stepTime = duration / steps;
-                        for (int i = 1; i <= steps; i++)
-                        {
-                            float t = (float)i / steps;
-                            cutscontrol.Modulate = new Color(t, t, t, 1f);
-                            if (cancelRequested)
-                            {
-                                goto cleanup;
-                            }
-                            yield return new WaitForSeconds(stepTime);
-                            if (cancelRequested)
-                            {
-                                goto cleanup;
-                            }
-                        }
-                    }
                 }
 
                 if (isEndCutscene)
@@ -1566,8 +1489,17 @@ namespace Underworld
         cleanup:
             IsPlaying = false;
             uimanager.CurrentGameMode = OrigGameMode;//restore gamemode before any new cutscenes start.
-            uimanager.EnableDisable(cutscontrol, false);
             uimanager.EnableDisable(uimanager.instance.CutsSubtitle, false);
+            if (CutsceneNo < 0x100 && FullScreen && uimanager.InGame && callBackMethod == null && !cancelRequested)
+            {
+                // Back in the game after a full screen cutscene, DOS goes through the
+                // main screen setup (PlayCutscene_ovr108_2DC5 ->
+                // ShowMapAndOtherFullScreenUIs_ovr112_31A), which ends by fading
+                // palette 0 in from black with an argument of 2 (ovr112_434), half
+                // a second. Reveal the game from under a black cutscene screen.
+                yield return FadeBackToGame(cutscontrol, 2);
+            }
+            uimanager.EnableDisable(cutscontrol, false);
 
             if ((cancelRequested) && (_RES == GAME_UW2) && (CutsceneNo == 0))
             {
@@ -1586,6 +1518,25 @@ namespace Underworld
             }
 
             yield return new WaitOneFrame();
+        }
+
+        /// <summary>
+        /// Uncover the game by fading a black cutscene screen out, the same curve
+        /// as DOS fading the palette in: arg * 8 linear steps, 8 ticks of the
+        /// 256 Hz clock apart.
+        /// </summary>
+        static IEnumerator FadeBackToGame(TextureRect cutscontrol, int arg)
+        {
+            var black = Image.CreateEmpty(2, 2, false, Image.Format.Rgb8);
+            cutscontrol.Texture = ImageTexture.CreateFromImage(black);
+            cutscontrol.Material = null;
+            int steps = arg * 8;
+            for (int i = 0; i <= steps; i++)
+            {
+                cutscontrol.Modulate = new Color(1f, 1f, 1f, 1f - (float)i / steps);
+                yield return new WaitForSeconds(8 / 256f);
+            }
+            cutscontrol.Modulate = new Color(1f, 1f, 1f, 1f);
         }
 
         /// <summary>

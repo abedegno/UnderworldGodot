@@ -117,7 +117,7 @@ namespace Underworld
         /// <returns></returns>
         static int ProcessGeneralBlock(byte[] currentblock, int XClockValue, int mode)
         {
-            playerdat.SetXClock(0,0);
+            //Sched_SetTime only sets the schedule's clock for the level. It does not change the player's xclocks (uw2/src/event/SCHEDULE.C:173-188)
             Debug.Print($"ProcessGeneralBlock xclockvalue {XClockValue}");
             var si_offset = currentblock[4 + playerdat.dungeon_level * 4];
             var di = XClockValue;
