@@ -203,9 +203,11 @@ namespace Underworld
         }
 
         /// <summary>
-        /// Search for Create Object Traps that are on the map and if the player is within 8 tiles of them trigger them
+        /// Search for Create Object Traps that are on the map and trigger them. While the player is awake (isPlayer) only traps
+        /// 8 or more tiles away run, out of the player's sight. uw1 TRIGGER.C:643-673, uw2 TRIGGER.C:1020-1050 (check_alert, DoWanderingMonsters)
         /// </summary>
-        public static void FindAndRunCreateObjectTraps()
+        /// <param name="isPlayer">false when the player sleeps (uw1 SKILLS.C:579, uw2 SKILLS.C:506): every trap runs</param>
+        public static void FindAndRunCreateObjectTraps(bool isPlayer = true)
         {
             //function that spawns critters randomly based on create object traps on the map");
             //this is called from sleeping and during playerupdates on a random chance.
@@ -233,7 +235,7 @@ namespace Underworld
                                     {
                                         toCreate.SpawnedCritter_0XD_Bit8 = 1;
 
-                                        if (!TileInfo.CheckIfOutsideRange(targetX: x, targetY: y, isPlayer: true, range: 8))
+                                        if (TileInfo.CheckIfOutsideRange(targetX: x, targetY: y, isPlayer: isPlayer, range: 8))
                                         {
                                             trap.ActivateTrap(0, foundObject, null, x, y, UWTileMap.current_tilemap.LevelObjects);
                                         }
