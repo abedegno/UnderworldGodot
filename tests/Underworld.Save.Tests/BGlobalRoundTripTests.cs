@@ -27,7 +27,7 @@ public class BGlobalRoundTripTests : IDisposable
     /// <summary>
     /// Load UW2 BGLOBALS.DAT, serialize via BGlobalWriter, assert byte-identical to original.
     /// </summary>
-    [Fact]
+    [GameDataFact]
     public void Uw2BGlobals_ByteIdentical_AfterSerialize()
     {
         // Arrange

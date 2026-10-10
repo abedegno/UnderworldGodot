@@ -151,7 +151,7 @@ public class ObjectFreeListTests : IDisposable
         return (both, neither);
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw1ShippedLevArk_EveryLevelPartitionsExactly_UnderInclusiveReading()
     {
         for (int level = 0; level < 9; level++)
@@ -165,7 +165,7 @@ public class ObjectFreeListTests : IDisposable
         }
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw1ShippedLevArk_ExclusiveReadingStrandsTheTopEntryOfEachList()
     {
         // Guards the test above: the exclusive reading the port used before this change
@@ -180,7 +180,7 @@ public class ObjectFreeListTests : IDisposable
         }
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw2LevArk_PartitionsExactly_UnderInclusiveReading()
     {
         var tm = LoadLevel(UWClass.GAME_UW2, "SAVE0", "UW2", 0);
@@ -190,7 +190,7 @@ public class ObjectFreeListTests : IDisposable
             $"UW2 level 1: {both} objects both in use and free, {neither} in neither list");
     }
 
-    [Fact]
+    [GameDataFact]
     public void Allocate_ReturnsEntryAtTop_ThenLowersPointer()
     {
         var tm = LoadLevel(UWClass.GAME_UW1, "DATA", "UW1", 0);
@@ -203,7 +203,7 @@ public class ObjectFreeListTests : IDisposable
         Assert.Equal(top - 1, tm.StaticFreeListPtr);
     }
 
-    [Fact]
+    [GameDataFact]
     public void Release_RaisesPointer_ThenWritesEntry()
     {
         var tm = LoadLevel(UWClass.GAME_UW1, "DATA", "UW1", 0);
@@ -218,7 +218,7 @@ public class ObjectFreeListTests : IDisposable
         Assert.Equal(entryAtOldTop, Word(tm.lev_ark_block.Data, StaticFreeListBase + top * 2));
     }
 
-    [Fact]
+    [GameDataFact]
     public void ReleaseThenAllocate_ReturnsTheSameObject()
     {
         var tm = LoadLevel(UWClass.GAME_UW1, "DATA", "UW1", 0);
@@ -230,7 +230,7 @@ public class ObjectFreeListTests : IDisposable
         Assert.Equal(Slot, got);
     }
 
-    [Fact]
+    [GameDataFact]
     public void Allocate_WhenListIsEmpty_ReturnsZero()
     {
         var tm = LoadLevel(UWClass.GAME_UW1, "DATA", "UW1", 0);
@@ -243,7 +243,7 @@ public class ObjectFreeListTests : IDisposable
         Assert.Equal(-1, tm.MobileFreeListPtr);
     }
 
-    [Fact]
+    [GameDataFact]
     public void EmptyList_IsStoredAs0xFFFF_AndReadsBackAsMinusOne()
     {
         var tm = LoadLevel(UWClass.GAME_UW1, "DATA", "UW1", 0);
@@ -256,7 +256,7 @@ public class ObjectFreeListTests : IDisposable
         Assert.Equal(-1, tm.MobileFreeListPtr);
     }
 
-    [Fact]
+    [GameDataFact]
     public void Allocate_AtTopZero_SucceedsAndLeavesTheListEmpty()
     {
         var tm = LoadLevel(UWClass.GAME_UW1, "DATA", "UW1", 0);
@@ -269,7 +269,7 @@ public class ObjectFreeListTests : IDisposable
         Assert.Equal(-1, tm.StaticFreeListPtr);
     }
 
-    [Fact]
+    [GameDataFact]
     public void ResetMap_RebuildsBothFreeListsToFullCapacity()
     {
         var tm = LoadLevel(UWClass.GAME_UW1, "DATA", "UW1", 0);
@@ -299,7 +299,7 @@ public class ObjectFreeListTests : IDisposable
         Assert.Equal(1023, Word(tm.lev_ark_block.Data, StaticFreeListBase + (StaticCapacity - 1) * 2));
     }
 
-    [Fact]
+    [GameDataFact]
     public void FillingTheMobileListFromEmpty_StopsAtCapacity_WithoutSpillingIntoStatic()
     {
         var tm = LoadLevel(UWClass.GAME_UW1, "DATA", "UW1", 0);
@@ -315,7 +315,7 @@ public class ObjectFreeListTests : IDisposable
         Assert.Equal(staticEntry0Before, Word(tm.lev_ark_block.Data, StaticFreeListBase));
     }
 
-    [Fact]
+    [GameDataFact]
     public void FillingTheStaticListFromEmpty_StopsAtCapacity_WithoutSpillingIntoActiveMobiles()
     {
         var tm = LoadLevel(UWClass.GAME_UW1, "DATA", "UW1", 0);
