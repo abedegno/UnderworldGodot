@@ -336,7 +336,15 @@ namespace Underworld
 
                     Debug.Print($"{spell.spellname}");
                     //do the skill check
-                    var chkresult = playerdat.SkillCheck(playerdat.Casting, spell.SpellLevel * 3);
+                    playerdat.SkillCheckResult chkresult;
+                    if (_RES == GAME_UW2)
+                    {//uw2 RUNES.C:238
+                        chkresult = playerdat.SkillCheck(playerdat.Casting, spell.SpellLevel * 3);
+                    }
+                    else
+                    {//uw1 RUNES.C:249
+                        chkresult = playerdat.SkillCheck(playerdat.Casting + 5, spell.SpellLevel * 2);
+                    }
                     // An ordinary failed incantation does not start the interval. DOS
                     // tests the skill result at ovr119_518 with jnz and leaves on zero,
                     // which is Fail, before reaching the code that stamps the clock. A
