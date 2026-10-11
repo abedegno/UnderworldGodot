@@ -127,6 +127,8 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         env:
           SCENARIO_IMPORT_TIMEOUT: '300'
+          # one Godot run per game; 180 scenarios take about 5 minutes per game on a hosted runner
+          SCENARIO_TIMEOUT: '1200'
         run: |
           set -euo pipefail
           # scenarios.sh skips a game whose folder has no DATA, which here would hide a bad bundle
