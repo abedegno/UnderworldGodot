@@ -80,8 +80,8 @@ namespace Underworld
                 if (response.ToUpper() == "YES")
                 {
                     //Attempt repair
-                    var repairtime = Math.Min(15, ((itemToRepair.Durability * 3) - repairskill) - (itemToRepair.quality / 2));
-                    repairtime = Math.Abs(repairtime * 60);
+                    var repairtime = Math.Max(15, ((itemToRepair.Durability * 3) - repairskill) - (itemToRepair.quality / 2));//minutes, at least 15. uw1 WORLDEV.C:629-630, uw2 WORLDEV.C:1010-1011
+                    repairtime = repairtime * 60;//in seconds. uw1 WORLDEV.C:705, uw2 WORLDEV.C:1085
                     var result = RepairObjectSkillCheck(repairskill, itemToRepair);
                     
                     //Set variables for the function callback.
@@ -142,6 +142,13 @@ namespace Underworld
             uimanager.EnableDisable(uimanager.instance.uwviewport,true); 
             playerdat.AdvanceTime(CallBackRepairTime);
 
+            if (CallBackRepairResult == -2)
+            {//a destroyed item survives unless its fate (range 10) lets it go. uw1 WORLDEV.C:706-712, uw2 WORLDEV.C:1086-1092
+                if (!ObjectRemover_OLD.ObjectCullingTest(CallBackItemToRepair, 10))
+                {
+                    CallBackRepairResult = 0;
+                }
+            }
             switch (CallBackRepairResult)
             {
                 case -2: //critical fail
@@ -164,6 +171,7 @@ namespace Underworld
                     }
                 case 0://unable to repair
                     {
+                        uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_you_cannot_repair_that_));
                         break;
                     }
                 case 1:
