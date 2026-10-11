@@ -103,6 +103,8 @@ public partial class ScenarioRunner : Node
         (() => new GuardLevelChange(), true),
         (() => new GuardSaveLoad(), true),
         (() => new GuardMelee(), true),
+        // issue #207
+        (() => new CulledContainerContents(), true),
         (() => new HarnessFails(), false),
     };
 
