@@ -41,6 +41,25 @@ namespace Underworld
         }
 
 
+        /// <summary>
+        /// Backing away from the target while fleeing: UW1's SEQ_BACK_OFF, 7 (uw1 AI.C:636,
+        /// critter.h:130); UW2 uses its walking sequence, 1 (uw2 AI.C:606).
+        /// </summary>
+        public static short ANIMATION_BACK_OFF
+        {
+            get
+            {
+                if (_RES == GAME_UW2)
+                {
+                    return 1;
+                }
+                else
+                {
+                    return 7;
+                }
+            }
+        }
+
         public static short ANIMATION_DEATH
         {
             get
@@ -2607,7 +2626,7 @@ namespace Underworld
                             critter.ProjectileHeading = (ushort)(((headingvar1 + 4) % 8) << 5);
                             critter.heading = (short)headingvar1;
                             critter.npc_heading = 0;
-                            UpdateAnimation(critter, 1, true);
+                            UpdateAnimation(critter, ANIMATION_BACK_OFF, true);//uw1 AI.C:636, uw2 AI.C:606
                             critter.UnkBit_0X13_Bit0to6 = (short)((critterObjectDat.unk_b(critter.item_id) + 1) / 2);
                             return;
                         }
@@ -2638,7 +2657,7 @@ namespace Underworld
                                 critter.UnkBit_0X13_Bit0to6 = 0;
                                 ChangeNpcHeadings(critter, headingvar1);
                                 critter.Projectile_Speed = 4;
-                                UpdateAnimation(critter, 2, true);
+                                UpdateAnimation(critter, ANIMATION_COMBAT_IDLE, true);//uw1 AI.C:647 SEQ_COMBAT, uw2 AI.C:616
                                 return;
                             }
                             else
@@ -2693,7 +2712,7 @@ namespace Underworld
                     //seg007_17A2_1493
                     critter.UnkBit_0X13_Bit0to6 = (short)critterObjectDat.speed(critter.item_id);
                 }
-                UpdateAnimation(critter, 1, true);
+                UpdateAnimation(critter, ANIMATION_WALK, true);//uw1 AI.C:677 SEQ_WALK, uw2 AI.C:645
                 critter.Projectile_Speed = 4;
             }
         }
@@ -2751,7 +2770,7 @@ namespace Underworld
                         critter.UnkBit_0X13_Bit0to6 = 0;
                         ChangeNpcHeadings(critter, heading_var1);
                         critter.Projectile_Speed = 4;
-                        UpdateAnimation(critter, 2, true);
+                        UpdateAnimation(critter, ANIMATION_COMBAT_IDLE, true);//uw1 AI.C:597 SEQ_COMBAT, uw2 AI.C:567
                     }
                     else
                     {
