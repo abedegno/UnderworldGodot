@@ -12,8 +12,8 @@ namespace Underworld
                 return true;
             }
 
-            if (uimanager.CurrentSlot >= 5 && uimanager.CurrentSlot <= 8)
-            {
+            if (uimanager.CurrentSlot >= 5 && uimanager.CurrentSlot <= 8 && obj.ObjectQuantity == 1)
+            {//only a single light is lit in place, a stack in a light slot has one moved out (uw1 USEITEMS.C:526-530, uw2 USEITEMS.C:625-631)
                 if (ToggleLight(obj))
                 {
                     if (_RES == GAME_UW2)

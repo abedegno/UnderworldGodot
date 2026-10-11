@@ -72,6 +72,7 @@ public partial class ScenarioRunner : Node
         (() => new CarryCapacity(), true),
         (() => new LightBurnRates(), true),
         (() => new LightOnQuality(), true),
+        (() => new LightStackInSlot(), true),
         (() => new RepairCriticalFailure(), true),
         (() => new Uw1CreateObjectTrap(), true),
         (() => new Uw1SoundsDatLength(), true),
