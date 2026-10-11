@@ -340,6 +340,7 @@ namespace Underworld
                 {
                     if (!FindGoodXAndY(playerdat.playerObject, tileX, tileY, out int goodX, out int goodY))
                     {
+                        CodeToRunOnTeleport = null;//no teleport, so nothing to run after it (uw2 WORLDEV.C:228-229)
                         return 2;
                     }
                     tileX = goodX; tileY = goodY;
@@ -412,6 +413,7 @@ namespace Underworld
             {
                 if (!FindGoodXAndY(playerdat.playerObject, tileX, tileY, out int goodX, out int goodY))
                 {
+                    CodeToRunOnTeleport = null;//no teleport, so nothing to run after it (uw1 WORLDEV.C:183-201)
                     return 2;
                 }
                 tileX = goodX; tileY = goodY;
