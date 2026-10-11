@@ -11,7 +11,12 @@ namespace Underworld.Scenarios;
 /// (uw2 PLAYTIME.C:148-149, uw2/src/combat/SPELLS.C:176-194; uw1 PLAYTIME.C:139-140). So that
 /// call heals 0 or 1, whatever the maximum.
 ///
-/// The scenario sets Strength 30 and low hit points, then drives the port's own timed loop,
+/// The check is skill_check(Strength, 15) > 0, a pass when Strength - 15 + rand() % 31 is above 15
+/// (uw1/src/game/SKILLCHK.C:48-60, uw2/src/game/SKILLCHK.C:39-52). The scenario sets Strength 31, so
+/// the score is at least 16 whatever the draw and the step heals exactly 1 in the original; at 30 a
+/// draw of 0 would fail and heal nothing, so the expectation would depend on the draw.
+///
+/// The scenario sets Strength 31 and low hit points, then drives the port's own timed loop,
 /// playerdat.PlayerTimedLoop, 20 seconds a call (each call is one 20 second step), until the
 /// step whose counter is a multiple of 30, the port's "every 5 minutes" block
 /// (src/player/playerdatloop.cs), and measures the hit points that step gave. The port's counter
@@ -23,7 +28,7 @@ namespace Underworld.Scenarios;
 /// </summary>
 public sealed class NaturalHealing : Scenario
 {
-    const int Strength = 30, StartHp = 5;
+    const int Strength = 31, StartHp = 5;
 
     public override string Name => "natural-healing";
     public override string Cites => "underworld-exhumed uw2/src/game/PLAYTIME.C:137-149, uw2/src/combat/SPELLS.C:176-194; uw1/src/game/PLAYTIME.C:128-141, uw1/src/combat/SPELLS.C:186";
@@ -70,8 +75,9 @@ public sealed class NaturalHealing : Scenario
         if (_problem != null) return "precondition: " + _problem;
         if (!_reached) return "precondition: the timed loop never reached its 5 minute step in 61 calls";
         var k = new Checks();
-        k.Within("hit points regained in one regeneration step", 0, 1, _hpAfter - _hpBefore,
-            c.Game == "uw2" ? "uw2 PLAYTIME.C:148-149, restore_hp(ThePlayer, -1)" : "uw1 PLAYTIME.C:139-140, restore_hp(ThePlayer, -1)");
+        k.Equal("hit points regained in one regeneration step", 1, _hpAfter - _hpBefore,
+            c.Game == "uw2" ? "uw2 PLAYTIME.C:148-149, restore_hp(ThePlayer, -1); Strength 31 always passes skill_check(, 15): uw2 SKILLCHK.C:39-52"
+                            : "uw1 PLAYTIME.C:139-140, restore_hp(ThePlayer, -1); Strength 31 always passes skill_check(, 15): uw1 SKILLCHK.C:48-60");
         return k.Result;
     }
 }
