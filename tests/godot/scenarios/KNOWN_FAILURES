@@ -43,8 +43,6 @@ uw1/player-armour  ~player's defence (Defence + weapon skill / 2)  # armour igno
 uw2/player-armour  ~player's defence (Defence + weapon skill / 2)  # same (playerdatloop.cs:653, critterObjectDat.cs:358); uw2 PLAYDATA.C:322-385
 uw1/item-protection  ~slot 2 protection minor 0x3  # class 12 only for slots 0 and 1, no +1, toughness to protection (src/magic/spellcasting_objects.cs:61-77); uw1 PLAYDATA.C:271-286
 uw2/item-protection  ~slot 2 protection minor 0x3  # same (spellcasting_objects.cs:61-77); uw2 PLAYDATA.C:249-264
-uw1/sleep-night  ~hit points after the night  # heals HPRegenerationChange(regen * comfort), 2..32 hunger, 16 drunkenness, lights as a counter (src/World/sleep.cs:117, 163, 192, 197); uw1 SKILLS.C:549, 584-605
-uw2/sleep-night  ~hit points after the night  # same (sleep.cs:117, 163, 192, 197); uw2 SKILLS.C:472, 511-532
 uw2/sleep-killorn-crash  ~quest 50 set and 54 clear (Killorn crashes) expected 0  # needs world 2 and quest 54 set, the reverse (src/World/sleep.cs:105); uw2 SKILLS.C:467-471
 uw1/sleep-in-void  ~fatigue after trying to sleep in the Void  # no level 9 test (src/World/sleep.cs:25); uw1 SKILLS.C:525-528 refuses
 uw2/map-area-radius  ~open squares mapped within the radius 7 circle at Casting 20  # radius Max(Casting - 13, 0) / 5 + 2, flood-filled square (src/magic/spellcasting_class_13.cs:71); uw2 SPELLS.C:996-1002 circle

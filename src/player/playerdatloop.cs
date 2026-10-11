@@ -363,11 +363,16 @@ namespace Underworld
             }
         }
 
-        public static void UpdateLightStability(int updatecounter)
+        /// <summary>
+        /// DegradeLights: burns each lit light in the light slots by 1 when counter is a multiple of its burn period, plus amount / period when amount > 1.
+        /// A light that burns down goes out, at quality 1 in UW2 and 0 in UW1. Nothing burns while time is stopped in UW2 (uw2 PLAYTIME.C:174-210, uw1 PLAYTIME.C:150-185)
+        /// </summary>
+        public static void DegradeLights(int amount, int counter)
         {
-            //loop each lit light source.
-            //a lit light loses a quality point when updatecounter is a multiple of its burn rate (Lights[].duration in OBJECTS.DAT)
-            //uw1 PLAYTIME.C:150-185, uw2 PLAYTIME.C:174-213 (DegradeLights, called with amount 1)
+            if ((_RES == GAME_UW2) && FreezeTimeEnchantment)
+            {
+                return;
+            }
             for (int slot = 5; slot <= 8; slot++)
             {
                 var objInSlot = GetInventorySlotObject(slot);
@@ -375,38 +380,54 @@ namespace Underworld
                 {
                     if ((objInSlot.majorclass == 2) && (objInSlot.minorclass == 1) && (objInSlot.classindex >= 4 && objInSlot.classindex <= 7))
                     {
-                        //a lit light source
-                        var burnrate = lightsourceObjectDat.duration(objInSlot.item_id);
-                        if (burnrate == 0)
+                        var period = lightsourceObjectDat.duration(objInSlot.item_id);
+                        if (period == 0)
                         {
                             continue;
                         }
-                        if (updatecounter % burnrate == 0)
+                        var burn = 0;
+                        if (counter % period == 0)
                         {
-                            var burn = 1;
-                            bool burnsout;
-                            if (_RES == GAME_UW2)
-                            {//uw2 PLAYTIME.C:197-206, the light goes out at quality 1
-                                burnsout = (ushort)(objInSlot.quality - 1) <= burn;
-                            }
-                            else
-                            {//uw1 PLAYTIME.C:172-181, the light goes out at quality 0
-                                burnsout = objInSlot.quality <= burn;
-                            }
-                            if (!burnsout)
-                            {
-                                objInSlot.quality = (short)(objInSlot.quality - burn);
-                            }
-                            else
-                            {
-                                objInSlot.quality = (short)(_RES == GAME_UW2 ? 1 : 0);
-                                light.LightOff(objInSlot);
-                                uimanager.UpdateInventoryDisplay();
-                            }
+                            burn = 1;
+                        }
+                        if (amount > 1)
+                        {
+                            burn += amount / period;
+                        }
+                        if (burn == 0)
+                        {
+                            continue;
+                        }
+                        bool stillLit;
+                        if (_RES == GAME_UW2)
+                        {
+                            stillLit = (ushort)(objInSlot.quality - 1) > burn;
+                        }
+                        else
+                        {
+                            stillLit = objInSlot.quality > burn;
+                        }
+                        if (stillLit)
+                        {
+                            objInSlot.quality = (short)(objInSlot.quality - burn);
+                        }
+                        else
+                        {
+                            objInSlot.quality = (short)(_RES == GAME_UW2 ? 1 : 0);
+                            light.LightOff(objInSlot);
+                            uimanager.UpdateInventoryDisplay();
                         }
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// The per-tick light burn: DegradeLights with amount 1 (uw1 PLAYTIME.C:150-185, uw2 PLAYTIME.C:174-213)
+        /// </summary>
+        public static void UpdateLightStability(int updatecounter)
+        {
+            DegradeLights(amount: 1, counter: updatecounter);
         }
 
         /// <summary>
