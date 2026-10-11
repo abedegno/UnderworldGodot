@@ -68,7 +68,6 @@ uw2/time-of-day-hourly-step  ~time of day (X clock 0) after the 60th 20-second s
 uw1/repair-time-floor  ~repair whose formula gives 5 min expected  # repair time capped at 15 min, not floored, plus Math.Abs: repair.cs:83-84; uw1 WORLDEV.C:629-630
 uw2/repair-time-floor  ~repair whose formula gives 5 min expected  # repair time capped at 15 min, not floored, plus Math.Abs: repair.cs:83-84; uw2 WORLDEV.C:1010-1011
 uw2/jail-term  ~jail term in seconds expected  # GoToJail adds the random part DOS subtracts and sets HP to max not STR: playerdatdeath.cs:203-207; uw2 WORLDEV.C:2287, 2295
-uw2/altaras-wand-scan  ~player (40, 20), marker (42, 20): marker within two squares expected removed  # y loop starts at cX - range, ValidTile axes swapped: spellcasting_class_13.cs:160-162; uw2 SPELLS2.C:807, 820-848
 uw2/scd-set-quest-bit  ~after an SCD row setting it to 1 expected 1  # SCD event 4 only prints: scd_changequest.cs:7; uw2 SCDEVENT.C:220-230
 uw2/qbert-gate-stays  ~moongate 0x3CE invisible after the pyramid is finished expected 0  # flag read from var 114 (never written), gate hidden at once: a_hack_trap_qbert.cs:100, 269; uw2 WORLDEV.C:1941, 1960-1968
 uw2/castle-schedule-hours  ~castle destination wrong  # 12-hour clock, stages 3/5/9 to the throne room, Miranda/XC_CASTLE 0 rules, loc 5, exclusive bounds: a_hack_trap_castleschedule.cs:138-229; uw2 CRITTIME.C:646-731
