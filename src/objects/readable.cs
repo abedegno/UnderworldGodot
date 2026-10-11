@@ -27,8 +27,12 @@ namespace Underworld
                 if ((magicenchantment != null) && (!WorldObject))
                 {
                     //uimanager.AddToMessageScroll($"Cast a spell from this object", colour: 2);
-                    MagicEnchantment.CastObjectSpell(ObjectUsed, magicenchantment);
-                    ObjectCreator.Consume(ObjectUsed, true);
+                    // UW2 uses the scroll up only when checkSpell cast it, so a scroll read
+                    // too soon after another object's spell is kept (uw2 USEITEMS.C:517-518).
+                    if (MagicEnchantment.CastObjectSpell(ObjectUsed, magicenchantment))
+                    {
+                        ObjectCreator.Consume(ObjectUsed, true);
+                    }
                     return true;
                 }
                 else
@@ -67,6 +71,8 @@ namespace Underworld
                     if (magicenchantment != null)
                     {
                         //uimanager.AddToMessageScroll($"Cast a spell from this object", colour: 2);
+                        // UW1 uses the scroll up whether or not checkSpell's wait let it cast
+                        // (uw1 USEITEMS.C:946-948).
                         MagicEnchantment.CastObjectSpell(ObjectUsed, magicenchantment);
                         ObjectCreator.Consume(ObjectUsed, true);
                     }

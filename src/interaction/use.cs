@@ -249,7 +249,14 @@ namespace Underworld
             var spell = MagicEnchantment.GetSpellEnchantment(obj, objList);
             if (spell != null)
             {
-                MagicEnchantment.CastObjectSpell(obj, spell);
+                // UseObj passes its how to checkSpell: 1 for the player's use from the
+                // inventory, which waits between casts, 0 from the world, which does not
+                // (uw1 USEITEMS.C:173-174, uw2 OBJUSE.C:144-145). A refused cast spends no
+                // charge.
+                if (!MagicEnchantment.CastObjectSpell(obj, spell, UsedByPlayer: !WorldObject))
+                {
+                    return true;
+                }
                 if (spell.LinkedSpellObject != null)
                 {
                     MagicEnchantment.DecrementSpellQuality(
