@@ -71,6 +71,11 @@ namespace Underworld
                     updateUI: false,
                     RemoveNext: false,
                     DestroyInventoryObject: false);
+                if (newIndex == 0)
+                {//no free object for the given part
+                    result_register = 0;
+                    return;
+                }
                 var given = UWTileMap.current_tilemap.LevelObjects[newIndex];
                 given.link = (short)qty;
                 ptrObject.link = (short)(ptrObject.link - qty);
@@ -84,6 +89,11 @@ namespace Underworld
                     objIndex: ObjectIndex,
                     updateUI: false,
                     RemoveNext: false);
+                if (newIndex == 0)
+                {//no free object to move it into
+                    result_register = 0;
+                    return;
+                }
                 NpcInvAdd(talker, UWTileMap.current_tilemap.LevelObjects[newIndex]);
             }
             uimanager.UpdateInventoryDisplay();
