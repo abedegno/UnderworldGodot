@@ -39,7 +39,7 @@ namespace Underworld
         /// </summary>
         public static void RefreshMusic()
         {
-            if (!playerdat.MusicEnabled || !MusicOk)
+            if (!playerdat.MusicEnabled || !MusicOk || MusicStreamPlayer.Instance == null)
             {
                 return;
             }
@@ -369,6 +369,14 @@ namespace Underworld
             }
         }
 
+#if DEBUG
+        /// <summary>
+        /// Test seam: called with the file name each time a theme's file is handed to the music
+        /// player, so a headless test can count the loads. Nothing in the game assigns it.
+        /// </summary>
+        internal static System.Action<string> LoadObserver;
+#endif
+
         static void LoadXMIByFileName(string filename, bool Loop = false)
         {
             if (!playerdat.MusicEnabled) return;
@@ -381,7 +389,18 @@ namespace Underworld
                 return;
             }
 
+#if DEBUG
+            LoadObserver?.Invoke(filename);
+#endif
             MusicStreamPlayer.Instance.PlayXmi(xmiPath, Loop);
+            if (!MusicStreamPlayer.Instance.IsPlaying)
+            {
+                //the theme was read but is not playing (no synth, or a tune with no events). As when
+                //load_new_music fails, the music is off for the session, rather than the file being
+                //read again on every frame (uw1 SOUND.C:351-354, uw2 SOUND.C:903-906).
+                System.Diagnostics.Debug.Print($"Theme {filename} did not start, music off");
+                MusicOk = false;
+            }
         }
 
         public static void PickLevelThemeMusic(int ThemeOffset)
