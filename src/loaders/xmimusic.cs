@@ -12,7 +12,10 @@ namespace Underworld
         public static byte CurrentlyPlayingThemeNo;
         public static byte NewThemeToPlay;
         static readonly byte[] UW2WorldThemes = [0xA, 0xC, 0xE, 0x9, 0xA, 0xF, 0xB, 0xD, 0xA, 0xC, 0xD, 0x9, 0x8, 0xB, 0xE, 0xD, 0x8, 0xF, 0xE, 0x9, 0x8, 0xF, 0xB, 0xA, 0x8, 0xC, 0x9];
-        static int CurrentWorldTheme;
+        // music_world, 0xFF until the first walking theme is chosen (uw2 SOUND.C:180).
+        static int CurrentWorldTheme = 0xFF;
+        // music_repeats: whether a UW1 theme may repeat when it ends (uw1 SOUND.C:91-93).
+        static readonly byte[] UW1MusicRepeats = [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1];
 
         /// <summary>
         /// False once a theme has failed to load: as in the original, the music is then off for the
@@ -81,64 +84,30 @@ namespace Underworld
                     // if that case the usage here must be a check to see if the music is not playing. 
                     if (!MusicStreamPlayer.Instance.IsPlaying)
                     {
-                        //DEBUG_MUSIC_HASSTOPPED = false;
-                        switch (CurrentlyPlayingThemeNo)
+                        // The theme has ended without a request (uw2 SOUND.C:1607-1619). Unless it was a
+                        // combat theme or 0x18, a walking theme is picked in play (scrmode 1); a walking
+                        // theme is too. Then theme 5 if the weapon is drawn and it was not a combat theme,
+                        // otherwise a walking theme, a combat theme or 0x18 repeats.
+                        var cur = CurrentlyPlayingThemeNo;
+                        bool walking = (cur >= 8) && (cur <= 0xF);
+                        bool combat = (cur >= 2) && (cur <= 4);
+                        bool repeats = walking || combat || (cur == 0x18);
+                        if ((!repeats || walking) && uimanager.InGame)
                         {
-                            case 1: //intro theme.
-                                {
-                                    if (uimanager.InGame)
-                                    {
-                                        PickLevelThemeMusic(-1);
-                                    }
-                                    else
-                                    {
-                                        NewThemeToPlay = 1; //repeat them at menu?
-                                    }
-                                    break;
-                                }
-                            case >= 8 and <= 0xF://map themes.
-                                {
-                                    if (uimanager.InGame)
-                                    {
-                                        PickLevelThemeMusic(-1);
-                                    }
-                                    break;
-                                }
-                            case >= 2 and <= 4://combat themes
-                            case > 0xF: //cutscene themes
-                            default:
-                                {
-                                    //do nothing.
-                                    break;
-                                }
+                            PickLevelThemeMusic(-1);
                         }
-
-                        // WeapDrawn_2D28:
-                        if (
-                            (playerdat.play_drawn != 0) && (CurrentlyPlayingThemeNo < 2)
-                            ||
-                            (playerdat.play_drawn != 0) && (CurrentlyPlayingThemeNo >= 5)
-                            )
+                        if ((playerdat.play_drawn != 0) && !combat)
                         {
-                            NewThemeToPlay = Armed;//set to armed theme if not already in a combat theme.
+                            NewThemeToPlay = Armed;
                         }
-                        else
+                        else if (repeats && (NewThemeToPlay == 0))
                         {
-                            switch (CurrentlyPlayingThemeNo)
-                            {
-                                case >= 2 and <= 4: //combat
-                                case >= 8 and <= 0xF: //level themes
-                                case 0x18:  // cutscene
-                                    if (NewThemeToPlay == 0)
-                                    {
-                                        NewThemeToPlay = CurrentlyPlayingThemeNo;//repeat theme.
-                                    }
-                                    break;
-                            }
+                            NewThemeToPlay = cur;//repeat theme.
                         }
 
                         //seg_2D7B:
-                        LoadXMI(NewThemeToPlay, restartIfSame: true);
+                        // load_new_music(0) plays the current theme again (uw2 SOUND.C:873-874).
+                        LoadXMI(NewThemeToPlay == 0 ? cur : NewThemeToPlay, restartIfSame: true);
                         if ((NewThemeToPlay >= 2) && (NewThemeToPlay <= 4))
                         {
                             LastCombatMusicThemeChange = main.GlobalPITTimer;
@@ -221,57 +190,23 @@ namespace Underworld
                 {
                     if (!MusicStreamPlayer.Instance.IsPlaying)
                     {
-                        switch (CurrentlyPlayingThemeNo)
+                        // The theme has ended without a request (uw1 SOUND.C:975-982). A walking theme is
+                        // picked when nothing was asked for, or in play (scrmode 1) after a walking theme
+                        // or one that does not repeat (music_repeats); theme 8 if the weapon is drawn.
+                        // The theme always starts again (load_new_music(m, 1)).
+                        var cur = CurrentlyPlayingThemeNo;
+                        bool walking = (cur >= 2) && (cur <= 4);
+                        bool norepeat = (cur < UW1MusicRepeats.Length) && (UW1MusicRepeats[cur] == 0);
+                        if (((norepeat || walking) && uimanager.InGame) || (NewThemeToPlay == 0))
                         {
-                            case 1: // intro theme
-                            case >= 2 and <= 4://map themes.
-                                {
-                                    if (uimanager.InGame)
-                                    {
-                                        PickLevelThemeMusic(-1);
-                                    }
-                                    break;
-                                }
-                            case >= 5 and <= 7://combat themes
-                            default:
-                                {
-                                    //do nothing.
-                                    break;
-                                }
+                            PickLevelThemeMusic(-1);
                         }
-
-                        // WeapDrawn_2D28:
-                        if (
-                            (playerdat.play_drawn != 0) && (CurrentlyPlayingThemeNo < 5)
-                            ||
-                            (playerdat.play_drawn != 0) && (CurrentlyPlayingThemeNo >= 8)
-                            )
+                        if (playerdat.play_drawn != 0)
                         {
-                            NewThemeToPlay = Armed;//set to armed theme if not already in a combat theme.
+                            NewThemeToPlay = Armed;
                         }
-                        else
-                        {
-                            switch (CurrentlyPlayingThemeNo)
-                            {
-                                case >= 2 and <= 4: //level themes                                
-                                case >= 5 and <= 7: //combat
-                                    if (NewThemeToPlay == 0)
-                                    {
-                                        NewThemeToPlay = CurrentlyPlayingThemeNo;//repeat theme.
-                                    }
-                                    break;
-                            }
-                        }
-
-                        LoadXMI(NewThemeToPlay);
-                        if ((NewThemeToPlay >= 2) && (NewThemeToPlay <= 4))
-                        {
-                            LastCombatMusicThemeChange = main.GlobalPITTimer;
-                        }
-                        else
-                        {
-                            LastCombatMusicThemeChange = 0;
-                        }
+                        LoadXMI(NewThemeToPlay, restartIfSame: true);
+                        LastCombatMusicThemeChange = 0;
                     }
                 }
                 else
@@ -351,7 +286,9 @@ namespace Underworld
 
         public static void ChangeThemeMusic(byte newTheme)
         {
-            if (CurrentlyPlayingThemeNo != Fanfare)
+            // set_new_music: UW2 ignores a request while theme 6 plays (uw2 SOUND.C:1532-1536);
+            // UW1 always takes it (uw1 SOUND.C:917-920).
+            if ((_RES != GAME_UW2) || (CurrentlyPlayingThemeNo != Fanfare))
             {
                 NewThemeToPlay = newTheme;
             }

@@ -104,6 +104,7 @@ public partial class ScenarioRunner : Node
         (() => new GuardLevelChange(), true),
         (() => new GuardSaveLoad(), true),
         (() => new GuardMelee(), true),
+        (() => new MusicThemeChoice(), true),
         (() => new HarnessFails(), false),
     };
 
