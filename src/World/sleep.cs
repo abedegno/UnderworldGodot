@@ -430,10 +430,12 @@ namespace Underworld
                                     //ovr107_9E0
                                     //get the path of the 2nd last tile
                                     var lastpath = FinalPath56.finalpath[Pathfind.MaybePathIndexOrLength_dseg_67d6_225A - 1];
-                                    //var lasttile = UWTileMap.current_tilemap.Tiles[lastpath.X0, lastpath.Y1];
 
-                                    if (npc.moveNPCToTile(obj, lastpath.X0, lastpath.Y1))
+                                    //on the floor even for a flier, and the b19 bit 0 set rather than cleared (uw1 CRITTIME.C:347-359, uw2 CRITTIME.C:349-361)
+                                    var lasttile = UWTileMap.current_tilemap.Tiles[lastpath.X0, lastpath.Y1];
+                                    if (npc.PlaceCritterInTile(obj, lastpath.X0, lastpath.Y1, lasttile.floorHeight << 3, critterObjectDat.isFlier(obj.item_id) ? 1 : 0))
                                     {
+                                        obj.UnkBit_0x19_0_likelyincombat = 1;
                                         npc.SetNPCTargetDestination(obj, playerdat.playerObject.tileX, playerdat.playerObject.tileY, playerdat.playerObject.zpos);
                                         NearbyHostileFindsAvatar = true;
                                         return true;

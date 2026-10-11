@@ -129,41 +129,105 @@ namespace Underworld
             }
         }
 
+        /// <summary>
+        /// teleport_critter (uw2 CRITTIME.C:374-410; UW1 has none, uw1 CRITTIME.C:22). Moves a critter to
+        /// tile (x, y): a critter already on that tile stays put and succeeds; otherwise it fails on a solid
+        /// tile, where can_place refuses, or if it cannot be taken out of its old tile.
+        /// </summary>
         public static bool moveNPCToTile(uwObject critter, int destTileX, int destTileY)
         {
             Debug.Print($"Moving {critter.a_name} to {destTileX},{destTileY} from {critter.tileX}, {critter.tileY}");
             if (UWTileMap.ValidTile(destTileX, destTileY) && UWTileMap.ValidTile(critter.tileX, critter.tileY))
             {
-                var sourceTile = UWTileMap.current_tilemap.Tiles[critter.tileX, critter.tileY];
+                if (critter.npc_xhome == destTileX && critter.npc_yhome == destTileY)
+                {//already there (uw2 CRITTIME.C:384-385)
+                    return true;
+                }
                 var destTile = UWTileMap.current_tilemap.Tiles[destTileX, destTileY];
-                if (destTile.tileType != UWTileMap.TILE_SOLID)
+                int z;
+                if (critterObjectDat.isFlier(critter.item_id))
+                {//fliers go half way up (uw2 CRITTIME.C:387-390)
+                    z = ((destTile.floorHeight << 3) + 0x80) >> 1;
+                }
+                else
                 {
-                    ObjectRemover_OLD.RemoveObjectFromLinkedList(sourceTile.indexObjectList, critter.index, UWTileMap.current_tilemap.LevelObjects, sourceTile.Ptr + 2);
-                    critter.next = destTile.indexObjectList;
-                    destTile.indexObjectList = critter.index;
-                    critter.tileX = destTileX; critter.tileY = destTileY;
-                    critter.zpos = (short)(destTile.floorHeight << 3);
-                    critter.xpos = 3; critter.ypos = 3;
-                    critter.npc_xhome = (short)destTileX;
-                    critter.npc_yhome = (short)destTileY;
-
-                    //Clear some bits relating to AI
+                    z = destTile.floorHeight << 3;
+                }
+                if (PlaceCritterInTile(critter, destTileX, destTileY, z, critterObjectDat.isFlier(critter.item_id) ? 1 : 0))
+                {
+                    //Clear some bits relating to AI (uw2 CRITTIME.C:403-406)
                     critter.UnkBit_0x19_4 = 0;
                     critter.UnkBit_0x19_5 = 0;
                     critter.UnkBit_0x19_0_likelyincombat = 0;
                     critter.UnkBit_0x19_1 = 0;
-
-                    Reposition(critter);
                     return true;
                 }
-                else
-                {
-                    Debug.Print($"Attempt to move {critter.a_name} to solid tile {destTileX},{destTileY}");
-                    return false;
-                }
-
             }
             return false;
+        }
+
+        /// <summary>
+        /// The placement shared by teleport_critter (uw2 CRITTIME.C:391-402), up_crit (uw1 CRITTIME.C:177-192,
+        /// uw2 CRITTIME.C:176-192) and wander_that_monster (uw1 CRITTIME.C:347-358, uw2 CRITTIME.C:349-360):
+        /// the fine position from the tile type, refused on a solid tile, then refused unless can_place says the
+        /// critter fits at that point at height z, then out of its old tile's list and into the new one.
+        /// </summary>
+        public static bool PlaceCritterInTile(uwObject critter, int destTileX, int destTileY, int z, int flier)
+        {
+            if (!UWTileMap.ValidTile(destTileX, destTileY) || !UWTileMap.ValidTile(critter.tileX, critter.tileY))
+            {
+                return false;
+            }
+            var sourceTile = UWTileMap.current_tilemap.Tiles[critter.tileX, critter.tileY];
+            var destTile = UWTileMap.current_tilemap.Tiles[destTileX, destTileY];
+            if (!set_gridx_and_y_based_on_tile_type(destTile.tileType, out int fx, out int fy))
+            {
+                Debug.Print($"Attempt to move {critter.a_name} to solid tile {destTileX},{destTileY}");
+                return false;
+            }
+            if (!motion.TestIfObjectFitsInTile(critter.item_id, critter.index, (destTileX << 3) + fx, (destTileY << 3) + fy, z, flier, 8))
+            {
+                return false;
+            }
+            if (!ObjectRemover_OLD.RemoveObjectFromLinkedList(sourceTile.indexObjectList, critter.index, UWTileMap.current_tilemap.LevelObjects, sourceTile.Ptr + 2))
+            {
+                return false;
+            }
+            critter.next = destTile.indexObjectList;
+            destTile.indexObjectList = critter.index;
+            critter.tileX = destTileX; critter.tileY = destTileY;
+            critter.npc_xhome = (short)destTileX;
+            critter.npc_yhome = (short)destTileY;
+            critter.xpos = (short)fx; critter.ypos = (short)fy;
+            critter.zpos = (short)z;
+            Reposition(critter);
+            return true;
+        }
+
+        /// <summary>
+        /// set_gridx_and_y_based_on_tile_type (uw1 CRITTIME.C:95-124, uw2 CRITTIME.C:93-122): where in a tile of
+        /// this type to put a critter. The middle of an open or sloped tile, the open corner of a diagonal; false
+        /// for a solid tile. Type 5 gets 6, 1 like type 2 in both games, as the original does.
+        /// </summary>
+        public static bool set_gridx_and_y_based_on_tile_type(int tileType, out int x, out int y)
+        {
+            switch (tileType)
+            {
+                case UWTileMap.TILE_SOLID:
+                    x = 0; y = 0;
+                    return false;
+                case UWTileMap.TILE_DIAG_SE:
+                    x = 6; y = 1; break;
+                case UWTileMap.TILE_DIAG_SW:
+                    x = 1; y = 1; break;
+                case UWTileMap.TILE_DIAG_NE:
+                    x = 6; y = 6; break;
+                case UWTileMap.TILE_DIAG_NW:
+                    x = 6; y = 1; break;
+                default:
+                    x = 4; y = 4; break;
+            }
+            return true;
         }
 
     }//end class
