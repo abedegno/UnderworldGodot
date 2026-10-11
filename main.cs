@@ -375,7 +375,13 @@ public partial class main : Node3D
 		{
 			combat.CombatInputHandler(delta);//may need to be moved outside this block
 			playerdat.PlayerTimedLoop(delta);
-			RefreshWorldState();//handles teleports, tile redraws	
+			RefreshWorldState();//handles teleports, tile redraws
+		}
+
+		if (uimanager.AtMainMenu && !cutsplayer.IsPlaying)
+		{
+			//the menus keep their music going while they wait for input (uw1 MAINMENU.C:320-323, uw2 MAINMENU.C:296-297)
+			XMIMusic.LoopMusicMaybe();
 		}
 
 		//Other updates

@@ -303,6 +303,44 @@ namespace Underworld
             }//end uw1 logic
         }
 
+        /// <summary>
+        /// Starts the current theme again once it has ended, except that some themes give way to
+        /// another: in UW1 theme 1 is followed by theme 4 (uw1 SOUND.C:928-938), in UW2 themes 1,
+        /// 6 and 7 by theme 10 (uw2 SOUND.C:1556-1568). The original calls this while the main
+        /// menu, the save list and character creation wait for input (uw1 MAINMENU.C:320-323,
+        /// uw2 MAINMENU.C:296-297, CHARGEN.C:466-468 in both).
+        /// </summary>
+        public static void LoopMusicMaybe()
+        {
+            if (!playerdat.MusicEnabled || MusicStreamPlayer.Instance == null)
+            {
+                return;
+            }
+            if (CurrentlyPlayingThemeNo == 0)
+            {
+                return; //no theme loaded yet
+            }
+            if (!MusicStreamPlayer.Instance.IsPlaying)
+            {
+                var theme = CurrentlyPlayingThemeNo;
+                if (_RES == GAME_UW2)
+                {
+                    if ((theme == IntroTheme) || (theme == Fanfare) || (theme == 7))
+                    {
+                        theme = 0xA;
+                    }
+                }
+                else
+                {
+                    if (theme == IntroTheme)
+                    {
+                        theme = 4;
+                    }
+                }
+                LoadXMI(theme, restartIfSame: true);
+            }
+        }
+
         public static void ChangeThemeMusic(byte newTheme)
         {
             if (CurrentlyPlayingThemeNo != Fanfare)
