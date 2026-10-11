@@ -93,6 +93,7 @@ public partial class ScenarioRunner : Node
         (() => new TeleportOccupied(), true),
         (() => new TeleportCritter(), true),
         (() => new SleepAmbush(), true),
+        (() => new CritterGoesHome(), true),
         (() => new TybalTalkTrap(), true),
         // batch D: guards
         (() => new GuardEat(), true),

@@ -514,8 +514,8 @@ namespace Underworld
                 obj.UnkBit_0x19_4 = 0;
                 obj.UnkBit_0x19_5 = 0;
                 obj.UnkBit_0x19_0_likelyincombat = 0;
-                if (obj.npc_goal != (byte)npc.npc_goals.npc_goal_want_to_talk)
-                {
+                if (_RES != GAME_UW2 || obj.npc_goal != (byte)npc.npc_goals.npc_goal_want_to_talk)
+                {//UW1 turns every critter, UW2 all but one waiting to talk (uw1 CRITTIME.C:159, uw2 CRITTIME.C:157-158)
                     obj.heading = (short)(Rng.r.Next(8) & 7);
                 }
                 var avghit = critterObjectDat.avghit(obj.item_id);
@@ -523,7 +523,7 @@ namespace Underworld
                 {
                     if (obj.UnkBit_0XD_Bit9_StopHPRegen == 0)
                     {
-                        obj.npc_hp += (byte)(avghit / 2);
+                        obj.npc_hp = (byte)((obj.npc_hp + avghit) / 2);//half way to the average (uw1 CRITTIME.C:160-161, uw2 CRITTIME.C:159-160)
                     }
                 }
                 if (obj.UnkBit_0XA_Bit7 == 0)
@@ -541,12 +541,8 @@ namespace Underworld
                 }
 
                 if ((obj.quality != obj.npc_xhome) || (obj.owner != obj.npc_yhome))
-                {
-                    var tile = UWTileMap.current_tilemap.Tiles[obj.npc_xhome, obj.npc_yhome];
-                    if (tile.tileType != UWTileMap.TILE_SOLID)
-                    {
-                        npc.moveNPCToTile(obj, tile.tileX, tile.tileY);
-                    }
+                {//go to the home square in quality and owner; npc_xhome and npc_yhome are the square it stands on (uw1 CRITTIME.C:172-192, uw2 CRITTIME.C:171-192)
+                    npc.moveNPCToTile(obj, obj.quality, obj.owner);
                 }
 
             }
