@@ -22,8 +22,8 @@ namespace Underworld
 
             if (sleepmethod >= 0)
             {
-                if (((playerdat.TileState & 0x1B) == 0) && (motion.playerMotionParams.gravity_10_Z == 0))
-                {
+                if (((playerdat.TileState & 0x1B) == 0) && (motion.playerMotionParams.gravity_10_Z == 0) && !((_RES != GAME_UW2) && (playerdat.dungeon_level == 9)))
+                {//uw1 also refuses sleep in the Ethereal Void, level 9 (uw1 SKILLS.C:525-528)
                     if ((_RES == GAME_UW2) && (playerdat.CurrentWorld == 8) && (playerdat.DreamingInVoid))
                     {//player has tried to sleep while sleeping in a void vision. end the void vision.
                         AwakenFromTheVoid();
@@ -100,16 +100,14 @@ namespace Underworld
 
             if (_RES == GAME_UW2)
             {
-                if (playerdat.CurrentWorld == 2) //killorn
+                //wherever the player sleeps (uw2 SKILLS.C:467-471)
+                if ((playerdat.GetQuest(50) == 1) && (playerdat.GetQuest(54) == 0))//keep is crashing and has not yet crashed.
                 {
-                    if ((playerdat.GetQuest(50) == 1) && (playerdat.GetQuest(54) != 0))//keep is crashing and has not yet crashed.
-                    {
-                        killorn.KilornIsCrashing(false);
-                        damage.DamagePlayer(
-                            basedamage: 0xFF,
-                            damagetype: 0,
-                            damagesource: 0);//kill the player for being dumb enough to fall asleep in a crashing keep.
-                    }
+                    killorn.KilornIsCrashing(false);
+                    damage.DamagePlayer(
+                        basedamage: 0xFF,
+                        damagetype: 0,
+                        damagesource: 0);//kill the player for being dumb enough to fall asleep in a crashing keep.
                 }
             }
 
