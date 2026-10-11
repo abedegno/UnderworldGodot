@@ -27,8 +27,6 @@ uw1/combat-equipment-wear  ~weapon wear from a door strike expected  # frp_check
 uw2/combat-equipment-wear  ~weapon wear from a door strike expected  # frp_check's three DamageInventory calls are debug prints: src/interaction/combat/combat.cs:452, 467, 488; uw2 COMBAT.C:310-345
 uw1/critter-line-of-sight  ~line of sight differs from DOS  # divides by dy/dx not -dy/-dx, hyp_see second branch east/west swapped: src/npc/pathfind.cs:1553, 1623, 1833; uw1 PATHFIND.C:837-870, 571-603
 uw2/critter-line-of-sight  ~line of sight differs from DOS  # same as UW1: src/npc/pathfind.cs:1553, 1623, 1833; uw2 PATHFIND.C:943-1047, 711-743
-uw1/paths-freed-on-level-change  ~free paths after entering level  # free-path mask never reset on entering a level: src/npc/npcai.cs:185, src/utility/teleportation.cs:567; uw1 PATHFIND.C:945-954, CRITTIME.C:406
-uw2/paths-freed-on-level-change  ~free paths after entering level  # free-path mask never reset on entering a level: src/npc/npcai.cs:185; uw2 CRITTIME.C:445-463
 # batch B: player and magic rules
 uw1/smite-undead  ~undead (resist bit 0x80) hit points after Smite Undead  # UW1 sends every target to the SmiteUndeadObject stub (src/magic/spellcasting_class_7.cs:407, 448); uw1 SPELLS.C:347-350 kills the undead
 uw2/smite-undead  ~living critter (no resist bit 0x80) hit points  # tests a value ScaleDamage never changes, so every critter takes 255 (spellcasting_class_7.cs:417-418); skull stub (:448); uw2 SPELLS.C:331-347, WORLDEV.C:1649
