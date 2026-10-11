@@ -791,7 +791,14 @@ namespace Underworld
             }
             // uimanager.RefreshManaFlask();
             // uimanager.RefreshHealthFlask();
-            WeightMax = (short)(300 + (STR * 13));
+            if (_RES == GAME_UW2)
+            {
+                WeightMax = (short)(300 + (STR * 13)); //uw2 SKILLS.C:81
+            }
+            else
+            {
+                WeightMax = (short)(STR * 2 * 10); //uw1 SKILLS.C:112
+            }
         }
     } //end class
 }//end namespace
