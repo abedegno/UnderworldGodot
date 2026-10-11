@@ -188,13 +188,14 @@ public sealed class GivePtrNpc : Scenario
 /// The scenario starts a conversation with the first NPC on level 1 that has one
 /// (ConversationVM.StartConversation, as talking to it does), puts one coin in the first trade slot
 /// selected and one in the second deselected (SetPlayerTradeSlot, as dropping an item there and
-/// clicking it does), and ends the conversation through the port's ExitConversation (private, by
-/// reflection; the end of the script reaches it). Both coins must be on the map within 5 squares
-/// of the player.
+/// clicking it does), and lets the conversation run to its own end, answering every menu with
+/// its last choice (as GuardTalk does) and dismissing the "more" prompts, so the VM reaches
+/// ExitConversation itself. Both coins must be on the map within 5 squares of the player.
 /// </summary>
 public sealed class EndBarter : Scenario
 {
-    const ulong StartMs = 10000;
+    const ulong StartMs = 10000, EndMs = 30000;
+    const int MaxMenus = 40;
 
     public override string Name => "end-barter-returns-items";
     public override string Cites => "underworld-exhumed uw1/src/conv/BARTER.C:212-225; uw2/src/conv/BARTER.C:172-190";
@@ -235,17 +236,29 @@ public sealed class EndBarter : Scenario
             _problem = "the coins are not in the trade slots";
     }
 
-    public override Task Act(ScenarioContext c)
+    public override async Task Act(ScenarioContext c)
     {
-        if (_problem != null) return Task.CompletedTask;
-        var exit = typeof(ConversationVM).GetMethod("ExitConversation", BindingFlags.NonPublic | BindingFlags.Static);
-        if (exit == null) { _problem = "ConversationVM.ExitConversation not found"; return Task.CompletedTask; }
-        exit.Invoke(null, new object[] { ConversationVM.currentTalker, ConversationVM.currentConversation });
+        if (_problem != null) return;
+        int menus = 0;
+        ulong deadline = Time.GetTicksMsec() + EndMs;
+        while (Time.GetTicksMsec() < deadline && uimanager.CurrentGameMode == uimanager.GameModes.CONVERSATION && menus <= MaxMenus)
+        {
+            if (MessageDisplay.WaitingForMore) MessageDisplay.WaitingForMore = false;
+            if (MessageDisplay.WaitingForTypedInput) MessageDisplay.WaitingForTypedInput = false;
+            if (ConversationVM.WaitingForInput)
+            {
+                ConversationVM.PlayerNumericAnswer = System.Math.Max(1, ConversationVM.MaxAnswer);
+                ConversationVM.WaitingForInput = false;
+                menus++;
+            }
+            await c.Frames(1);
+        }
+        c.Note($"{menus} menus answered; mode now {uimanager.CurrentGameMode}");
+        if (uimanager.CurrentGameMode == uimanager.GameModes.CONVERSATION) { _problem = "the conversation did not end"; return; }
         int px = playerdat.playerObject.tileX, py = playerdat.playerObject.tileY;
         _selOnMap = ConvHelp.OnMapNear(_selected, px, py, 5, out _sx, out _sy);
         _deselOnMap = ConvHelp.OnMapNear(_deselected, px, py, 5, out _dx, out _dy);
         c.Note($"player at ({px}, {py}); selected coin on the map {_selOnMap} at ({_sx}, {_sy}); deselected coin on the map {_deselOnMap} at ({_dx}, {_dy})");
-        return Task.CompletedTask;
     }
 
     public override string Assert(ScenarioContext c)
