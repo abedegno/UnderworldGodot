@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 using Godot;
 
@@ -72,6 +73,7 @@ public sealed class MusicThemeChoice : Scenario
     void SetState(byte cur, int drawn)
     {
         playerdat.MusicEnabled = true;
+        XMIMusic.MusicOk = true;
         if (!_uw1)
         {
             // so the world of the last walking pick is this one, as after any earlier pick here
@@ -115,6 +117,12 @@ public sealed class MusicThemeChoice : Scenario
         try
         {
             ThemeEnds(c);
+            if (_problem != null) return;
+            Weapon(c);
+            Options(c);
+            Automap(c);
+            if (_problem != null) return;
+            if (!_uw1) CutsceneMusic(c);
             await ConversationStarts(c, drawn: 0);
             if (_problem != null) return;
             await ConversationStarts(c, drawn: 1);
@@ -159,6 +167,139 @@ public sealed class MusicThemeChoice : Scenario
             Record("theme " + k.what, k.expect(v), XMIMusic.CurrentlyPlayingThemeNo, cite);
         }
         playerdat.play_drawn = 0;
+    }
+
+    // the walking pick of a request made with the seed 0x1234 just installed: its first rand() % 3
+    int SeededPick => new BorlandRandSource(0x1234).Rand() % 3;
+
+    /// <summary>
+    /// Drawing the weapon asks for the armed theme only when no combat theme plays; putting it away
+    /// asks for a random walking theme only when the armed theme plays (uw1 INTERACT.C:800-801,
+    /// 807-808; uw2 INTERACT.C:682-683, 688-689). The request is read before any music step.
+    /// </summary>
+    void Weapon(ScenarioContext c)
+    {
+        byte combat = (byte)(_uw1 ? 6 : 3);
+        string cite = _uw1 ? "uw1 INTERACT.C:800-801, 807-808" : "uw2 INTERACT.C:682-683, 688-689";
+        (string what, byte cur, bool draw, int expected)[] cases =
+        {
+            ("drawing the weapon during combat theme " + combat, combat, true, 0),
+            ("drawing the weapon during walking theme " + Walk(1), Walk(1), true, Armed),
+            ("sheathing the weapon during the armed theme", Armed, false, Walk(SeededPick)),
+            ("sheathing the weapon during combat theme " + combat, combat, false, 0),
+        };
+        foreach (var k in cases)
+        {
+            SetState(k.cur, k.draw ? 0 : 1);
+            Rng.Source = new BorlandRandSource(0x1234);
+            uimanager.ToggleWeaponAnimationState(k.draw);
+            Record("request on " + k.what, k.expected, XMIMusic.NewThemeToPlay, cite);
+        }
+        uimanager.ToggleWeaponAnimationState(false, updateThemes: false);
+        playerdat.play_drawn = 0;
+    }
+
+    /// <summary>
+    /// The options panel's music on and off, through the panel's own handler: turn_music restarts
+    /// the current theme, or with none loaded picks a random walking theme (uw1 SOUND.C:458-473,
+    /// uw2 SOUND.C:1010-1026).
+    /// </summary>
+    void Options(ScenarioContext c)
+    {
+        string cite = _uw1 ? "turn_music: uw1 SOUND.C:458-473" : "turn_music: uw2 SOUND.C:1010-1026";
+        var handler = typeof(uimanager).GetMethod("_on_game_options_input", BindingFlags.NonPublic | BindingFlags.Instance);
+        if (handler == null) { _problem = "no options handler"; return; }
+        var click = new InputEventMouseButton { Pressed = true, ButtonIndex = MouseButton.Left };
+        var savedMenu = uimanager.CurrentGameOptionMenu;
+        try
+        {
+            uimanager.CurrentGameOptionMenu = uimanager.OptionMenus.MusicMenu;
+            SetState(Walk(1), 0);
+            handler.Invoke(uimanager.instance, new object[] { click, 3L });   // off
+            Record("music on after turning it off (1 = on)", 0, playerdat.MusicEnabled ? 1 : 0, cite);
+            Rng.Source = new BorlandRandSource(0x1234);
+            handler.Invoke(uimanager.instance, new object[] { click, 2L });   // on
+            Record("theme after turning the music back on", Walk(1), XMIMusic.CurrentlyPlayingThemeNo, cite);
+            Record("request after turning the music back on", 0, XMIMusic.NewThemeToPlay, cite);
+
+            SetState(0, 0);
+            playerdat.MusicEnabled = false;
+            Rng.Source = new BorlandRandSource(0x1234);
+            handler.Invoke(uimanager.instance, new object[] { click, 2L });   // on, nothing loaded
+            Record("theme after turning the music on with none loaded", Walk(SeededPick), XMIMusic.CurrentlyPlayingThemeNo, cite);
+        }
+        finally
+        {
+            uimanager.CurrentGameOptionMenu = savedMenu;
+            playerdat.MusicEnabled = true;
+        }
+    }
+
+    /// <summary>
+    /// The map: opening it starts UW1's theme 13 (uw1 AUTOMAP.C:113-114) and, in UW2, the world's
+    /// first walking theme unless a walking theme plays (uw2 AUTOMAP.C:101-104). Closing it asks
+    /// for a walking theme in UW1, drawn weapon or not (uw1 AUTOMAP.C:173), and in UW2 starts the
+    /// armed theme at once when the weapon is drawn (uw2 AUTOMAP.C:232-235). The map is opened with
+    /// the map scroll's use and closed with the map's own click handler.
+    /// </summary>
+    void Automap(ScenarioContext c)
+    {
+        var close = typeof(uimanager).GetMethod("CloseAutomap", BindingFlags.NonPublic | BindingFlags.Instance);
+        if (close == null) { _problem = "no automap close handler"; return; }
+        var click = new InputEventMouseButton { Pressed = true, ButtonIndex = MouseButton.Left };
+        (byte cur, int expected, string cite)[] opens = _uw1
+            ? new[] { (Walk(1), (int)Maps, "uw1 AUTOMAP.C:113-114") }
+            : new[] { (Armed, (int)Walk(0), "uw2 AUTOMAP.C:101-104"), (Walk(1), (int)Walk(1), "uw2 AUTOMAP.C:101-104") };
+        foreach (var o in opens)
+        {
+            SetState(o.cur, o.cur == Armed ? 1 : 0);
+            map.Use(playerdat.playerObject, WorldObject: false);
+            if (uimanager.CurrentGameMode != uimanager.GameModes.AUTOMAP) { _problem = $"the map did not open ({uimanager.CurrentGameMode})"; return; }
+            Record($"theme on opening the map during theme {o.cur}", o.expected, XMIMusic.CurrentlyPlayingThemeNo, o.cite);
+
+            SetState(XMIMusic.CurrentlyPlayingThemeNo, 1);
+            Rng.Source = new BorlandRandSource(0x1234);
+            close.Invoke(uimanager.instance, new object[] { click });
+            if (uimanager.CurrentGameMode != uimanager.GameModes.GAME) { _problem = $"the map did not close ({uimanager.CurrentGameMode})"; return; }
+            if (_uw1)
+                Record("request on closing the map, drawn", Walk(SeededPick), XMIMusic.NewThemeToPlay, "uw1 AUTOMAP.C:173");
+            else
+                Record("theme on closing the map, drawn", Armed, XMIMusic.CurrentlyPlayingThemeNo, "uw2 AUTOMAP.C:232-235");
+        }
+        playerdat.play_drawn = 0;
+    }
+
+    /// <summary>
+    /// UW2's cutscene music opcode asks for its theme with set_new_music, started by the next
+    /// music step (change_music_maybe on each frame); 0 stops the music (uw2 CUTS.C:564-570, 891-893).
+    /// </summary>
+    void CutsceneMusic(ScenarioContext c)
+    {
+        var step = typeof(cutsplayer).GetMethod("RefreshCutsceneMusic", BindingFlags.NonPublic | BindingFlags.Static);
+        var savedMode = uimanager.CurrentGameMode;
+        var cancel = typeof(cutsplayer).GetField("cancelRequested", BindingFlags.NonPublic | BindingFlags.Static);
+        var savedCancel = cancel?.GetValue(null);
+        try
+        {
+            cancel?.SetValue(null, false);   // the runner stopped the intro, which leaves it set
+            uimanager.CurrentGameMode = uimanager.GameModes.CUTSCENE;
+            SetState(0x18, 0);
+            var cmd = new CutSceneCommand { functionNo = 25, functionParams = new List<int> { 0x0C, 0, 0, 0 } };
+            cutsplayer.ExecuteCommand(cmd, null, 0).MoveNext();
+            Record("request after cutscene music opcode 0xC", 0x0C, XMIMusic.NewThemeToPlay, "set_new_music: uw2 CUTS.C:568");
+            Record("theme after cutscene music opcode 0xC, before the music step", 0x18, XMIMusic.CurrentlyPlayingThemeNo, "set_new_music: uw2 CUTS.C:568");
+            step?.Invoke(null, null);
+            Record("theme after the cutscene's music step", 0x0C, XMIMusic.CurrentlyPlayingThemeNo, "change_music_maybe: uw2 CUTS.C:891-893");
+
+            cmd = new CutSceneCommand { functionNo = 25, functionParams = new List<int> { 0, 0, 0, 0 } };
+            cutsplayer.ExecuteCommand(cmd, null, 0).MoveNext();
+            Record("theme after cutscene music opcode 0", 0x0C, XMIMusic.CurrentlyPlayingThemeNo, "stop_music: uw2 CUTS.C:567");
+        }
+        finally
+        {
+            uimanager.CurrentGameMode = savedMode;
+            if (savedCancel != null) cancel.SetValue(null, savedCancel);
+        }
     }
 
     /// <summary>Talks to the NPC and reads the theme at once, then talks the conversation to its end.</summary>

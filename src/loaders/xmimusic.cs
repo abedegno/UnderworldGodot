@@ -106,8 +106,7 @@ namespace Underworld
                         }
 
                         //seg_2D7B:
-                        // load_new_music(0) plays the current theme again (uw2 SOUND.C:873-874).
-                        LoadXMI(NewThemeToPlay == 0 ? cur : NewThemeToPlay, restartIfSame: true);
+                        LoadXMI(NewThemeToPlay, restartIfSame: true);
                         if ((NewThemeToPlay >= 2) && (NewThemeToPlay <= 4))
                         {
                             LastCombatMusicThemeChange = main.GlobalPITTimer;
@@ -284,6 +283,37 @@ namespace Underworld
             }
         }
 
+        /// <summary>
+        /// Music on or off (turn_music, uw1 SOUND.C:458-473, uw2 SOUND.C:1010-1026). Turning it on
+        /// with no theme loaded picks a random walking theme and loads it; otherwise the current
+        /// theme starts again. It is turned off only once a theme has been loaded.
+        /// </summary>
+        public static void TurnMusic(bool on)
+        {
+            if (!MusicOk)
+            {
+                return;
+            }
+            if (on && !playerdat.MusicEnabled)
+            {
+                playerdat.MusicEnabled = true;
+                if (CurrentlyPlayingThemeNo == 0)
+                {
+                    PickLevelThemeMusic(-1);
+                    LoadXMI(NewThemeToPlay, restartIfSame: true);
+                }
+                else
+                {
+                    LoadXMI(CurrentlyPlayingThemeNo, restartIfSame: true);
+                }
+            }
+            else if (!on && playerdat.MusicEnabled && (CurrentlyPlayingThemeNo != 0))
+            {
+                playerdat.MusicEnabled = false;
+                MusicStreamPlayer.Instance?.Stop();
+            }
+        }
+
         public static void ChangeThemeMusic(byte newTheme)
         {
             // set_new_music: UW2 ignores a request while theme 6 plays (uw2 SOUND.C:1532-1536);
@@ -304,6 +334,10 @@ namespace Underworld
             {
                 return;
             }
+            if ((_RES == GAME_UW2) && (themeNo == 0))
+            {
+                themeNo = CurrentlyPlayingThemeNo;//theme 0 is the current one (uw2 SOUND.C:873-874)
+            }
             if (CurrentlyPlayingThemeNo != themeNo || restartIfSame)
             {
                 // Theme numbers are octal-encoded: upper 5 bits = first digit, lower 3 bits = second digit.
@@ -316,10 +350,9 @@ namespace Underworld
                     ? $"UWA{digit1}{digit2}.XMI"
                     : $"UW{digit1}{digit2}.XMI";
 
-                //theme 0 is left out: the port's RefreshMusic can ask for it where the original
-                //never does (uw1 SOUND.C:977-978 picks a walking theme instead), and it means
-                //"no theme" here, not a file the game failed to load.
-                if (themeNo != 0 && playerdat.MusicEnabled && MusicStreamPlayer.Instance != null
+                //only a new theme is read from its file; the current one is just started again
+                //(load_new_music's music != curmusic, uw1 SOUND.C:325, uw2 SOUND.C:875).
+                if (themeNo != CurrentlyPlayingThemeNo && playerdat.MusicEnabled && MusicStreamPlayer.Instance != null
                     && !File.Exists(Path.Combine(BasePath, "SOUND", filename)))
                 {
                     //the theme cannot be loaded: the original turns the music off for the session and
