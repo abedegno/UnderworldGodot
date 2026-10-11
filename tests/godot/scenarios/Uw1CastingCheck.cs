@@ -15,7 +15,8 @@ namespace Underworld.Scenarios;
 /// RunicMagic.CastRunicSpell, the cast button. The mana spent must be 3 when the original's
 /// skill_check over the same seed gives anything but 0, and 0 when it gives 0. The seeds are found
 /// by the scenario: for each Casting, one whose first rand() % 31 makes the two rules disagree, and
-/// one where they agree.
+/// one where they agree. Casting 0 is there so that some rows fail in the original and must cost
+/// nothing.
 ///
 /// UW1 only. The port once used UW2's rule in both games (src/magic/runicmagic.cs:339), making
 /// every UW1 spell 5 + circle points harder.
@@ -23,7 +24,9 @@ namespace Underworld.Scenarios;
 public sealed class Uw1CastingCheck : Scenario
 {
     const int SpellIdx = 0, Circle = 1, Cost = 3;
-    static readonly int[] Castings = { 13, 8, 20 };
+    // Casting 0 gives a failing roll: the original's score 3 + rand() % 31 fails for draws 0..12,
+    // and on draws 0..5 UW2's rule backfires instead, which pays the mana.
+    static readonly int[] Castings = { 13, 8, 20, 0 };
 
     public override string Name => "uw1-casting-check";
     public override string[] Games => new[] { "uw1" };
@@ -72,6 +75,7 @@ public sealed class Uw1CastingCheck : Scenario
     {
         if (_problem != null) return "precondition: " + _problem;
         if (_results.Count < Castings.Length) return $"precondition: only {_results.Count} rows ran";
+        if (!_results.Exists(r => r.dosResult == 0)) return "precondition: no row where the original's skill_check fails";
         var k = new Checks();
         foreach (var r in _results)
             k.Equal($"mana spent casting a circle 1 spell at Casting {r.casting}, seed {r.seed} (original's check {r.dosResult})",
