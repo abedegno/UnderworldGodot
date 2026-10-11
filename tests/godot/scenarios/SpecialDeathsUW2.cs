@@ -28,7 +28,8 @@ public sealed class SpecialDeathsUW2 : Scenario
 
     const int PitRecord = 129, PitKills = 14;
     string _problem;
-    int _kinAttitudeBefore, _kinAttitude;
+    int _kinAttitudeBefore, _kinAttitude, _kinLastHit;
+    int _lonerAttitude, _idleAttitude;
     int _q4, _q100Before, _q100;
     int _dorstagRecord, _dorstagTally, _q137Before, _q137, _q121;
     int _highRecord, _highTally, _lowRecord, _lowTally;
@@ -46,6 +47,20 @@ public sealed class SpecialDeathsUW2 : Scenario
         return o;
     }
 
+    /// <summary>Takes a mobile off the active mobile list, as ReleaseFreeObject does, leaving it in the world.</summary>
+    static bool Deactivate(uwObject o)
+    {
+        var map = UWTileMap.current_tilemap;
+        for (int i = 0; i < map.NoOfActiveMobiles; i++)
+        {
+            if (map.GetActiveMobileAtIndex(i) != o.index) continue;
+            map.NoOfActiveMobiles--;
+            if (i < map.NoOfActiveMobiles) map.SetActiveMobileAtIndex(i, map.GetActiveMobileAtIndex(map.NoOfActiveMobiles));
+            return true;
+        }
+        return false;
+    }
+
     public override async Task Act(ScenarioContext c)
     {
         if (_problem != null) return;
@@ -54,14 +69,25 @@ public sealed class SpecialDeathsUW2 : Scenario
         if (plain < 0 || trilkhai < 0) { _problem = $"no creature types to use (plain {plain}, race 0xB {trilkhai})"; return; }
 
         // 1. A Trilkhai's death turns its kin hostile.
+        // gronk_race walks only the active mobile list and skips loners (SCDEVENT.C:42-60);
+        // gronkify_attitude forgets the last hit only for a non-hostile attitude (SCDEVENT.C:424-430).
         var victim = Make(trilkhai, 0);
         var kin = Make(trilkhai, 0);
-        if (victim == null || kin == null) { _problem = "no race 0xB critters could be made"; return; }
+        var loner = Make(trilkhai, 0);
+        var idle = Make(trilkhai, 0);
+        if (victim == null || kin == null || loner == null || idle == null) { _problem = "no race 0xB critters could be made"; return; }
         kin.UnkBit_0XA_Bit7 = 0;      // not a loner
+        kin.ProjectileSourceID = 1;   // last hit by the player
+        loner.UnkBit_0XA_Bit7 = 1;    // a loner
+        idle.UnkBit_0XA_Bit7 = 0;
+        if (!Deactivate(idle)) { _problem = "could not take a critter off the active mobile list"; return; }
         _kinAttitudeBefore = kin.npc_attitude;
         npc.KillCritter(victim);
         _kinAttitude = kin.npc_attitude;
-        c.Note($"race 0xB (item 0x{trilkhai:X}): kin attitude {_kinAttitudeBefore} -> {_kinAttitude}");
+        _kinLastHit = kin.ProjectileSourceID;
+        _lonerAttitude = loner.npc_attitude;
+        _idleAttitude = idle.npc_attitude;
+        c.Note($"race 0xB (item 0x{trilkhai:X}): kin attitude {_kinAttitudeBefore} -> {_kinAttitude}, last hit 1 -> {_kinLastHit}; loner -> {_lonerAttitude}; inactive -> {_idleAttitude}");
 
         // 2. The Bishop.
         playerdat.SetQuest(4, 0);
@@ -111,6 +137,9 @@ public sealed class SpecialDeathsUW2 : Scenario
         if (_kinAttitudeBefore == 0) return "precondition: the Trilkhai's kin was hostile before the death";
         var k = new Checks();
         k.Equal("race 0xB kin's attitude after a Trilkhai's death", 0, _kinAttitude, "uw2 WORLDEV.C:707-708, SCDEVENT.C:424-430");
+        k.Equal("race 0xB kin's last hit after turning hostile (kept)", 1, _kinLastHit, "uw2 SCDEVENT.C:424-430");
+        k.Equal("race 0xB loner's attitude after a Trilkhai's death (untouched)", 2, _lonerAttitude, "uw2 SCDEVENT.C:42-60");
+        k.Equal("inactive race 0xB critter's attitude after a Trilkhai's death (untouched)", 2, _idleAttitude, "uw2 SCDEVENT.C:42-60");
         k.Equal("quest 4 after the Bishop's death", 1, _q4, "uw2 WORLDEV.C:787-789");
         k.Equal("quest 100 after the Bishop's death (untouched)", _q100Before, _q100, "uw2 WORLDEV.C:787-789");
         k.Equal("quest 121 after Dorstag's death", 1, _q121, "uw2 WORLDEV.C:771");
