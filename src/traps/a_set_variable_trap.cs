@@ -154,7 +154,7 @@ namespace Underworld
                         var questno = LeftVariable - 0x100;// >> 2;
                         switch (Operation)
                         {   //assuming these cases are the same as UW1. the dissasembly is complex so I could be wrong here
-                            case 1://maybe unset
+                            case 1://unset. DOS op 1 leaves the bit as it is (uw2 TRIGGER.C:184-187), probably a slip in the original, so the port clears it
                                 {
                                     playerdat.SetQuest(questno,0);
                                     break;
@@ -182,16 +182,16 @@ namespace Underworld
                         playerdat.SetQuest(128 + LeftVariable-0x180, newValue);
                         break;
                     }
-                case >=0x190 and <0x200:
+                case >=0x190 and <0x1A0:
                     {
-                        //xclock
+                        //xclock, the 16 of them (uw2 TRIGGER.C:199-203)
                         var xclockvar = playerdat.GetXClock(LeftVariable-0x190);
                         var newValue = VariableTransformUW2(xclockvar, Operation,RightVariable); 
                         playerdat.SetXClock(LeftVariable-0x190, newValue);
                         break;
                     }
                 default:
-                    {
+                    {//above 0x19F nothing is set (uw2 TRIGGER.C:199-203)
                         Debug.Print ("Invalid Operation {LeftOperator} {Operation} {RightOperator}");
                         break;
                     }
