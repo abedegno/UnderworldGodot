@@ -562,12 +562,8 @@ namespace Underworld
                 // Culled, or no static slot: DOS's Obj_Punt(head, obj, 1) frees the object and
                 // everything inside it (uw1 OBJPHYS.C:477, uw2 OBJPHYS.C:468). Freeing the
                 // object alone left a container's contents allocated and in no list (#207).
-                ObjectRemover.RemoveObject_experimental(
-                    objectlist: UWTileMap.current_tilemap.LevelObjects,
-                    buffer: UWTileMap.current_tilemap.lev_ark_block.Data,
-                    ListHeadPTR: (int)(tile.Ptr + 2),
-                    objToRemove: projectile,
-                    ForceCull: true);
+                // One not found in the tile's chain is left alone, contents and all.
+                ObjectRemover.RemoveObjectAndContentsFromTile(projectile);
             }
             if (haltedObject != null)
             {//is this a bit hairy under the circumstances?
