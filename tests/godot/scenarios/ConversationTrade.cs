@@ -144,9 +144,8 @@ public sealed class GivePtrNpc : Scenario
     }
 
     /// <summary>
-    /// give_ptr_npc(object, qty): at(at(sp - 1)) is qty, at(at(sp - 2)) the object. The port's
-    /// call can throw (splitting a stack it spawns the copy at tile 99, 99, give_ptr_npc.cs:41);
-    /// that is its failure to give, so it is noted and the call counts as returning nothing (-1).
+    /// give_ptr_npc(object, qty): at(at(sp - 1)) is qty, at(at(sp - 2)) the object. An exception
+    /// from the call is not caught here: it fails the scenario with its own message.
     /// </summary>
     static int Give(ScenarioContext c, uwObject talker, int index, int qty)
     {
@@ -154,8 +153,7 @@ public sealed class GivePtrNpc : Scenario
         ConversationVM.Set(2, 12); ConversationVM.Set(12, qty);
         ConversationVM.Set(1, 13); ConversationVM.Set(13, index);
         ConversationVM.result_register = -1;
-        try { ConversationVM.give_ptr_npc(talker); }
-        catch (System.Exception ex) { c.Note($"give_ptr_npc(coins, {qty}) threw {ex.GetType().Name}: {ex.Message.Split('\n')[0]}"); return -1; }
+        ConversationVM.give_ptr_npc(talker);
         return ConversationVM.result_register;
     }
 
