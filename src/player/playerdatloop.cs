@@ -542,7 +542,7 @@ namespace Underworld
         private static void ApplyEquipmentEffects(bool CastOnEquip, ref int DamageResistance, ref int StealthBonus)
         {
             //apply spell effects from inventory objects
-            for (int slot = 0; slot < 10; slot++)
+            for (int slot = 0; slot <= 10; slot++)//slots 0 to 10, uw1 PLAYDATA.C:445, uw2 PLAYDATA.C:405
             {
                 var objindex = uimanager.GetPaperDollObjAtSlot(slot);
                 if (objindex != -1)
@@ -584,9 +584,10 @@ namespace Underworld
                         }
 
 
-                        if ((slot >= 5) && (slot <= 8))
+                        if ((slot >= 5) && (slot <= 8)
+                            && !(slot == 7 + playerdat.handednessvalue && obj.majorclass == 0 && obj.minorclass >= 2 && obj.classindex >= 0xB && obj.classindex <= 0xF))
                         {
-                            //shoulders and arms. do not cast effects from here.
+                            //shoulders and arms. do not cast effects from here, except from a shield in the shield hand (player->lefty + 7): ObjWorn, uw1 INVDATA.C:403-412, uw2 INVDATA.C:384-393; FixPlayerEquips, uw1 PLAYDATA.C:445-454, uw2 PLAYDATA.C:405-411
                             // if (uimanager.DominantHandSlot == slot)
                             // {//Check for weapon in dominant hand. 
                             //     if (
