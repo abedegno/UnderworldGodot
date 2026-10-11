@@ -6,6 +6,12 @@ namespace Underworld
         {
             if (WorldObject) { return false; }
 
+            if (IsUsedUp(obj))
+            {//refused before the light is moved or toggled either way (uw1 USEITEMS.C:522-525, uw2 USEITEMS.C:620-624)
+                uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_that_light_is_already_used_up_));
+                return true;
+            }
+
             if (uimanager.CurrentSlot >= 5 && uimanager.CurrentSlot <= 8)
             {
                 if (ToggleLight(obj))
@@ -48,8 +54,13 @@ namespace Underworld
                     }
                                   
                     var newObj = UWTileMap.current_tilemap.LevelObjects[playerdat.ObjectInHand];
-                    LightOn(newObj); //assuming light starts in an off state    
-                    UWsoundeffects.PlaySoundEffectAtAvatar(UWsoundeffects.SoundEffectLight,0x40,0);                
+                    if (LightOn(newObj)) //assuming light starts in an off state
+                    {
+                        if (_RES == GAME_UW2)
+                        {//only UW2 plays a sound, and only when a light is lit (uw2 USEITEMS.C:659-664; uw1 USEITEMS.C:555-558 has none)
+                            UWsoundeffects.PlaySoundEffectAtAvatar(UWsoundeffects.SoundEffectLight,0x40,0);
+                        }
+                    }
                     uimanager.CurrentSlot = freeslot;
                     uimanager.PickupToEmptySlot(playerdat.ObjectInHand);
                 }
@@ -70,8 +81,7 @@ namespace Underworld
             //turn light on or off.
             if (obj.classindex <= 3)
             {
-                LightOn(obj); 
-                return true;               
+                return LightOn(obj);
             }
             else
             {
@@ -88,19 +98,32 @@ namespace Underworld
             }
         }
 
-        public static void LightOn(uwObject obj)
+        /// <summary>
+        /// A used-up light will not light: quality 0 in UW1 (uw1 USEITEMS.C:522-525), 1 or less in UW2 (uw2 USEITEMS.C:620-624)
+        /// </summary>
+        public static bool IsUsedUp(uwObject obj)
+        {
+            return (_RES == GAME_UW2) ? (obj.quality <= 1) : (obj.quality == 0);
+        }
+
+        /// <summary>
+        /// Return true if the light was lit.
+        /// </summary>
+        public static bool LightOn(uwObject obj)
         {
             if (obj.classindex <= 3)
             {
-                if (obj.quality > 1 )
+                if (!IsUsedUp(obj))
                 {
                     obj.item_id += 4;
+                    return true;
                 }
                 else
                 {
                     uimanager.AddToMessageScroll(GameStrings.GetString(1,GameStrings.str_that_light_is_already_used_up_));
                 }                
             }
+            return false;
         }
 
 
