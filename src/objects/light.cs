@@ -22,6 +22,10 @@ namespace Underworld
                     }                    
                 }
             }
+            else if (obj.classindex >= 4)
+            {//a lit light is not one of the items that are moved, so it is put out where it is (uw1 USEITEMS.C:532-533, 555-556; uw2 USEITEMS.C:633-634, 659-660)
+                LightOff(obj);
+            }
             else
             {
                 var freeslot = -1;
@@ -63,6 +67,10 @@ namespace Underworld
                     }
                     uimanager.CurrentSlot = freeslot;
                     uimanager.PickupToEmptySlot(playerdat.ObjectInHand);
+                }
+                else
+                {//no free light slot (uw1 USEITEMS.C:544-547, uw2 USEITEMS.C:648-651)
+                    uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_your_hands_are_full_));
                 }
             }
 

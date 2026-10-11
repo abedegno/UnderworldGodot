@@ -21,6 +21,12 @@ namespace Underworld.Scenarios;
 /// game's refusing quality from the backpack (it must stay there, unlit, with slot 5 still empty),
 /// and a lit torch in slot 5 at the refusing quality (it must stay lit) and at quality 2 (it goes
 /// out).
+///
+/// Last, the backpack path itself. Only an unlit lantern, torch, candle or taper (UW2: light sphere)
+/// is moved (uw1 USEITEMS.C:532-551, uw2 USEITEMS.C:633-657, the ids being the unlit items), so a lit
+/// torch used from the backpack is put out where it is. An unlit torch used from the backpack with
+/// all four light slots full is refused with message 0xF6 in UW1, 0x105 "Your hands are full." in
+/// UW2 (uw1 USEITEMS.C:544-547, uw2 USEITEMS.C:648-651), and stays in the backpack, unlit.
 /// </summary>
 public sealed class LightOnQuality : Scenario
 {
@@ -38,10 +44,13 @@ public sealed class LightOnQuality : Scenario
     int _refuseQ, _bpSlot, _bpSlotAfter = -1, _bpItem, _slot5After;
     bool _bpMessage, _litMessage;
     int _litRefusedItem, _litOkItem;
+    int _bpLitItem, _bpLitSlotAfter = -1, _bpLitSlot5, _fullItem, _fullSlotAfter = -1, _fullBpSlot, _bpLitBpSlot;
+    bool _fullMessage;
 
     public override Task Setup(ScenarioContext c)
     {
-        if (playerdat.GetInventorySlotListHead(Slot) != 0) _problem = $"slot {Slot} is not empty at the start";
+        for (int s = 5; s <= 8; s++)
+            if (playerdat.GetInventorySlotListHead(s) != 0) { _problem = $"light slot {s} is not empty at the start"; break; }
         return Task.CompletedTask;
     }
 
@@ -108,6 +117,59 @@ public sealed class LightOnQuality : Scenario
         (_litRefusedItem, _litMessage) = await UseInSlot(c, LitTorch, _refuseQ);
         (_litOkItem, _) = await UseInSlot(c, LitTorch, 2);
         c.Note($"lit torch at quality {_refuseQ}: item 0x{_litRefusedItem:X}, refusal shown {_litMessage}; at quality 2: item 0x{_litOkItem:X}");
+
+        // A lit torch used from the backpack is put out where it is.
+        {
+            var (idx, slot) = Guards.PutInBackpack(LitTorch, o => o.quality = 2);
+            if (slot == -1) { _problem = "could not put a lit torch in the backpack"; return; }
+            _bpLitBpSlot = slot;
+            uimanager.CurrentSlot = slot;
+            use.Use(playerdat.InventoryObjects[idx], playerdat.playerObject, playerdat.InventoryObjects, WorldObject: false);
+            await c.Frames(3);
+            _bpLitItem = playerdat.InventoryObjects[idx]?.item_id ?? -1;
+            _bpLitSlotAfter = playerdat.GetInventorySlotListHead(slot) == idx ? slot : -1;
+            _bpLitSlot5 = playerdat.GetInventorySlotListHead(Slot);
+            c.Note($"lit torch from the backpack: item 0x{_bpLitItem:X}, backpack slot {slot} -> {_bpLitSlotAfter}, slot {Slot} head {_bpLitSlot5}");
+            await Clear(c, idx, slot);
+        }
+
+        // Hands full: all four light slots taken, an unlit torch from the backpack is refused.
+        {
+            var fillers = new int[4];
+            for (int s = 5; s <= 8; s++)
+            {
+                int w = ObjectCreator.SpawnObjectInHand(Torch);
+                if (w == 0) { _problem = "could not make a torch for a light slot"; return; }
+                UWTileMap.current_tilemap.LevelObjects[w].quality = 10;
+                fillers[s - 5] = playerdat.AddObjectToPlayerInventory(w, false);
+                playerdat.SetInventorySlotListHead(s, fillers[s - 5]);
+                playerdat.ObjectInHand = -1;
+            }
+            uimanager.instance.mousecursor.SetCursorToCursor();
+            var (idx, slot) = Guards.PutInBackpack(Torch, o => o.quality = 2);
+            if (slot == -1) { _problem = "could not put a torch in the backpack"; return; }
+            _fullBpSlot = slot;
+            uimanager.instance.scroll.Clear();
+            uimanager.CurrentSlot = slot;
+            use.Use(playerdat.InventoryObjects[idx], playerdat.playerObject, playerdat.InventoryObjects, WorldObject: false);
+            await c.Frames(3);
+            _fullItem = playerdat.InventoryObjects[idx]?.item_id ?? -1;
+            _fullSlotAfter = playerdat.GetInventorySlotListHead(slot) == idx ? slot : -1;
+            _fullMessage = ScrollHas(GameStrings.GetString(1, c.Game == "uw1" ? 0xF6 : 0x105).Trim());
+            c.Note($"hands full, torch from the backpack: item 0x{_fullItem:X}, backpack slot {slot} -> {_fullSlotAfter}, hands-full message shown {_fullMessage}");
+            if (playerdat.InventoryObjects[idx] != null && _fullSlotAfter == slot) await Clear(c, idx, slot);
+            for (int s = 5; s <= 8; s++)
+                if (playerdat.GetInventorySlotListHead(s) != 0) await Clear(c, playerdat.GetInventorySlotListHead(s), s);
+            if (playerdat.ObjectInHand > 0) { playerdat.ObjectInHand = -1; uimanager.instance.mousecursor.SetCursorToCursor(); }
+        }
+    }
+
+    static async Task Clear(ScenarioContext c, int index, int slot)
+    {
+        uimanager.CurrentSlot = slot;
+        playerdat.RemoveFromInventory(index);
+        playerdat.PlayerStatusUpdate();
+        await c.Frames(1);
     }
 
     async Task<(int item, bool refused)> UseInSlot(ScenarioContext c, int item, int quality)
@@ -157,6 +219,14 @@ public sealed class LightOnQuality : Scenario
         k.Equal($"lit torch's item after use at quality {_refuseQ}", LitTorch, _litRefusedItem, offCite);
         k.True(_litMessage, $"used-up message expected for the lit quality {_refuseQ} torch ({offCite})");
         k.Equal("lit torch's item after use at quality 2", Torch, _litOkItem, "inclass - 4: uw1 USEITEMS.C:555-556, uw2 USEITEMS.C:659-660");
+        string moveCite = uw1 ? "only unlit lights are moved: uw1 USEITEMS.C:532-551" : "only unlit lights are moved: uw2 USEITEMS.C:633-657";
+        k.Equal("lit torch's item after use from the backpack", Torch, _bpLitItem, $"put out: {moveCite}, then inclass - 4 at {(uw1 ? "555-556" : "659-660")}");
+        k.Equal("backpack slot of the lit torch after use", _bpLitBpSlot, _bpLitSlotAfter, moveCite);
+        k.Equal($"slot {Slot} after using a lit torch from the backpack", 0, _bpLitSlot5, moveCite);
+        string fullCite = uw1 ? "message 0xF6: uw1 USEITEMS.C:544-547" : "message 0x105: uw2 USEITEMS.C:648-651";
+        k.True(_fullMessage, $"hands-full message expected for a torch used from the backpack with slots 5..8 full ({fullCite})");
+        k.Equal("torch's item after use with the hands full", Torch, _fullItem, fullCite);
+        k.Equal("backpack slot of the torch after use with the hands full", _fullBpSlot, _fullSlotAfter, fullCite);
         return k.Result;
     }
 }
