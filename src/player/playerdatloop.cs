@@ -363,6 +363,65 @@ namespace Underworld
             }
         }
 
+        /// <summary>
+        /// DegradeLights: burns each lit light in the light slots by 1 when counter is a multiple of its burn period, plus amount / period when amount > 1.
+        /// A light that burns down goes out, at quality 1 in UW2 and 0 in UW1. Nothing burns while time is stopped in UW2 (uw2 PLAYTIME.C:174-210, uw1 PLAYTIME.C:150-185)
+        /// </summary>
+        public static void DegradeLights(int amount, int counter)
+        {
+            if ((_RES == GAME_UW2) && FreezeTimeEnchantment)
+            {
+                return;
+            }
+            for (int slot = 5; slot <= 8; slot++)
+            {
+                var objInSlot = GetInventorySlotObject(slot);
+                if (objInSlot != null)
+                {
+                    if ((objInSlot.majorclass == 2) && (objInSlot.minorclass == 1) && (objInSlot.classindex >= 4 && objInSlot.classindex <= 7))
+                    {
+                        var period = lightsourceObjectDat.duration(objInSlot.item_id);
+                        if (period == 0)
+                        {
+                            continue;
+                        }
+                        var burn = 0;
+                        if (counter % period == 0)
+                        {
+                            burn = 1;
+                        }
+                        if (amount > 1)
+                        {
+                            burn += amount / period;
+                        }
+                        if (burn == 0)
+                        {
+                            continue;
+                        }
+                        bool stillLit;
+                        if (_RES == GAME_UW2)
+                        {
+                            stillLit = (ushort)(objInSlot.quality - 1) > burn;
+                        }
+                        else
+                        {
+                            stillLit = objInSlot.quality > burn;
+                        }
+                        if (stillLit)
+                        {
+                            objInSlot.quality = (short)(objInSlot.quality - burn);
+                        }
+                        else
+                        {
+                            objInSlot.quality = (short)(_RES == GAME_UW2 ? 1 : 0);
+                            light.LightOff(objInSlot);
+                            uimanager.UpdateInventoryDisplay();
+                        }
+                    }
+                }
+            }
+        }
+
         public static void UpdateLightStability(int updatecounter)
         {
             //loop each lit light source.
