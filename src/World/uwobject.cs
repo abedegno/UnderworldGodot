@@ -1628,7 +1628,7 @@ namespace Underworld
 
         public static bool CheckIfObjectInValidSlot(uwObject obj, int slot)
         {
-            if ((slot >= 0) && (slot < 4))
+            if ((slot >= 0) && (slot <= 4))//ObjWorn: slots 0-4, uw1 INVDATA.C:403, uw2 INVDATA.C:384
             {
                 return true;
             }
