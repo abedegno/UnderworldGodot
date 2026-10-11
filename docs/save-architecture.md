@@ -389,7 +389,7 @@ Each of the following was needed. Every one was found by comparing a port save w
 
 ### 1. Level blocks are 0x7E08 bytes, not 0x8000
 
-`ReadArkFileBlock_ovr093_C33` reads an uncompressed block by copying its recorded length straight to the destination, and the level buffer is exactly 0x7E08 bytes (`InitialiseEmptyTileMapData_ovr128_0`). The port wrote 0x8000, 504 bytes past the end. 0x7E08 covers everything the port uses: tilemap and objects to 0x7C08, 64 overlays to 0x7D88, 64 timer words to 0x7E08. DOS writes every level block uncompressed at this size with flags 0.
+`ReadArkFileBlock_ovr093_C33` reads an uncompressed block by copying its recorded length straight to the destination, and the level buffer is exactly 0x7E08 bytes (`InitialiseEmptyTileMapData_ovr128_0`). The port wrote 0x8000, 504 bytes past the end. 0x7E08 covers everything the port uses: tilemap and objects to 0x7C08, 64 overlays to 0x7D88, 64 timer words to 0x7E08. DOS keeps each block's flags when it saves (`WriteDataToARKFile_ovr093_779D_4B1`, the original's `put_arc`): the shipped `LEV.ARK` and DOS's own saves carry flags 7 on level blocks, so DOS writes those compressed, while a block that already has flags 0, as the port writes it, stays uncompressed at this size.
 
 ### 2. Blocks the port did not change are copied exactly
 
@@ -397,7 +397,7 @@ The writer used to decompress every block it passed through and write it back un
 
 ### 3. Available space must describe the bytes on disk
 
-`WriteDataToARKFile_ovr093_779D_4B1` overwrites a block in place only when the new data fits: within the available space when bit 2 is set, or exactly equal to it when bit 2 is clear. Otherwise it rebuilds the archive. So every block the port writes itself is uncompressed with available space equal to its length, the way DOS writes level blocks. `SCD.ARK` follows the same rule.
+`WriteDataToARKFile_ovr093_779D_4B1` overwrites a block in place only when the new data fits: within the available space when bit 2 is set, or exactly equal to it when bit 2 is clear. Otherwise it rebuilds the archive. So every block the port writes itself is uncompressed, with flags 0 and available space equal to its length, which DOS reads and, keeping those flags, rewrites the same way. `SCD.ARK` follows the same rule.
 
 ### 4. Automaps are written (issue #69)
 

@@ -31,7 +31,9 @@ namespace Underworld
     //   ReadArkFileBlock_ovr093_C33 reads an uncompressed block by copying dataLengths[i]
     //   bytes straight to its destination. A level goes into a buffer of exactly 0x7E08
     //   bytes (InitialiseEmptyTileMapData_ovr128_0), so a level block must not be longer.
-    //   DOS itself writes every level block uncompressed at 0x7E08 with flags 0.
+    //   DOS keeps each block's flags when it saves: level blocks in the shipped archive
+    //   and in DOS's own saves have flags 7 and are written compressed; a block the port
+    //   wrote uncompressed with flags 0 stays that way.
     //
     //   WriteDataToARKFile_ovr093_779D_4B1 overwrites a block in place only when the new
     //   data fits: within availableSpace when bit 2 is set, or exactly equal to it when
