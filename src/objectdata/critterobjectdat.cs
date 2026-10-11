@@ -355,7 +355,7 @@ namespace Underworld
             }
             else
             {
-                return playerdat.Defense;
+                return playerdat.PlayerDefence;//the Defence skill plus half the weapon skill (uw2 PLAYDATA.C:370-385, uw1 PLAYDATA.C:409-425)
             }
         }
 
