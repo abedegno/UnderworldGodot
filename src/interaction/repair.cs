@@ -144,7 +144,7 @@ namespace Underworld
 
             if (CallBackRepairResult == -2)
             {//a destroyed item survives unless its fate (range 10) lets it go. uw1 WORLDEV.C:706-712, uw2 WORLDEV.C:1086-1092
-                if (!ObjectRemover_OLD.ObjectCullingTest(CallBackItemToRepair, 10))
+                if (!ObjectRemover_OLD.ObjectCullingTest(CallBackItemToRepair, 10, CallBackWorldObject ? UWTileMap.current_tilemap.LevelObjects : playerdat.InventoryObjects))
                 {
                     CallBackRepairResult = 0;
                 }
