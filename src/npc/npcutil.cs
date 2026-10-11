@@ -129,6 +129,27 @@ namespace Underworld
             }
         }
 
+        /// <summary>
+        /// For every active mobile object the fed bit (0x19 bit 7) becomes random, and three times in four the ally bit (0x19 bit 6) is cleared.
+        /// Called from the player's 5 minute update. uw1 CRITTIME.C:78-89, uw2 CRITTIME.C:76-87 (yearly_checkup)
+        /// </summary>
+        public static void yearly_checkup()
+        {
+            for (int i = 0; i < UWTileMap.current_tilemap.NoOfActiveMobiles; i++)
+            {
+                var index = UWTileMap.current_tilemap.GetActiveMobileAtIndex(i);
+                if (index != 0)
+                {
+                    var obj = UWTileMap.current_tilemap.LevelObjects[index];
+                    obj.UnkBit_0x19_7 = (short)Rng.r.Next(2);
+                    if (Rng.r.Next(4) != 1)
+                    {
+                        obj.IsAlly = 0;
+                    }
+                }
+            }
+        }
+
         public static bool moveNPCToTile(uwObject critter, int destTileX, int destTileY)
         {
             Debug.Print($"Moving {critter.a_name} to {destTileX},{destTileY} from {critter.tileX}, {critter.tileY}");
