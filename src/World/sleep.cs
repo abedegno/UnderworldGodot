@@ -228,13 +228,14 @@ namespace Underworld
 
         private static void SleepInterupted()
         {
-            if (playerdat.play_fatigue <= 0x18)
+            byte fatigueloss = (byte)((_RES == GAME_UW2) ? 0x18 : 0x20);//uw2 SKILLS.C:492-493, uw1 SKILLS.C:565-566
+            if (playerdat.play_fatigue <= fatigueloss)
             {
                 playerdat.play_fatigue = 0;
             }
             else
             {
-                playerdat.play_fatigue -= 0x18;
+                playerdat.play_fatigue -= fatigueloss;
             }
             uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x15));//your sleep is interrupted
             playerdat.ChangeHunger(-12 - Rng.r.Next(16));
