@@ -397,7 +397,8 @@ namespace Underworld
                         var distance = ((obj.tileX - playerdat.playerObject.tileX) * (obj.tileX - playerdat.playerObject.tileX)) + ((obj.tileY - playerdat.playerObject.tileY) * (obj.tileY - playerdat.playerObject.tileY));
                         if ((critterObjectDat.TravelRange(obj.item_id) * critterObjectDat.TravelRange(obj.item_id)) * 3 >= distance)
                         {
-                            if (Pathfind.PathFindBetweenTiles(critter: obj, currTileX_arg0: obj.tileX, currTileY_arg2: obj.tileY, CurrFloorHeight_arg4: obj.zpos, TargetTileX_arg6: playerdat.playerObject.tileX, TargetTileY_arg8: playerdat.playerObject.tileY, TargetFloorHeight_argA: playerdat.playerObject.zpos, LikelyRangeArgC: 0))
+                            //heights in tile units, Z >> 3 (uw1 CRITTIME.C:331-332, uw2 CRITTIME.C:333-334)
+                            if (Pathfind.PathFindBetweenTiles(critter: obj, currTileX_arg0: obj.tileX, currTileY_arg2: obj.tileY, CurrFloorHeight_arg4: obj.zpos >> 3, TargetTileX_arg6: playerdat.playerObject.tileX, TargetTileY_arg8: playerdat.playerObject.tileY, TargetFloorHeight_argA: playerdat.playerObject.zpos >> 3, LikelyRangeArgC: 0))
                             {
                                 if (Pathfind.MaybePathIndexOrLength_dseg_67d6_225A >= 2)
                                 {
@@ -428,12 +429,14 @@ namespace Underworld
                                         varb++;
                                     }
                                     //ovr107_9E0
-                                    //get the path of the 2nd last tile
-                                    var lastpath = FinalPath56.finalpath[Pathfind.MaybePathIndexOrLength_dseg_67d6_225A - 1];
-                                    //var lasttile = UWTileMap.current_tilemap.Tiles[lastpath.X0, lastpath.Y1];
+                                    //two squares short of the player: the path ends at finalpath[length] (uw1 CRITTIME.C:344-345, uw2 CRITTIME.C:346-347)
+                                    var lastpath = FinalPath56.finalpath[Pathfind.MaybePathIndexOrLength_dseg_67d6_225A - 2];
 
-                                    if (npc.moveNPCToTile(obj, lastpath.X0, lastpath.Y1))
+                                    //on the floor even for a flier, and the b19 bit 0 set rather than cleared (uw1 CRITTIME.C:347-359, uw2 CRITTIME.C:349-361)
+                                    var lasttile = UWTileMap.current_tilemap.Tiles[lastpath.X0, lastpath.Y1];
+                                    if (npc.PlaceCritterInTile(obj, lastpath.X0, lastpath.Y1, lasttile.floorHeight << 3, critterObjectDat.isFlier(obj.item_id) ? 1 : 0))
                                     {
+                                        obj.UnkBit_0x19_0_likelyincombat = 1;
                                         npc.SetNPCTargetDestination(obj, playerdat.playerObject.tileX, playerdat.playerObject.tileY, playerdat.playerObject.zpos);
                                         NearbyHostileFindsAvatar = true;
                                         return true;
