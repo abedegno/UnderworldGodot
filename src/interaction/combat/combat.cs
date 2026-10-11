@@ -303,17 +303,56 @@ namespace Underworld
         {
             if (attackresult != 0)//a hit
             {
+                UWsoundeffects.PlaySoundEffectAtObject((byte)MissImpactEffect(), DefendingCharacter, 0);
+            }
+            else
+            {
+                //a miss
+                //TODO check a global variable that is related to missile impacts. if set do not play sound.
+                UWsoundeffects.PlaySoundEffectAtObject(effectNo: 0xA, obj: AttackingCharacter, volDelta: 0);
+            }
+        }
+
+        /// <summary>
+        /// The sound effect, 7 or 8, of a blocked blow (do_miss, uw1 COMBAT.C:429-476, uw2 COMBAT.C:466-511).
+        /// </summary>
+        static int MissImpactEffect()
+        {
+            {
                 int var6 = 0;
                 int var7 = 0;
-                if (AttackingCharacter.index == 1)
+                var attackerItem = AttackingCharacter.item_id;
+                if (_RES == GAME_UW2)
                 {
-                    var6 = PlayerWeaponSound;
+                    if (AttackingCharacter.index == 1)
+                    {
+                        var6 = PlayerWeaponSound;
+                    }
+                    else
+                    {
+                        if (AttackingCharacter.index < 0x100)
+                        {
+                            var6 = critterObjectDat.combatimpactsound_7_3(attackerItem);
+                        }
+                        else
+                        {
+                            var6 = 1;
+                        }
+                    }
                 }
                 else
                 {
-                    if (AttackingCharacter.index < 0x100)
+                    // UW1 overwrites fromwho with the attacker's item id before testing it
+                    // (uw1 COMBAT.C:445-451), so these tests are on the item id: 1 is item 1,
+                    // never the player, and the player (item 0x7F) takes Creature 0x3F's
+                    // weapon kind whatever he swings. Kept as DOS does it.
+                    if (attackerItem == 1)
                     {
-                        var6 = critterObjectDat.combatimpactsound_7_3(AttackingCharacter.item_id);
+                        var6 = 1;
+                    }
+                    else if (attackerItem < 0x100)
+                    {
+                        var6 = critterObjectDat.combatimpactsound_7_3(attackerItem);
                     }
                     else
                     {
@@ -361,7 +400,10 @@ namespace Underworld
                     //defender is not player
                     if (DefendingCharacter.index < 0x100)
                     {
-                        var7 = critterObjectDat.combatimpactsound_4_3(DefendingCharacter.item_id);
+                        // The attacker's armour kind, not the defender's, in both games
+                        // (uw1 COMBAT.C:463-466, uw2 COMBAT.C:500-501); probably meant to be the
+                        // defender's, but this is what DOS plays.
+                        var7 = critterObjectDat.combatimpactsound_4_3(attackerItem);
                     }
                     else
                     {
@@ -385,13 +427,7 @@ namespace Underworld
                     // first matched, and either mismatch falls through to 8.
                     effectVar8 = (var6 == 1 && var7 == 1) ? 7 : 8;
                 }
-                UWsoundeffects.PlaySoundEffectAtObject((byte)effectVar8, DefendingCharacter, 0);
-            }
-            else
-            {
-                //a miss
-                //TODO check a global variable that is related to missile impacts. if set do not play sound.
-                UWsoundeffects.PlaySoundEffectAtObject(effectNo: 0xA, obj: AttackingCharacter, volDelta: 0);
+                return effectVar8;
             }
         }
 
