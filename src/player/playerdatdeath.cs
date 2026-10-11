@@ -76,7 +76,7 @@ namespace Underworld
             Teleportation.CodeToRunOnTeleport = TeleportToSilverTree;
             Teleportation.Teleport(
                 character: 0,
-                tileX: 32, tileY: 32,
+                tileX: 0x3F, tileY: 0x3F,//no square: CodeToRunOnTeleport sets it, so no search for room here (uw1 SKILLS.C:863)
                 newLevel: SilverTreeDungeon,
                 HeadingHeightFlag: 0);
         }
