@@ -56,6 +56,7 @@ public partial class ScenarioRunner : Node
         (() => new SmiteUndeadRule(), true),
         (() => new KillExperience(), true),
         (() => new SkillPointGain(), true),
+        (() => new LoreSkillRecord(), true),
         (() => new QuestFlagOperations(), true),
         (() => new NaturalHealing(), true),
         (() => new PlayerArmour(), true),
