@@ -402,6 +402,15 @@ namespace Underworld
                         break;
                     }
 
+                case 50: //UW1 a critter with whoami 0xD8 talks to the player
+                    {
+                        if (_RES != GAME_UW2)
+                        {
+                            a_do_trap_talkto.Activate();
+                            return true;
+                        }
+                        break;
+                    }
                 case 54://world gem rotation
                     {
                         if (_RES == GAME_UW2)

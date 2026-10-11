@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Godot;
 
 namespace Underworld.Scenarios;
 
@@ -9,15 +10,17 @@ namespace Underworld.Scenarios;
 /// it was waiting (goal 7 becomes goal 1, GOAL_GO_HOME) and talks to the player (TalkTo)
 /// (TRIGGER.C:486-493).
 ///
-/// The port has no UW1 case for 0x32; it prints "Unimplemented hack trap" (src/traps/hack_trap.cs:456).
-///
 /// The scenario makes a critter (item 0x40) in the mobile list next to the player with whoami 0xD8
 /// and goal 7, and fires a hack trap of quality 0x32 through trap.ActivateTrap with the player as
-/// the one who set it off, as the level's trigger does.
+/// the one who set it off, as the level's trigger does. Once the state is read, the conversation is
+/// ended as a player would end it (as GuardTalk does): every [MORE] passed and every menu answered
+/// with its last option, until the game is back in play.
 /// </summary>
 public sealed class TybalTalkTrap : Scenario
 {
     const int Whoami = 0xD8;
+    const ulong TalkMs = 30000;
+    const int MaxMenus = 60;
 
     public override string Name => "hack-trap-tybal-talk";
     public override string[] Games => new[] { "uw1" };
@@ -64,6 +67,32 @@ public sealed class TybalTalkTrap : Scenario
             c.Note($"talking to the 0xD8 critter directly starts a conversation: {_canTalk}");
         }
         else _canTalk = true;
+        await EndConversation(c);
+    }
+
+    /// <summary>Ends the conversation through its script's own exit, so no conversation is left open.</summary>
+    static async Task EndConversation(ScenarioContext c)
+    {
+        int menus = 0;
+        ulong deadline = Time.GetTicksMsec() + TalkMs;
+        while (Time.GetTicksMsec() < deadline && uimanager.CurrentGameMode == uimanager.GameModes.CONVERSATION && menus <= MaxMenus)
+        {
+            if (MessageDisplay.WaitingForMore) MessageDisplay.WaitingForMore = false;
+            if (MessageDisplay.WaitingForTypedInput) MessageDisplay.WaitingForTypedInput = false;
+            if (ConversationVM.WaitingForInput)
+            {
+                ConversationVM.PlayerNumericAnswer = System.Math.Max(1, ConversationVM.MaxAnswer);
+                ConversationVM.WaitingForInput = false;
+                menus++;
+            }
+            await c.Frames(1);
+        }
+        for (int f = 0; f < 600 && uimanager.CurrentGameMode != uimanager.GameModes.GAME; f++)
+        {
+            if (MessageDisplay.WaitingForMore) MessageDisplay.WaitingForMore = false;
+            await c.Frames(1);
+        }
+        c.Note($"conversation ended after {menus} menus; mode now {uimanager.CurrentGameMode}");
     }
 
     public override string Assert(ScenarioContext c)
