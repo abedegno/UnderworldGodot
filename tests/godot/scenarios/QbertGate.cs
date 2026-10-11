@@ -21,9 +21,15 @@ namespace Underworld.Scenarios;
 ///
 /// The scenario goes to the pyramid top on level 69 (0x45, where the colour hack traps send the
 /// player, WORLDEV.C:1980), sets the sequence to colours 6 then 2, every pyramid floor to 2 but
-/// the top's to 6, var 107 to 1 and the last-tile vars (DOS 108, the port's 0x1D1) to 0, and fires
+/// the top's to 6, var 107 to 1 and the last-tile var 108 (16 bits) to 0, and fires
 /// the pyramid trap (owner 0x3F) through a_hack_trap_qbert.Activate, as the top tile's trigger does.
 /// The top turns 2, completing the pyramid in colour 2.
+///
+/// Var 104 (seq[4]) is set to 2 as well, so the finished colour is the sequence's fifth and the
+/// moongate 0x29A is shown too (WORLDEV.C:1952-1956); the port tested var 108 there. The trap is
+/// then fired a second time on the same tile: last_tile (var 108, the tile's index 0xCF1) matches,
+/// so do_qbert returns at once (WORLDEV.C:1912-1913) and the top stays 2. The port kept last_tile
+/// in a byte, which could not hold 0xCF1, so the second step turned the top to the next colour.
 /// </summary>
 public sealed class QbertGate : Scenario
 {
@@ -36,10 +42,10 @@ public sealed class QbertGate : Scenario
 
     public override string Name => "qbert-gate-stays";
     public override string[] Games => new[] { "uw2" };
-    public override string Cites => "underworld-exhumed uw2/src/event/WORLDEV.C:1880-1964";
+    public override string Cites => "underworld-exhumed uw2/src/event/WORLDEV.C:1880-1968";
 
     string _problem;
-    int _topFloor, _gateInvis, _gateLink, _liftZ, _teleQuality, _teleOwner, _done, _gateItem;
+    int _topFloor, _gateInvis, _gateLink, _liftZ, _teleQuality, _teleOwner, _done, _gateItem, _gate2Invis, _topAfterRepeat, _gateInvisAfterRepeat;
 
     public override async Task Setup(ScenarioContext c)
     {
@@ -61,14 +67,15 @@ public sealed class QbertGate : Scenario
         playerdat.SetGameVariable(100, 6);
         playerdat.SetGameVariable(101, Colour);
         for (int i = 102; i <= 106; i++) playerdat.SetGameVariable(i, 0xFF);   // -1, free (the port keeps 0xFF)
+        playerdat.SetGameVariable(104, Colour);   // seq[4], for the 0x29A gate (WORLDEV.C:1952)
         playerdat.SetGameVariable(107, 1);
-        playerdat.SetGameVariable(108, 0);
-        playerdat.SetGameVariable(0x1D1, 0);
+        playerdat.SetAt16(0xFA + 108 * 2, 0);     // last_tile, a 16 bit var (WORLDEV.C:1895)
         for (int j = 0; j < 5; j++)
             for (int i = 0; i > j - 5; i--)
                 UWTileMap.current_tilemap.Tiles[TopX + i, TopY + j].floorTexture = (short)Colour;
         UWTileMap.current_tilemap.Tiles[TopX, TopY].floorTexture = 6;
         objs[0x3CE].invis = 1;
+        objs[0x29A].invis = 1;
     }
 
     public override Task Act(ScenarioContext c)
@@ -88,7 +95,12 @@ public sealed class QbertGate : Scenario
         _teleQuality = objs[0x3CD].quality;
         _teleOwner = objs[0x3CD].owner;
         _done = playerdat.GetGameVariable(107);
-        c.Note($"top floor {_topFloor}; gate 0x3CE invis {_gateInvis} link 0x{_gateLink:X}; 0x3CC z {_liftZ}; 0x3CD quality {_teleQuality} owner {_teleOwner}; var 107 {_done}");
+        _gate2Invis = objs[0x29A].invis;
+        // the same tile again: last_tile matches, nothing happens (WORLDEV.C:1912-1913)
+        a_hack_trap_qbert.Activate(trap, UWTileMap.current_tilemap.LevelObjects);
+        _topAfterRepeat = UWTileMap.current_tilemap.Tiles[TopX, TopY].floorTexture;
+        _gateInvisAfterRepeat = objs[0x3CE].invis;
+        c.Note($"top floor {_topFloor}; gate 0x3CE invis {_gateInvis} link 0x{_gateLink:X}; 0x3CC z {_liftZ}; 0x3CD quality {_teleQuality} owner {_teleOwner}; var 107 {_done}; gate 0x29A invis {_gate2Invis}; after a repeat step top floor {_topAfterRepeat}, gate 0x3CE invis {_gateInvisAfterRepeat}");
         return Task.CompletedTask;
     }
 
@@ -103,6 +115,9 @@ public sealed class QbertGate : Scenario
         k.Equal("object 0x3CD quality", 4, _teleQuality, "uw2 WORLDEV.C:1950");
         k.Equal("object 0x3CD owner", Colour * 6 + 4, _teleOwner, "uw2 WORLDEV.C:1951");
         k.Equal("var 107 (not complete)", 0, _done, "*done = 0: uw2 WORLDEV.C:1941");
+        k.Equal("moongate 0x29A invisible when the colour is seq[4]", 0, _gate2Invis, "seq[4] == colour: uw2 WORLDEV.C:1952-1954");
+        k.Equal("top floor after a second step on the same tile", Colour, _topAfterRepeat, "last_tile matches, return: uw2 WORLDEV.C:1912-1913");
+        k.Equal("moongate 0x3CE invisible after a second step on the same tile", 0, _gateInvisAfterRepeat, "uw2 WORLDEV.C:1912-1913");
         return k.Result;
     }
 }

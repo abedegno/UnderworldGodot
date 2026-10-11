@@ -97,7 +97,7 @@ namespace Underworld
         private static void StepOnPyramidTile()
         {
             bool ShowMoongate;
-            var var4_puzzleactive = playerdat.GetGameVariable(114);
+            var var4_puzzleactive = playerdat.GetGameVariable(107);//the "not complete" flag, done = seq + 7 (uw2 WORLDEV.C:1893)
             int var8 = 0;
             var currentTile = UWTileMap.current_tilemap.Tiles[playerdat.playerObject.tileX, playerdat.playerObject.tileY];
             if (currentTile.Ptr == 0x33C4)//should be tile 49,51 -> pyramid top
@@ -140,10 +140,11 @@ namespace Underworld
             }
 
             //not tile 49,51 or after handling tile 49,51
-            if (currentTile.Ptr / 4 != playerdat.GetGameVariable(0x1D1))
+            //last_tile = seq + 8, var 108, a 16 bit variable holding the tile's index in the map (uw2 WORLDEV.C:1895, 1912-1914)
+            if (currentTile.Ptr / 4 != playerdat.GetAt16(0xFA + 108 * 2))
             {
                 //a new tile has been stood on
-                playerdat.SetGameVariable(0x1D1, (int)(currentTile.Ptr / 4));
+                playerdat.SetAt16(0xFA + 108 * 2, (int)(currentTile.Ptr / 4));
                 var var6 = 0xFF;
                 var di = currentTile.floorTexture;
                 var si = 0;
@@ -205,6 +206,7 @@ namespace Underworld
 
                         if (ShowMoongate)
                         {
+                            playerdat.SetGameVariable(107, 0);//*done = 0 (uw2 WORLDEV.C:1941)
                             di = 0;
                             while (di < 6)
                             {
@@ -245,7 +247,7 @@ namespace Underworld
                                 obj_teleport_973.quality = 4;
                                 obj_teleport_973.owner = (short)(4 + (var6 * 6));
 
-                                if (var6 == playerdat.GetGameVariable(108))
+                                if (var6 == playerdat.GetGameVariable(104))//seq[4], the last colour of the sequence (uw2 WORLDEV.C:1952)
                                 {
                                     obj_666_moongate.invis = 0;
                                     objectInstance.RedrawFull(obj_666_moongate);
@@ -265,16 +267,12 @@ namespace Underworld
                             obj_974_moongate.link = (short)newlink;
                             obj_974_moongate.invis = 0;
                             objectInstance.RedrawFull(obj_974_moongate);
-
-                            if (var4_puzzleactive == 0)
-                            {
-                                HideMoonGateAndTrigger();
-                            }
                         }
                         else
-                        {//hidemoongate
+                        {//hidemoongate, only when the pyramid is not complete and the flag was clear; the flag is then set (uw2 WORLDEV.C:1962-1968)
                             if (var4_puzzleactive == 0)
                             {
+                                playerdat.SetGameVariable(107, 1);
                                 HideMoonGateAndTrigger();
                             }
                         }
