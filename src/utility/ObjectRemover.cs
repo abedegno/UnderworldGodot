@@ -59,6 +59,59 @@ namespace Underworld
             return null;
         }
 
+        /// <summary>
+        /// Obj_GarbageCollect. Deletes up to count objects (with their contents) from tiles more than 10 - range tiles
+        /// from the player's home tile (taxicab distance), each tile's list in order, letting Obj_Fate decide each one.
+        /// Allocation calls it with (3, 5) for a mobile or (3, 10) for a static when the free list is empty; sleeping calls it with (1, 20).
+        /// uw1 OBJECTS.C:188-223, uw2 OBJECTS.C:181-216
+        /// </summary>
+        /// <param name="range"></param>
+        /// <param name="count"></param>
+        public static void GarbageCollect(int range, int count)
+        {
+            var map = UWTileMap.current_tilemap;
+            var player = playerdat.playerObject;
+            if (map == null || player == null)
+            {
+                return;
+            }
+            int px = player.npc_xhome;
+            int py = player.npc_yhome;
+            int freed = 0;
+            for (int y = 0; y <= UWTileMap.TileMapSizeY; y++)
+            {
+                int dy = System.Math.Abs(py - y);
+                for (int x = 0; x <= UWTileMap.TileMapSizeX; x++)
+                {
+                    if (dy + System.Math.Abs(px - x) > 10 - range)
+                    {
+                        var tile = map.Tiles[x, y];
+                        int link = tile.indexObjectList;
+                        while (link > 0)
+                        {
+                            var obj = map.LevelObjects[link];
+                            int next = obj.next;
+                            if (ObjectRemover_OLD.ObjectCullingTest(obj, range))
+                            {//Obj_FreeLinkChain, the object and its contents
+                                RemoveObject_experimental(
+                                    objectlist: map.LevelObjects,
+                                    buffer: map.lev_ark_block.Data,
+                                    ListHeadPTR: (int)(tile.Ptr + 2),
+                                    objToRemove: obj,
+                                    ForceCull: true);
+                                freed++;
+                                if (freed >= count)
+                                {
+                                    return;
+                                }
+                            }
+                            link = next;
+                        }
+                    }
+                }
+            }
+        }
+
 
         static void RemoveObjectAndChainFromLists(uwObject[]objectlist, byte[]objectdata, byte[]listheaddata, long ptrListHead, uwObject toDelete)
         {
@@ -808,7 +861,7 @@ namespace Underworld
             }
             if (CullingRange != 0)
             {
-                CullingRange += Rng.r.Next(3);
+                CullingRange += Rng.RandScale(3);//rand() * 3 / 0x8000. uw1 OBJECTS.C:159, uw2 OBJECTS.C:153
             }
             GlobalCullingRange = CullingRange;
             if (ObjectCullingRngTest(obj) == false)
@@ -821,7 +874,7 @@ namespace Underworld
                         return false;
                     }
                 }
-                if (Rng.r.Next(0xA) < GlobalCullingRange)
+                if (Rng.RandScale(0xA) < GlobalCullingRange)//rand() * 10 / 0x8000. uw1 OBJECTS.C:167, uw2 OBJECTS.C:161
                 {
                     return true;
                 }
