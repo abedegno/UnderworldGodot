@@ -518,10 +518,12 @@ namespace Underworld
 
             if ((attributeValue << 1) < skillvalue)
             {//cap skill at 2xAttribute value
+                UpdateLevelLore(skillno);
                 return 0;
             }
             if (skillvalue >= 30)
             { //already at max
+                UpdateLevelLore(skillno);
                 return 0;
             }
             //increment by 1
@@ -547,18 +549,28 @@ namespace Underworld
                 }
             }
 
+            UpdateLevelLore(skillno);
+            return 1;
+        }
+
+        /// <summary>
+        /// After any attempt to raise lore, raised or refused, get_skill resets the lore tries and stores the
+        /// lore skill for this level, at lore[PlayerLevel] with PlayerLevel counted from 1
+        /// (uw2 SKILLS.C:180-184, uw1 SKILLS.C:212-217, which stores it only on levels 1 to 8; SetLevelLore applies that).
+        /// </summary>
+        static void UpdateLevelLore(int skillno)
+        {
             if (skillno == 8)
             {
                 //A lore skill increase has occured.
                 //we need to store the lore values per dungeon level and reset
                 //object  identification bits on every sprite object in the level.
                 //but oddly enough not on objects the player has in inventory?!?
-                SetLevelLore(dungeon_level - 1, Lore);
+                SetLevelLore(dungeon_level, Lore);
 
                 //Update heading bits on all objects
                 uwObject.ResetAllObjectIdentification();
             }
-            return 1;
         }
 
 
