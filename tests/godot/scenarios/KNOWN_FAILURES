@@ -22,7 +22,6 @@ uw2/allies-wear-off  ~allies after a slow tick expected fewer than 8  # no yearl
 uw1/wandering-monsters-out-of-sight  ~create-object traps within 8 squares of the awake player that ran expected 0  # range test inverted: src/traps/a_create_object_trap.cs:236; uw1 TRIGGER.C:643-652, 667-668
 uw2/wandering-monsters-out-of-sight  ~create-object traps within 8 squares of the awake player that ran expected 0  # range test inverted: src/traps/a_create_object_trap.cs:236; uw2 TRIGGER.C:1020-1029, 1044-1045
 uw2/special-deaths-uw2  ~race 0xB kin's attitude after a Trilkhai's death  # SetRaceAttitude args swapped, Bishop quest 100, Dorstag to quest 137, record/tally reversed: src/npc/npcdeath.cs:128, 189, 351, 510; uw2 WORLDEV.C:707-708, 789, 772-773, 905-906
-uw2/poison-weapon-damage  ~poisoned blow of 10 with Casting 0 expected 17  # adds (Casting+30)/40, not damage*(Casting+30)/40: src/interaction/combat/combat.cs:422; uw2 COMBAT.C:325
 uw1/combat-equipment-wear  ~weapon wear from a door strike expected  # frp_check's three DamageInventory calls are debug prints: src/interaction/combat/combat.cs:452, 467, 488; uw1 COMBAT.C:290-320
 uw2/combat-equipment-wear  ~weapon wear from a door strike expected  # frp_check's three DamageInventory calls are debug prints: src/interaction/combat/combat.cs:452, 467, 488; uw2 COMBAT.C:310-345
 uw1/critter-line-of-sight  ~line of sight differs from DOS  # divides by dy/dx not -dy/-dx, hyp_see second branch east/west swapped: src/npc/pathfind.cs:1553, 1623, 1833; uw1 PATHFIND.C:837-870, 571-603
