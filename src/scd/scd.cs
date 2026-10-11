@@ -71,6 +71,39 @@ namespace Underworld
         }
 
         /// <summary>
+        /// Runs only the day schedule, SCD.ARK block 0, up to the time of day in X clock 0, as the hourly step does
+        /// (Sched_Load(0), Sched_WrapTime(xclock[XC_TIME], DAY_STEPS, mode), Sched_Save(0): uw2 PLAYTIME.C:157-162).
+        /// ProcessSCDArk does the same for all 16 blocks.
+        /// </summary>
+        public static void ProcessSCDBlock0(int mode)
+        {
+            ArkHasBeenModified = false;
+            if (scd_data == null)
+            {
+                scd_data = new UWBlock[0x10];
+            }
+            BlockIdentifier = 0;
+            if (scd_data[0] == null)
+            {
+                if (!LoadSCDBlock(0))
+                {
+                    Debug.Print("Error loading scd block 0");
+                    return;
+                }
+            }
+            scd_data[0].Data[2] = 0;
+            var error = ProcessBlock0(
+                currentblock: scd_data[0].Data,
+                arg0_xclock: playerdat.GetXClock(0),
+                NoOfMaps: 72,
+                mode_arg4: mode);
+            if (error == 0 && !ArkHasBeenModified)
+            {
+                scd_data[0] = null;//simulate discarding of data that is unsaved.
+            }
+        }
+
+        /// <summary>
         /// Special case that is called on xclock 0
         /// </summary>
         /// <param name="currentblock"></param>
