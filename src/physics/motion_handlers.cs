@@ -20,6 +20,14 @@ namespace Underworld
         public static MotionHandler SwimmerNPCMotionHandler;
         public static MotionHandler ObjectMotionHandler;
 
+        /// <summary>
+        /// What the critter path search reads before any critter AI has chosen a handler (npc.SpecialMotionHandler's
+        /// start). The original's tp_act is in _BSS (uw1 PATHFIND.C:83, uw2 PATHFIND.C:77), zeroed at start-up, and only
+        /// AI.C sets it (uw1 AI.C:1030-1036, uw2 AI.C:993-999), so a sleep before any AI has run reads the Handler at near
+        /// null, DS:0. noclimb and w6, the only fields flood_path reads, are then DS:4 and DS:6, C0's zeroed null area.
+        /// </summary>
+        public static readonly MotionHandler TpActAtStartUp = new(_handlerdata: new byte[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, _motionhandlerfunction: null);
+
         public byte[] handlerdata;
 
         public delegate bool MotionHandlerCallback(uwObject obj, ref int arg0, UWMotionParamArray motionparams);
