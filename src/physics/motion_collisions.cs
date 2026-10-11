@@ -1717,15 +1717,38 @@ namespace Underworld
                 {
                     Debug.Print($"Destroying {projectile.a_name} due to failed culling test."); //In some cases throwing an object at the head of an NPC causes the object to vanish. This happens in the dos version too.
                     //seg030_2BB7_1410
-                    if (ObjectRemover_OLD.DeleteObjectFromTile_DEPRECIATED(projectile.tileX, projectile.tileY, projectile.index))
-                    {
-
-                        return null;
-                    }
-                    else
+                    // DOS frees the object and everything inside it here, Obj_Punt(&tile->objects,
+                    // obj, 0) (uw1 OBJPHYS.C:590-591, uw2 OBJPHYS.C:587), which goes through
+                    // Obj_FreeLinkChain. Freeing the object alone left a culled container's
+                    // contents allocated and in no list (#207). The culling test above is
+                    // Obj_Punt's Obj_Elem_Fate, so the removal itself is forced.
+                    if (!UWTileMap.ValidTile(projectile.tileX, projectile.tileY))
                     {
                         return projectile;
                     }
+                    var tile = UWTileMap.current_tilemap.Tiles[projectile.tileX, projectile.tileY];
+                    var inTile = false;
+                    var next = tile.indexObjectList;
+                    for (int guard = 0; next != 0 && guard < 1024; guard++)
+                    {
+                        if (next == projectile.index)
+                        {
+                            inTile = true;
+                            break;
+                        }
+                        next = UWTileMap.current_tilemap.LevelObjects[next].next;
+                    }
+                    if (!inTile)
+                    {
+                        Debug.Print($"Was unable to find {projectile.index} to delete it in {projectile.tileX},{projectile.tileY}");
+                        return projectile;
+                    }
+                    return ObjectRemover.RemoveObject_experimental(
+                        objectlist: UWTileMap.current_tilemap.LevelObjects,
+                        buffer: UWTileMap.current_tilemap.lev_ark_block.Data,
+                        ListHeadPTR: (int)(tile.Ptr + 2),
+                        objToRemove: projectile,
+                        ForceCull: true);
                 }
             }
         }
