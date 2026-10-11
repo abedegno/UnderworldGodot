@@ -48,7 +48,7 @@ namespace Underworld
             var si = 0;
             while (si < 7)
             {
-                if (playerdat.GetGameVariable(100 + si) == owner)
+                if (QbertSeq(si) == owner)
                 {
                     //do hacktrap
                     var ax = 6 - si;
@@ -80,16 +80,30 @@ namespace Underworld
 
 
         /// <summary>
+        /// The pyramid's colour sequence, vars 100 to 106, read as the original's int16 *seq = vars + 100 (uw2 WORLDEV.C:1892):
+        /// signed 16 bit, -1 (0xFFFF) for an empty slot. Get/SetGameVariable only use the low byte.
+        /// </summary>
+        static int QbertSeq(int i)
+        {
+            return (short)playerdat.GetAt16(0xFA + (100 + i) * 2);
+        }
+
+        static void SetQbertSeq(int i, int value)
+        {
+            playerdat.SetAt16(0xFA + (100 + i) * 2, value & 0xFFFF);
+        }
+
+        /// <summary>
         /// Sets game variables at first run of trap execution
         /// </summary>
         private static void InitialiseQbert()
         {
-            if (playerdat.GetGameVariable(100) != 6)
+            if (QbertSeq(0) != 6)
             {
-                playerdat.SetGameVariable(100, 6);
+                SetQbertSeq(0, 6);
                 for (int i = 1; i < 7; i++)
                 {
-                    playerdat.SetGameVariable(100 + i, 0xFF);
+                    SetQbertSeq(i, -1);//empty slot
                 }
             }
         }
@@ -118,13 +132,13 @@ namespace Underworld
                             var di = 0;
                             while (di < 7)
                             {
-                                if (playerdat.GetGameVariable(100 + di) == 0xFF)
+                                if (QbertSeq(di) == -1)
                                 {
                                     break;
                                 }
                                 else
                                 {
-                                    if (playerdat.GetGameVariable(100 + di) == tmapObject.owner)
+                                    if (QbertSeq(di) == tmapObject.owner)
                                     {
                                         Debug.Print($"Changing owner of {tmapObject.a_name} on tile {si},{4} to 5, Previous value was {tmapObject.owner}");
                                         tmapObject.owner = 5;//changes texture
@@ -150,20 +164,20 @@ namespace Underworld
                 var si = 0;
             ovr110_4132:
                 //var TargetTexture = 0xFF;
-                if ((playerdat.GetGameVariable(100 + si) == di) || (playerdat.GetGameVariable(100 + si) == 0xFF))
+                if ((QbertSeq(si) == di) || (QbertSeq(si) == -1))
                 {
-                    if (playerdat.GetGameVariable(100 + si) == di)
+                    if (QbertSeq(si) == di)
                     {
                         //ovr110_415D
                         si++;
-                        if (playerdat.GetGameVariable(100 + si) == 0xFF)
+                        if (QbertSeq(si) == -1)
                         {
                             si = 0;
                         }
                         TileInfo.ChangeTile(
                             StartTileX: currentTile.tileX, StartTileY: currentTile.tileY,
-                            newFloorTexture: (playerdat.GetGameVariable(100 + si) & 0xF));
-                        // currentTile.floorTexture = (short)(playerdat.GetGameVariable(100 + si) & 0xF); Teleportation.DoRedraw = true; currentTile.Redraw = true;
+                            newFloorTexture: (QbertSeq(si) & 0xF));
+                        // currentTile.floorTexture = (short)(QbertSeq(si) & 0xF); Teleportation.DoRedraw = true; currentTile.Redraw = true;
                         di = 0;
 
                     ovr110_41D6:
@@ -247,7 +261,7 @@ namespace Underworld
                                 obj_teleport_973.quality = 4;
                                 obj_teleport_973.owner = (short)(4 + (var6 * 6));
 
-                                if (var6 == playerdat.GetGameVariable(104))//seq[4], the last colour of the sequence (uw2 WORLDEV.C:1952)
+                                if (var6 == QbertSeq(4))//seq[4], the last colour of the sequence (uw2 WORLDEV.C:1952)
                                 {
                                     obj_666_moongate.invis = 0;
                                     objectInstance.RedrawFull(obj_666_moongate);
@@ -281,12 +295,12 @@ namespace Underworld
                     else
                     {
                         //ovr110_43B4
-                        if (playerdat.GetGameVariable(100) > 0 && playerdat.GetGameVariable(100) < 10)
+                        if (QbertSeq(0) > 0 && QbertSeq(0) < 10)
                         {//sets floor to default colour
                             TileInfo.ChangeTile(
                                 StartTileX: currentTile.tileX, StartTileY: currentTile.tileY,
-                                newFloorTexture: (playerdat.GetGameVariable(100) & 0xF));
-                            //currentTile.floorTexture = (short)(playerdat.GetGameVariable(100) & 0xF); Teleportation.DoRedraw = true; currentTile.Redraw = true;
+                                newFloorTexture: (QbertSeq(0) & 0xF));
+                            //currentTile.floorTexture = (short)(QbertSeq(0) & 0xF); Teleportation.DoRedraw = true; currentTile.Redraw = true;
                         }
                     }
                 }
@@ -315,17 +329,13 @@ namespace Underworld
             var si = 0;
             while (si <= 4)
             {
-                var gamevarvalue = playerdat.GetGameVariable(100 + si);
-                if (gamevarvalue == 0xFF)
+                var gamevarvalue = QbertSeq(si);
+                if (gamevarvalue == -1)
                 {//freeslot
-                    playerdat.SetGameVariable(
-                        variableno: 100 + si,
-                        value: owner);
+                    SetQbertSeq(si, owner);
                     if (si == 4)
                     {//final colour
-                        playerdat.SetGameVariable(
-                        variableno: 100 + si + 1,
-                        value: 5);
+                        SetQbertSeq(si + 1, 5);
                     }
 
                     TeleportToTopOfPyramid();

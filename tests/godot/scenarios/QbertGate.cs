@@ -30,6 +30,11 @@ namespace Underworld.Scenarios;
 /// then fired a second time on the same tile: last_tile (var 108, the tile's index 0xCF1) matches,
 /// so do_qbert returns at once (WORLDEV.C:1912-1913) and the top stays 2. The port kept last_tile
 /// in a byte, which could not hold 0xCF1, so the second step turned the top to the next colour.
+///
+/// Before all that, a qbert trap (owner 40, a colour room orb that matches nothing) is fired with
+/// seq[0] cleared, so the sequence is reset: seq[0] = 6 and seq[1..6] = -1, which the original
+/// stores as 0xFFFF in the 16-bit vars (WORLDEV.C:1892, 1897-1901). The port wrote 0xFF to the low
+/// byte only, so a port save taken mid-puzzle held 0x00FF and DOS's -1 scan (WORLDEV.C:1919) ran on.
 /// </summary>
 public sealed class QbertGate : Scenario
 {
@@ -45,6 +50,9 @@ public sealed class QbertGate : Scenario
     public override string Cites => "underworld-exhumed uw2/src/event/WORLDEV.C:1880-1968";
 
     string _problem;
+    uwObject _trap;
+    int[] _emptyAfterReset;
+    int _seq0AfterReset;
     int _topFloor, _gateInvis, _gateLink, _liftZ, _teleQuality, _teleOwner, _done, _gateItem, _gate2Invis, _topAfterRepeat, _gateInvisAfterRepeat;
 
     public override async Task Setup(ScenarioContext c)
@@ -64,10 +72,24 @@ public sealed class QbertGate : Scenario
         _gateItem = objs[0x3CE]?.item_id ?? -1;
         if (_gateItem != Moongate) { _problem = $"object 0x3CE is item 0x{_gateItem:X}, not a moongate"; return; }
 
-        playerdat.SetGameVariable(100, 6);
-        playerdat.SetGameVariable(101, Colour);
-        for (int i = 102; i <= 106; i++) playerdat.SetGameVariable(i, 0xFF);   // -1, free (the port keeps 0xFF)
-        playerdat.SetGameVariable(104, Colour);   // seq[4], for the 0x29A gate (WORLDEV.C:1952)
+        // A new sequence: with seq[0] not 6, any qbert trap resets it, seq[0] = 6 and seq[1..6] = -1
+        // (WORLDEV.C:1897-1901). Owner 40 is a colour room orb that matches no colour, so nothing else happens.
+        int slot = ObjectCreator.PrepareNewObject(0x183);   // ITEM_HACK_TRAP
+        if (slot == 0) { _problem = "no hack trap could be made"; return; }
+        _trap = objs[slot];
+        _trap.quality = 32;
+        _trap.owner = 40;
+        playerdat.SetAt16(Seq(0), 0);
+        a_hack_trap_qbert.Activate(_trap, objs);
+        _seq0AfterReset = playerdat.GetAt16(Seq(0));
+        _emptyAfterReset = new int[6];
+        for (int i = 1; i <= 6; i++) _emptyAfterReset[i - 1] = playerdat.GetAt16(Seq(i));
+        _trap.owner = 0x3F;
+
+        playerdat.SetAt16(Seq(0), 6);
+        playerdat.SetAt16(Seq(1), Colour);
+        for (int i = 2; i <= 6; i++) playerdat.SetAt16(Seq(i), 0xFFFF);   // -1, free
+        playerdat.SetAt16(Seq(4), Colour);        // seq[4], for the 0x29A gate (WORLDEV.C:1952)
         playerdat.SetGameVariable(107, 1);
         playerdat.SetAt16(0xFA + 108 * 2, 0);     // last_tile, a 16 bit var (WORLDEV.C:1895)
         for (int j = 0; j < 5; j++)
@@ -78,14 +100,13 @@ public sealed class QbertGate : Scenario
         objs[0x29A].invis = 1;
     }
 
+    /// <summary>Where seq[i] (var 100 + i, 16 bits) is in the port's player record.</summary>
+    static int Seq(int i) => 0xFA + (100 + i) * 2;
+
     public override Task Act(ScenarioContext c)
     {
         if (_problem != null) return Task.CompletedTask;
-        int slot = ObjectCreator.PrepareNewObject(0x183);   // ITEM_HACK_TRAP
-        if (slot == 0) { _problem = "no hack trap could be made"; return Task.CompletedTask; }
-        var trap = UWTileMap.current_tilemap.LevelObjects[slot];
-        trap.quality = 32;
-        trap.owner = 0x3F;
+        var trap = _trap;
         a_hack_trap_qbert.Activate(trap, UWTileMap.current_tilemap.LevelObjects);
         var objs = UWTileMap.current_tilemap.LevelObjects;
         _topFloor = UWTileMap.current_tilemap.Tiles[TopX, TopY].floorTexture;
@@ -115,6 +136,10 @@ public sealed class QbertGate : Scenario
         k.Equal("object 0x3CD quality", 4, _teleQuality, "uw2 WORLDEV.C:1950");
         k.Equal("object 0x3CD owner", Colour * 6 + 4, _teleOwner, "uw2 WORLDEV.C:1951");
         k.Equal("var 107 (not complete)", 0, _done, "*done = 0: uw2 WORLDEV.C:1941");
+        k.Equal("seq[0] after a new sequence", 6, _seq0AfterReset, "seq[0] = 6: uw2 WORLDEV.C:1898");
+        for (int i = 1; i <= 6; i++)
+            k.Equal($"seq[{i}] (var {100 + i}, 16 bits) in the player record after a new sequence", 0xFFFF, _emptyAfterReset[i - 1],
+                "seq[i] = -1, int16 *seq = vars + 100: uw2 WORLDEV.C:1892, 1899-1900");
         k.Equal("moongate 0x29A invisible when the colour is seq[4]", 0, _gate2Invis, "seq[4] == colour: uw2 WORLDEV.C:1952-1954");
         k.Equal("top floor after a second step on the same tile", Colour, _topAfterRepeat, "last_tile matches, return: uw2 WORLDEV.C:1912-1913");
         k.Equal("moongate 0x3CE invisible after a second step on the same tile", 0, _gateInvisAfterRepeat, "uw2 WORLDEV.C:1912-1913");
