@@ -71,7 +71,6 @@ uw2/jail-term  ~jail term in seconds expected  # GoToJail adds the random part D
 uw2/altaras-wand-scan  ~player (40, 20), marker (42, 20): marker within two squares expected removed  # y loop starts at cX - range, ValidTile axes swapped: spellcasting_class_13.cs:160-162; uw2 SPELLS2.C:807, 820-848
 uw2/scd-set-quest-bit  ~after an SCD row setting it to 1 expected 1  # SCD event 4 only prints: scd_changequest.cs:7; uw2 SCDEVENT.C:220-230
 uw2/qbert-gate-stays  ~moongate 0x3CE invisible after the pyramid is finished expected 0  # flag read from var 114 (never written), gate hidden at once: a_hack_trap_qbert.cs:100, 269; uw2 WORLDEV.C:1941, 1960-1968
-uw2/castle-schedule-hours  ~castle destination wrong  # 12-hour clock, stages 3/5/9 to the throne room, Miranda/XC_CASTLE 0 rules, loc 5, exclusive bounds: a_hack_trap_castleschedule.cs:138-229; uw2 CRITTIME.C:646-731
 uw2/enchant-weapon-tier  ~(tier 2 above skill 0) expected destroyed  # weapon tier is effect & 0xFFF8, always 0: enchanting.cs:88; uw2 SPELLS2.C:349-363
 uw1/give-ptr-npc  ~give_ptr_npc(coins, 2) result expected 1  # looks the inventory index up in the level objects, never takes from the pack, returns 0: give_ptr_npc.cs:28-71; uw1 CONVERSE.C:696-716
 uw2/give-ptr-npc  ~give_ptr_npc(coins, 2) result expected 1  # looks the inventory index up in the level objects, never takes from the pack, returns 0: give_ptr_npc.cs:28-71; uw2 CONVERSE.C:680-712
