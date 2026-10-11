@@ -230,7 +230,7 @@ namespace Underworld
                                     a_create_object_trap.FindAndRunCreateObjectTraps();
                                 }
 
-                                Debug.Print("Do something with Npc hunger");
+                                npc.yearly_checkup();//uw1 PLAYTIME.C:135, uw2 PLAYTIME.C:144
 
                                 Debug.Print("Increment values at  bx+3a(fatigue), bx+3b(related to food health regen), bx+3c (unknown)");
                                 play_fatigue = (byte)Math.Min(play_fatigue + 1, 0xFF);
