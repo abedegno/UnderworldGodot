@@ -665,9 +665,13 @@ namespace Underworld
         /// <param name="objIndex"></param>
         /// <param name="updateUI"></param>
         /// <param name="RemoveNext"></param>
-        /// <returns></returns>
+        /// <returns>the new level object index, or 0 when there are not enough free objects (nothing is moved then)</returns>
         public static int AddInventoryObjectToWorld(int objIndex, bool updateUI, bool RemoveNext, bool DestroyInventoryObject = true, bool ClearLink = true)
         {
+            if (UWTileMap.current_tilemap.StaticFreeListPtr + 1 < CountInventoryObjectsToMove(objIndex, RemoveNext))
+            {//no room in the level's object list: fail before anything is moved, as Obj_Alloc returning 0 does (uw2 CONVERSE.C:697-704)
+                return 0;
+            }
             var oldObj = InventoryObjects[objIndex];
 
             // recursively add linked/next objects to the world first. Updating oldobj so that its link/next is pointing to the world
@@ -722,6 +726,29 @@ namespace Underworld
         }
 
 
+
+        /// <summary>
+        /// How many level objects AddInventoryObjectToWorld needs for this object: itself, its contents and, with includeNext, the objects after it.
+        /// </summary>
+        static int CountInventoryObjectsToMove(int objIndex, bool includeNext)
+        {
+            int count = 0;
+            for (int guard = 0; objIndex != 0 && guard < 1024; guard++)
+            {
+                var obj = InventoryObjects[objIndex];
+                count++;
+                if (obj.link != 0 && obj.is_quant == 0)
+                {
+                    count += CountInventoryObjectsToMove(obj.link, true);
+                }
+                if (!includeNext)
+                {
+                    break;
+                }
+                objIndex = obj.next;
+            }
+            return count;
+        }
 
         /// <summary>
         /// Recursively adds object data to player inventory and returns the index it is at.
