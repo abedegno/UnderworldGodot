@@ -14,6 +14,14 @@ namespace Underworld
         static readonly byte[] UW2WorldThemes = [0xA, 0xC, 0xE, 0x9, 0xA, 0xF, 0xB, 0xD, 0xA, 0xC, 0xD, 0x9, 0x8, 0xB, 0xE, 0xD, 0x8, 0xF, 0xE, 0x9, 0x8, 0xF, 0xB, 0xA, 0x8, 0xC, 0x9];
         static int CurrentWorldTheme;
 
+        /// <summary>
+        /// False once a theme has failed to load: as in the original, the music is then off for the
+        /// rest of the session and nothing tries to load a theme again (load_new_music's fail path,
+        /// uw1 SOUND.C:351-354, uw2 SOUND.C:903-906; change_music_maybe and load_new_music return at
+        /// once while music_ok is 0).
+        /// </summary>
+        public static bool MusicOk = true;
+
         public static double LastCombatMusicThemeChange;
         public static double CombatMusicTimer;
 
@@ -28,7 +36,7 @@ namespace Underworld
         /// </summary>
         public static void RefreshMusic()
         {
-            if (!playerdat.MusicEnabled)
+            if (!playerdat.MusicEnabled || !MusicOk)
             {
                 return;
             }
@@ -312,7 +320,7 @@ namespace Underworld
         /// </summary>
         public static void LoopMusicMaybe()
         {
-            if (!playerdat.MusicEnabled || MusicStreamPlayer.Instance == null)
+            if (!playerdat.MusicEnabled || !MusicOk || MusicStreamPlayer.Instance == null)
             {
                 return;
             }
@@ -355,6 +363,10 @@ namespace Underworld
         public static void LoadXMI(byte themeNo, bool Loop = false, bool restartIfSame = false)
         {
             Loop = false;//temporary force looping off in all cases.
+            if (!MusicOk)
+            {
+                return;
+            }
             if (CurrentlyPlayingThemeNo != themeNo || restartIfSame)
             {
                 // Theme numbers are octal-encoded: upper 5 bits = first digit, lower 3 bits = second digit.
@@ -363,12 +375,26 @@ namespace Underworld
                 var digit2 = (char)(0x30 + (themeNo & 0x7));
                 //
 
-                CurrentlyPlayingThemeNo = themeNo;
-                NewThemeToPlay = 0;
-
                 string filename = _RES == GAME_UW2
                     ? $"UWA{digit1}{digit2}.XMI"
                     : $"UW{digit1}{digit2}.XMI";
+
+                //theme 0 is left out: the port's RefreshMusic can ask for it where the original
+                //never does (uw1 SOUND.C:977-978 picks a walking theme instead), and it means
+                //"no theme" here, not a file the game failed to load.
+                if (themeNo != 0 && playerdat.MusicEnabled && MusicStreamPlayer.Instance != null
+                    && !File.Exists(Path.Combine(BasePath, "SOUND", filename)))
+                {
+                    //the theme cannot be loaded: the original turns the music off for the session and
+                    //leaves the current theme as it was (uw1 SOUND.C:351-354, uw2 SOUND.C:903-906).
+                    System.Diagnostics.Debug.Print($"Theme {filename} not found, music off");
+                    MusicOk = false;
+                    return;
+                }
+
+                CurrentlyPlayingThemeNo = themeNo;
+                NewThemeToPlay = 0;
+
                 LoadXMIByFileName(filename, Loop);
             }
         }

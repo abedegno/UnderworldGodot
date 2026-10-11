@@ -378,9 +378,13 @@ public partial class main : Node3D
 			RefreshWorldState();//handles teleports, tile redraws
 		}
 
-		if (uimanager.AtMainMenu && !cutsplayer.IsPlaying)
+		if (!cutsplayer.IsPlaying &&
+			(uimanager.AtMainMenu || uimanager.InConversation || uimanager.InAutomap || uimanager.CurrentGameMode == uimanager.GameModes.OPTIONS))
 		{
-			//the menus keep their music going while they wait for input (uw1 MAINMENU.C:320-323, uw2 MAINMENU.C:296-297)
+			//the screens that wait for input outside the game loop keep their music going: the menus
+			//(uw1 MAINMENU.C:320-323, uw2 MAINMENU.C:296-297, CHARGEN.C:466-468), conversations
+			//(uw1 CONVERSE.C:348, uw2 CONVERSE.C:335), the automap (uw1 AUTOMAP.C:672, uw2 AUTOMAP.C:818)
+			//and the options (uw1 OPTIONS.C:103, uw2 WRAPPER.C:109)
 			XMIMusic.LoopMusicMaybe();
 		}
 
