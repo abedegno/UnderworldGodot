@@ -514,6 +514,7 @@ namespace Underworld
                 obj.UnkBit_0x19_4 = 0;
                 obj.UnkBit_0x19_5 = 0;
                 obj.UnkBit_0x19_0_likelyincombat = 0;
+                obj.UnkBit_0x19_1 = 0;//whether or not the move home succeeds (uw1 CRITTIME.C:158, uw2 CRITTIME.C:156)
                 if (_RES != GAME_UW2 || obj.npc_goal != (byte)npc.npc_goals.npc_goal_want_to_talk)
                 {//UW1 turns every critter, UW2 all but one waiting to talk (uw1 CRITTIME.C:159, uw2 CRITTIME.C:157-158)
                     obj.heading = (short)(Rng.r.Next(8) & 7);

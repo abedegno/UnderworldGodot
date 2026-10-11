@@ -18,8 +18,10 @@ namespace Underworld.Scenarios;
 /// (npc_xhome, npc_yhome are the current square; :545-551), so it never goes home.
 ///
 /// The scenario makes a critter on one open square with its home on another, below its average
-/// hit points, and calls npc.ReturnNPCToHomeTile (the port's up_crit); then a second critter
-/// standing at home with goal 10, to see whether it draws its turn. The home square has no solid
+/// hit points, and calls npc.ReturnNPCToHomeTile (the port's up_crit); then a critter whose home
+/// square another critter stands in the middle of, so the move is refused, to see that b19 bit 1
+/// is cleared anyway (uw1 :158, uw2 :156; the port cleared it only when the move succeeded);
+/// then a critter standing at home with goal 10, to see whether it draws its turn. The home square has no solid
 /// neighbour, and the object chains of it and its neighbours are set aside during the call, so
 /// nothing but the rule under test decides the move.
 /// </summary>
@@ -141,6 +143,28 @@ public sealed class CritterGoesHome : Scenario
             _k.True(!InChain(sx, sy, o.index), $"critter still in its old square's object list ({cite})");
             _k.Equal("hit points after up_crit", (hp0 + avghit) / 2, o.npc_hp, game == "uw1" ? "uw1 CRITTIME.C:160-161" : "uw2 CRITTIME.C:159-160");
             c.Note($"critter 0x{item:X}, avghit {avghit}, from ({sx}, {sy}) home ({hx}, {hy})");
+        }
+
+        // A critter whose home square is taken by another critter standing in its middle: can_place
+        // refuses the move (uw1 CRITTIME.C:183-185, uw2 :182-184), but b19 bit 1 was cleared before
+        // that, whatever the move does (uw1 CRITTIME.C:158, uw2 :156).
+        {
+            var (sx, sy) = Find(false);
+            var (hx, hy) = Find(true);
+            if (sx < 0 || hx < 0) { _problem = "no squares for the blocked critter and its home"; return; }
+            var o = BatchB.SpawnCritter(item, sx, sy);
+            var blocker = BatchB.SpawnCritter(item, hx, hy);
+            if (o == null || blocker == null) { _problem = "could not make the blocked critter or its blocker"; return; }
+            blocker.xpos = 4; blocker.ypos = 4;
+            o.quality = (short)hx; o.owner = (short)hy;
+            o.npc_goal = 0; o.npc_attitude = 2; o.npc_hp = (byte)avghit;
+            o.SpawnedCritter_0XD_Bit8 = 0;
+            o.UnkBit_0x19_1 = 1;
+            npc.ReturnNPCToHomeTile(o, ref counts);
+            string cite = game == "uw1" ? "uw1 CRITTIME.C:183-185" : "uw2 CRITTIME.C:182-184";
+            if (o.npc_xhome != sx || o.npc_yhome != sy || !InChain(sx, sy, o.index))
+            { _problem = $"the blocked critter moved to ({o.npc_xhome}, {o.npc_yhome}); its home was meant to refuse it ({cite})"; return; }
+            _k.Equal("b19 bit 1 after up_crit whose move home failed", 0, o.UnkBit_0x19_1, game == "uw1" ? "uw1 CRITTIME.C:158" : "uw2 CRITTIME.C:156");
         }
 
         // A critter at home waiting to talk (goal 10): UW1 turns it anyway, UW2 does not.
