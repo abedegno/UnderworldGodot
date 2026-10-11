@@ -32,6 +32,12 @@ jobs:
     needs: check
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    # One job per game, in parallel; each fetches and decrypts only its own bundle.
+    strategy:
+      fail-fast: false
+      matrix:
+        game: [1, 2]
+    name: scenarios (uw${{ matrix.game }})
     env:
       GODOT_VERSION: 4.3-stable
       GODOT_ZIP: Godot_v4.3-stable_mono_linux_x86_64.zip
@@ -45,15 +51,13 @@ jobs:
       - name: Gate on the asset secrets
         id: gate
         env:
-          K1: ${{ secrets.UW1_ASSETS_DEPLOY_KEY }}
-          K2: ${{ secrets.UW2_ASSETS_DEPLOY_KEY }}
-          A1: ${{ secrets.UW1_ASSETS_AGE_KEY }}
-          A2: ${{ secrets.UW2_ASSETS_AGE_KEY }}
+          K: ${{ matrix.game == 1 && secrets.UW1_ASSETS_DEPLOY_KEY || secrets.UW2_ASSETS_DEPLOY_KEY }}
+          A: ${{ matrix.game == 1 && secrets.UW1_ASSETS_AGE_KEY || secrets.UW2_ASSETS_AGE_KEY }}
         run: |
           if [ ! -x tests/scenarios.sh ]; then
             echo "scenarios: this branch has no tests/scenarios.sh, skipped"
             echo "run=false" >> "$GITHUB_OUTPUT"
-          elif [ -z "$K1" ] || [ -z "$K2" ] || [ -z "$A1" ] || [ -z "$A2" ]; then
+          elif [ -z "$K" ] || [ -z "$A" ]; then
             echo "scenarios: no asset secrets, skipped"
             echo "run=false" >> "$GITHUB_OUTPUT"
           else
@@ -88,6 +92,18 @@ jobs:
           [ -f "$godot" ] || { echo "scenarios: no Godot binary at $godot"; exit 1; }
           chmod +x "$godot"
           echo "GODOT=$godot" >> "$GITHUB_ENV"
+      # Godot's import takes about five minutes here. A stale cache is safe: Godot re-imports any
+      # resource whose source changed (.godot/imported keeps each source's hash).
+      - name: Cache the Godot import
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            .godot
+            !.godot/mono
+          key: godot-import-${{ env.GODOT_VERSION }}-${{ hashFiles('project.godot', '**/*.import') }}
+          restore-keys: |
+            godot-import-${{ env.GODOT_VERSION }}-
       - name: Install age
         if: steps.gate.outputs.run == 'true'
         run: |
@@ -109,7 +125,7 @@ jobs:
           hosts="$RUNNER_TEMP/github-known-hosts"
           # GitHub's published host key (api.github.com/meta)
           echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "$hosts"
-          for n in 1 2; do
+          for n in ${{ matrix.game }}; do
             key="$RUNNER_TEMP/uw$n-assets-deploy-key"
             keyvar="UW${n}_DEPLOY_KEY"
             printf '%s\n' "${!keyvar}" | tr -d '\r' > "$key"
@@ -132,11 +148,10 @@ jobs:
         run: |
           set -euo pipefail
           # scenarios.sh skips a game whose folder has no DATA, which here would hide a bad bundle
-          for d in "$UW1_DIR" "$UW2_DIR"; do
-            [ -d "$d/DATA" ] || { echo "scenarios: the bundle's $(basename "$d") has no DATA folder"; exit 1; }
-          done
+          dir_var="UW${{ matrix.game }}_DIR"; dir="${!dir_var:-}"
+          [ -d "$dir/DATA" ] || { echo "scenarios: the bundle's $(basename "$dir") has no DATA folder"; exit 1; }
           dotnet_root="${DOTNET_ROOT:-$(dirname "$(readlink -f "$(command -v dotnet)")")}"
-          DOTNET_ROOT="$dotnet_root" tests/scenarios.sh --uw1-dir "$UW1_DIR" --uw2-dir "$UW2_DIR"
+          DOTNET_ROOT="$dotnet_root" tests/scenarios.sh --game uw${{ matrix.game }} --uw${{ matrix.game }}-dir "$dir"
       - name: Remove the game files and keys
         if: always()
         run: rm -rf "$RUNNER_TEMP"/assets-uw1 "$RUNNER_TEMP"/assets-uw2 "$RUNNER_TEMP"/uw1-ci-assets "$RUNNER_TEMP"/uw2-ci-assets "$RUNNER_TEMP"/uw1-assets-deploy-key "$RUNNER_TEMP"/uw2-assets-deploy-key "$RUNNER_TEMP"/github-known-hosts
