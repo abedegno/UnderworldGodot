@@ -1636,11 +1636,7 @@ namespace Underworld
             {
                 return true;
             }
-            if (
-                (playerdat.isLefty && slot == 8)
-                ||
-                (!playerdat.isLefty && slot == 7)
-                )
+            if (slot == 7 + playerdat.handednessvalue)//the shield hand, player->lefty + 7, uw1 INVDATA.C:407, uw2 INVDATA.C:388
             {
                 if (obj.majorclass == 0)
                 {

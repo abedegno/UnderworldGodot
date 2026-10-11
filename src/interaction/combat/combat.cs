@@ -427,7 +427,7 @@ namespace Underworld
                 if (result == playerdat.SkillCheckResult.CritSucess)
                 {
                     AttackWasACrit = true;
-                    var critbonus = (48 + Rng.r.Next(30)) >> 5;
+                    var critbonus = (48 + Rng.r.Next(32)) >> 5;//((rand() & 0x1F) + 0x30) >> 5, uw1 COMBAT.C:305, uw2 COMBAT.C:331
                     AttackDamage = AttackDamage * critbonus;
 
                     if (DefendingCharacter.index == 1)
