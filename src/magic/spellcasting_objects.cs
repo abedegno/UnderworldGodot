@@ -56,22 +56,33 @@ namespace Underworld
                         CastClassBEnchantment(minorclass); break;
                     }
                 case 0xC: //toughness or protection.
-                    {   //toughness applies a damage resistance to a specific body part. 
-                        //Protection makes the body part harder to hit
-                        if (PaperDollSlot < 2) //appears to only work when helm and chest?
+                    {   //toughness adds armour to a body part. Protection makes the body part harder to hit
+                        //slots 0 to 4 give one location (defence_slot_index), the rings both body and arms; toughness always goes to the first location's armour, once per location (uw2 PLAYDATA.C:249-264, uw1 PLAYDATA.C:271-286)
+                        if (PaperDollSlot < 0) { break; }
+                        int[] defence_slot_index = new int[] { 3, 0, 1, 2, 2 };
+                        int[] slots;
+                        if (PaperDollSlot > 4)
                         {
-                            var slot = 0;
-                            if (PaperDollSlot == 0) { slot = 3; }
+                            slots = new int[] { 0, 1 };
+                        }
+                        else
+                        {
+                            slots = new int[] { defence_slot_index[PaperDollSlot] };
+                        }
+                        for (int i = 0; i < slots.Length; i++)
+                        {
+                            var toughness = 0;
                             if ((minorclass & 0x8) == 0)
                             {
                                 //protection
-                                playerdat.LocationalProtectionValues[slot] += (minorclass & 0x7);
+                                playerdat.LocationalProtectionValues[slots[i]] += (minorclass & 0x7) + 1;
                             }
                             else
                             {
                                 //toughness
-                                playerdat.LocationalProtectionValues[slot] += (minorclass & 0x7);
+                                toughness = (minorclass & 0x7) + 1;
                             }
+                            playerdat.LocationalArmourValues[slots[0]] += toughness;
                         }
                         break;
                     }
