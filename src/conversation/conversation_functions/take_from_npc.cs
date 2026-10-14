@@ -91,6 +91,10 @@ namespace Underworld
                 if (uimanager.GetPlayerTradeSlot(i, false) == -1)
                 {
                     uimanager.SetPlayerTradeSlot(slotno: i, item_index: obj.index, selected: false);
+                    //the player's slot i changes, so its valuations are forgotten. DOS clears npc_appraisals[i] here in place of
+                    //play_appraisals[i] (uw1 BARTER.C:979, 1015, uw2 BARTER.C:959, 995), an evident slip that is not copied.
+                    PlayerJudgement[i] = -1;
+                    PlayerAppraisals[i] = -1;
                     return 1;
                 }
             }
