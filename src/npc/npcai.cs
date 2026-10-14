@@ -823,7 +823,8 @@ namespace Underworld
                     critter.UnkBit_0X13_Bit0to6 = (short)Rng.r.Next(2);
                     critter.ProjectileHeading = (ushort)Rng.r.Next(0x100);
                     critter.Projectile_Pitch = (short)(0xF + Rng.r.Next(3));
-                    critter.AnimationFrame = (byte)((critter.AnimationFrame + 1) % MaxAnimFrame);
+                    //UW2 steps by the sequence's frame count, seq_len (uw2 AI.C:1301), UW1 by 4 (uw1 AI.C:1315)
+                    critter.AnimationFrame = (byte)((critter.AnimationFrame + 1) % ((_RES == GAME_UW2) ? MaxAnimFrame + 1 : 4));
                     critter.UnkBit_0X15_6 = 1;
                     break;
                 case 0xC://stand at location
@@ -1780,7 +1781,8 @@ namespace Underworld
                         //already in walk animation;
                         //seg006_1413_3620:
                         var tmp = critter.AnimationFrame + 1;
-                        critter.AnimationFrame = (byte)(tmp % MaxAnimFrame);
+                        //UW2 steps by the sequence's frame count, seq_len (uw2 PATHFIND.C:1354), UW1 by 4 (uw1 PATHFIND.C:1224)
+                        critter.AnimationFrame = (byte)(tmp % ((_RES == GAME_UW2) ? MaxAnimFrame + 1 : 4));
                     }
                     //seg006_1413_3657:
                     //set frames as in above branches   
@@ -2475,45 +2477,42 @@ namespace Underworld
                     critter.npc_attitude = 0;
                 }
 
-                if ((siDist < 0x64) || ((siDist >= 0x64) && (currObj_XHome == currentGTargXHome) && (currObj_YHome == currentGTargYHome)))
+                if (
+                    ((siDist < 0x64) || ((siDist >= 0x64) && (currObj_XHome == currentGTargXHome) && (currObj_YHome == currentGTargYHome)))
+                    &&
+                    ((Math.Abs(currObj_FloorHeight - currentGTargFloorHeight) < 4) || critterObjectDat.isFlier(critter.item_id))
+                    )
                 {
-                    //seg007_17A2_81D: 
-                    if (Math.Abs(currObj_FloorHeight - currentGTargFloorHeight) < 4)
+                    //seg007_17A2_844:
+                    ChooseMeleeAttackToMake(critter, siDist);
+                    if (_RES == GAME_UW2)
                     {
-                        //seg007_17A2_844:
-                        ChooseMeleeAttackToMake(critter, siDist);
-                        return;
+                        return;//uw2 AI.C:349-352
                     }
-                    else
-                    {
-                        if (critterObjectDat.isFlier(critter.item_id))
-                        {
-                            //seg007_17A2_844:
-                            ChooseMeleeAttackToMake(critter, siDist);
-                            return;
-                        }
-                    }
-                }
-
-                //seg007_17A2_84F:
-                if (critterObjectDat.NPCPower_0x2DBits1To7(critter.item_id) <= 0)
-                {
-                    //Check if NPC Weapon loot is a ranged weapon
-                    //seg007_17A2_87F:
-                    if ((critterObjectDat.weaponloot(critter.item_id, 0) >> 4) == 1)
-                    {
-                        //seg007_17A2_895:
-                        RangeAttackStarted = NPCStartRangedAttack(critter);
-                    }
+                    //UW1 goes on with nothing attacked to the give-up test and crit_offense_find_target (uw1 AI.C:362-385)
                 }
                 else
                 {
-                    if (!TryToDoMagicAttack(critter))
+                    //seg007_17A2_84F:
+                    if (critterObjectDat.NPCPower_0x2DBits1To7(critter.item_id) <= 0)
                     {
-                        //seg007_17A2_86E
-                        if (critterObjectDat.isCaster(critter.item_id))
+                        //Check if NPC Weapon loot is a ranged weapon
+                        //seg007_17A2_87F:
+                        if ((critterObjectDat.weaponloot(critter.item_id, 0) >> 4) == 1)
                         {
-                            RangeAttackStarted = NPCStartMagicAttack(critter);
+                            //seg007_17A2_895:
+                            RangeAttackStarted = NPCStartRangedAttack(critter);
+                        }
+                    }
+                    else
+                    {
+                        if (!TryToDoMagicAttack(critter))
+                        {
+                            //seg007_17A2_86E
+                            if (critterObjectDat.isCaster(critter.item_id))
+                            {
+                                RangeAttackStarted = NPCStartMagicAttack(critter);
+                            }
                         }
                     }
                 }
@@ -2976,7 +2975,8 @@ namespace Underworld
             }
             else
             {
-                critter.AnimationFrame = (byte)((critter.AnimationFrame + 1) % MaxAnimFrame);
+                //seq_len, the frame count, one more than the last frame (uw2 AI.C:423)
+                critter.AnimationFrame = (byte)((critter.AnimationFrame + 1) % (MaxAnimFrame + 1));
             }
 
             if (critterObjectDat.isFlier(critter.item_id))
