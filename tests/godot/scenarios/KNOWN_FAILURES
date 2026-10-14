@@ -13,8 +13,6 @@ uw1/npc-swing-charge-resets  ~attack charge after the blow expected 0  # charge 
 uw2/npc-swing-charge-resets  ~attack charge after the blow expected 0  # charge and cast slot never cleared when a sequence ends: src/npc/npcai.cs:441, 477; uw2 AI.C:1133, 1150-1151
 uw1/critter-melee-choice  ~melee manoeuvre differs from crit_attack  # UW2 sequence numbers in UW1, reach 0x100, attack choice >=: src/npc/npcai.cs:2912-2942, 2983, 2997; uw1 AI.C:395-458
 uw2/critter-melee-choice  ~melee manoeuvre differs from crit_attack  # reach 0x100 and attack choice >=: src/npc/npcai.cs:2983, 2997; uw2 AI.C:432-437
-uw1/fleeing-critter-steers  ~steering round the player differs from crit_avoid_player  # steers when far, measures from the target, keeps every heading: src/npc/npcai.cs:2808, 2816; uw1 AI.C:685-713
-uw2/fleeing-critter-steers  ~steering round the player differs from crit_avoid_player  # same as UW1: src/npc/npcai.cs:2808, 2816; uw2 AI.C:652-686
 uw1/allies-join-fight  ~ally's goal after the player hit a critter nearby (5, attack) expected 5  # allies skip the join-the-fight test: src/npc/npcai.cs:607; uw1 AI.C:1227-1233
 uw2/allies-join-fight  ~ally's goal after the player hit a critter nearby (5, attack) expected 5  # allies skip the join-the-fight test: src/npc/npcai.cs:607; uw2 AI.C:1218-1225
 uw1/allies-wear-off  ~allies after a slow tick expected fewer than 8  # no yearly_checkup in the slow tick: src/player/playerdatloop.cs:233; uw1 CRITTIME.C:78-89, PLAYTIME.C:135
