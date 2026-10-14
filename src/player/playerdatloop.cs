@@ -303,8 +303,8 @@ namespace Underworld
                 }
             }
             
-            if (regeneration < 0)
-            {//boost mana by a fixed amount, mana regen on a schedule.
+            if (regeneration <= 0)
+            {//boost mana by a fixed amount, mana regen on a schedule. 0 adds nothing (uw1 SPELLS.C:173-177, uw2 SPELLS.C:162-165)
                 play_mana = Math.Min(play_mana - regeneration, max_mana);
             }
             else
