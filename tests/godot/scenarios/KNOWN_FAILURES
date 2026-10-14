@@ -73,8 +73,6 @@ uw2/scd-set-quest-bit  ~after an SCD row setting it to 1 expected 1  # SCD event
 uw2/qbert-gate-stays  ~moongate 0x3CE invisible after the pyramid is finished expected 0  # flag read from var 114 (never written), gate hidden at once: a_hack_trap_qbert.cs:100, 269; uw2 WORLDEV.C:1941, 1960-1968
 uw2/castle-schedule-hours  ~castle destination wrong  # 12-hour clock, stages 3/5/9 to the throne room, Miranda/XC_CASTLE 0 rules, loc 5, exclusive bounds: a_hack_trap_castleschedule.cs:138-229; uw2 CRITTIME.C:646-731
 uw2/enchant-weapon-tier  ~(tier 2 above skill 0) expected destroyed  # weapon tier is effect & 0xFFF8, always 0: enchanting.cs:88; uw2 SPELLS2.C:349-363
-uw1/give-ptr-npc  ~give_ptr_npc(coins, 2) result expected 1  # looks the inventory index up in the level objects, never takes from the pack, returns 0: give_ptr_npc.cs:28-71; uw1 CONVERSE.C:696-716
-uw2/give-ptr-npc  ~give_ptr_npc(coins, 2) result expected 1  # looks the inventory index up in the level objects, never takes from the pack, returns 0: give_ptr_npc.cs:28-71; uw2 CONVERSE.C:680-712
 uw1/trap-chain-flow  ~ward trap -> set variable: variable 10 (the chain ends) expected 0  # ward and door traps pass the chain on, chained triggers checked, unhandled hacks stop: a_ward_trap.cs:29, trigger.cs:51-55, hack_trap.cs:456; uw1 TRIGGER.C:116, 339-340, 403-436
 uw2/trap-chain-flow  ~ward trap -> set variable: variable 10 (the chain ends) expected 0  # ward passes the chain on, chained triggers checked, unhandled hacks stop: a_ward_trap.cs:29, trigger.cs:51-55, trap.cs:300; uw2 TRIGGER.C:98, 693, 702-712
 uw1/teleport-occupied-square  ~expected to land on another square  # no find_good_x_and_y: TeleportUW1 stores the square as given: teleportation.cs:394; uw1 WORLDEV.C:76-168, 183-190

@@ -88,6 +88,13 @@ static class ConvHelp
 /// the top two stack values point at the qty and at the object. The talker is a critter made in
 /// the mobile list. The port's calls touch the level object at the inventory index (the player
 /// object); its next link is restored afterwards so the level stays sound.
+///
+/// First, with the static free list made to look empty (StaticFreeListPtr -1, restored
+/// afterwards), it picks the coins up from the pack as a click does (uimanager.DoPickup), which
+/// must change nothing, and gives 2 and then all 5: the port copies a given object into a new level
+/// object, so with no free object the give must fail, return 0, leave the pack as it was and
+/// write nothing into object 0, as give_ptr_npc returns 0 when its own allocation fails
+/// (uw2 CONVERSE.C:697-704).
 /// </summary>
 public sealed class GivePtrNpc : Scenario
 {
@@ -96,6 +103,8 @@ public sealed class GivePtrNpc : Scenario
 
     string _problem;
     int _found, _resultA, _resultB, _playerAfterA, _npcAfterA, _playerAfterB, _npcAfterB, _playerBefore;
+    int _fullSplit = -1, _fullAll = -1, _playerAfterFull, _npcAfterFull, _pickup = -1, _handBefore, _handAfter;
+    bool _obj0Same;
 
     public override Task Setup(ScenarioContext c)
     {
@@ -128,6 +137,28 @@ public sealed class GivePtrNpc : Scenario
             _found = ConversationVM.result_register;
             if (_found <= 0) { _problem = "find_inv(1, 0xA0) did not find the coins in the player's inventory"; return Task.CompletedTask; }
 
+            // No free static object: both gives must fail and change nothing.
+            var map = UWTileMap.current_tilemap;
+            var obj0 = map.LevelObjects[0];
+            var obj0Before = new byte[8];
+            for (int b = 0; b < 8; b++) obj0Before[b] = obj0.DataBuffer[obj0.PTR + b];
+            int savedFree = map.StaticFreeListPtr;
+            try
+            {
+                map.StaticFreeListPtr = -1;
+                _handBefore = playerdat.ObjectInHand;
+                _pickup = uimanager.DoPickup(playerdat.InventoryObjects[_found]);
+                _handAfter = playerdat.ObjectInHand;
+                _fullSplit = Give(c, talker, _found, 2);
+                _fullAll = Give(c, talker, _found, 5);
+            }
+            finally { map.StaticFreeListPtr = savedFree; }
+            _obj0Same = true;
+            for (int b = 0; b < 8; b++) if (obj0.DataBuffer[obj0.PTR + b] != obj0Before[b]) _obj0Same = false;
+            _playerAfterFull = ConvHelp.PlayerCoins(); _npcAfterFull = ConvHelp.NpcCoins(talker);
+            c.Note($"no free object: pickup returned {_pickup}, hand {_handBefore} -> {_handAfter}; give 2 returned {_fullSplit}, give 5 returned {_fullAll}, player {_playerAfterFull}, NPC {_npcAfterFull}, object 0 unchanged {_obj0Same}");
+            if (_npcAfterFull != 0 || _playerAfterFull != 5) return Task.CompletedTask;
+
             _resultA = Give(c, talker, _found, 2);
             _playerAfterA = ConvHelp.PlayerCoins(); _npcAfterA = ConvHelp.NpcCoins(talker);
             _resultB = Give(c, talker, _found, 3);
@@ -144,9 +175,8 @@ public sealed class GivePtrNpc : Scenario
     }
 
     /// <summary>
-    /// give_ptr_npc(object, qty): at(at(sp - 1)) is qty, at(at(sp - 2)) the object. The port's
-    /// call can throw (splitting a stack it spawns the copy at tile 99, 99, give_ptr_npc.cs:41);
-    /// that is its failure to give, so it is noted and the call counts as returning nothing (-1).
+    /// give_ptr_npc(object, qty): at(at(sp - 1)) is qty, at(at(sp - 2)) the object. An exception
+    /// from the call is not caught here: it fails the scenario with its own message.
     /// </summary>
     static int Give(ScenarioContext c, uwObject talker, int index, int qty)
     {
@@ -154,8 +184,7 @@ public sealed class GivePtrNpc : Scenario
         ConversationVM.Set(2, 12); ConversationVM.Set(12, qty);
         ConversationVM.Set(1, 13); ConversationVM.Set(13, index);
         ConversationVM.result_register = -1;
-        try { ConversationVM.give_ptr_npc(talker); }
-        catch (System.Exception ex) { c.Note($"give_ptr_npc(coins, {qty}) threw {ex.GetType().Name}: {ex.Message.Split('\n')[0]}"); return -1; }
+        ConversationVM.give_ptr_npc(talker);
         return ConversationVM.result_register;
     }
 
@@ -165,6 +194,14 @@ public sealed class GivePtrNpc : Scenario
         if (_playerBefore != 5) return $"precondition: the player carries {_playerBefore} coins, not 5";
         string cite = c.Game == "uw1" ? "uw1 CONVERSE.C:710-715" : "uw2 CONVERSE.C:708-711";
         var k = new Checks();
+        k.Equal("DoPickup result with no free object", 0, _pickup, "the port copies a picked-up object into a new level object");
+        k.Equal("object in hand after a pickup with no free object", _handBefore, _handAfter, "nothing is picked up");
+        k.Equal("give_ptr_npc(coins, 2) result with no free object", 0, _fullSplit, "uw2 CONVERSE.C:697-704");
+        k.Equal("give_ptr_npc(coins, 5) result with no free object", 0, _fullAll, "uw2 CONVERSE.C:697-704");
+        k.Equal("player's coins after the pickup and gives with no free object", 5, _playerAfterFull, cite);
+        k.Equal("NPC's coins after the gives with no free object", 0, _npcAfterFull, cite);
+        k.True(_obj0Same, "object 0 was written by a pickup or give with no free object");
+        if (_playerAfterFull != 5 || _npcAfterFull != 0) return k.Result;
         k.Equal("give_ptr_npc(coins, 2) result", 1, _resultA, cite);
         k.Equal("player's coins after giving 2", 3, _playerAfterA, "invRemoveObject(obj, qty): " + cite);
         k.Equal("NPC's coins after giving 2", 2, _npcAfterA, "npc_inv_add: " + cite);
