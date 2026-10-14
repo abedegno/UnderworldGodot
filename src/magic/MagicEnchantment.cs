@@ -247,15 +247,23 @@ namespace Underworld
         /// </summary>
         /// <param name="obj"></param>
         /// <param name="spell"></param>
-        public static void CastObjectSpell(uwObject obj, MagicEnchantment spell)
+        /// <param name="UsedByPlayer">A use by the player, how nonzero in checkSpell, which
+        /// waits SpellCasting.ObjectSpellInterval between casts (uw1 USEITEMS.C:1058, uw2 OBJUSE.C:361).</param>
+        /// <returns>False when the wait refused the cast: nothing is cast and no charge is to be spent.</returns>
+        public static bool CastObjectSpell(uwObject obj, MagicEnchantment spell, bool UsedByPlayer = true)
         {
             use.SpellHasBeenCast = true;
+            if (UsedByPlayer && !SpellCasting.ObjectSpellWaitHasElapsed())
+            {
+                return false;
+            }
             var spellno = spell.SpellMinorClass;
             if (spell.SpellMajorClass != -1)
             {
                 spellno = spellno |= (spell.SpellMajorClass << 6);
             }
             SpellCasting.CastSpellFromObject(spellno, obj);
+            return true;
         } 
 
 

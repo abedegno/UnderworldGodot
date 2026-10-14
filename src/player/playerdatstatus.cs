@@ -673,7 +673,7 @@ namespace Underworld
                     if (nutritionValue > 0)
                     {
                          //apply food health boost
-                         var hpbonusToApply = foodhealthbonus / 6;
+                         var hpbonusToApply = foodhealthbonus / (_RES == GAME_UW2 ? 6 : 8);//food_heal / 8 in UW1, / 6 in UW2 (uw1 SKILLS.C:654, uw2 SKILLS.C:592)
                          if (hpbonusToApply > 8)
                          {
                               hpbonusToApply = 8;
