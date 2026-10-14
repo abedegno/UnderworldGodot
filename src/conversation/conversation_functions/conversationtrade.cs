@@ -309,7 +309,8 @@ namespace Underworld
 
 
         /// <summary>
-        /// Gives the item at the specified index from the trade area to the npc.
+        /// Gives the item at the specified index from the trade area to the npc, adding coins to a pile it already has
+        /// (player_barter_give, uw1 BARTER.C:898-915, uw2 BARTER.C:878-895)
         /// </summary>
         /// <param name="talker"></param>
         /// <param name="itemindex"></param>
@@ -323,9 +324,7 @@ namespace Underworld
                     var obj = UWTileMap.current_tilemap.LevelObjects[x];
                     if (obj.index == itemindex)
                     {
-                        //insert to talkers object list
-                        obj.next = talker.link;
-                        talker.link = obj.index;
+                        NpcInvAdd(talker, obj);
                         uimanager.SetPlayerTradeSlot(i, -1, false);
                         return;
                     }
