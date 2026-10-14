@@ -17,10 +17,9 @@ namespace Underworld.Scenarios;
 /// a critter fleeing the player has them (its target, the player, at the player's position; its
 /// own position at the offset) and compares the heading with the original's.
 ///
-/// Both games. The port steers when the player is far rather than near, measures from the
-/// target instead of the critter (src/npc/npcai.cs:2808), and its test for a heading to keep is
-/// always true (npcai.cs:2816). Its other flee faults (no abs on the height difference,
-/// npcai.cs:2599; the stuck turn, npcai.cs:2630) are not in this table.
+/// Both games. The port steered when the player was far rather than near, measured from the
+/// target instead of the critter, and its test for a heading to keep was always true
+/// (VectorsToPlayer, src/npc/npcai.cs). The rest of crit_flee is critter-flees.
 /// </summary>
 public sealed class FleeingCritterSteers : Scenario
 {
