@@ -38,14 +38,31 @@ namespace Underworld
             UWMotionParamArray.RelatedToMotionZ_dseg_67d6_402 = 0;
 
 
+            // The terrain and pitch tests differ between the games. UW2 settles when the
+            // terrain's low two bits equal 1 and the pitch is not above zero:
+            // (3 & hits0) == 1 && vel[2] <= 0, uw2 MOTION.C:514-515. UW1 tests bit 0 alone,
+            // which also passes for 3, and settles only on a falling pitch:
+            // (1 & hits0) && vel[2] < 0, uw1 MOTION.C:505-506. See #117.
+            bool settleTerrain;
+            bool settlePitch;
+            if (_RES == GAME_UW2)
+            {
+                settleTerrain = (MotionCalcArray.UnkC_terrain_base & 0x3) == 1;
+                settlePitch = MotionParams.unk_a_pitch <= 0;
+            }
+            else
+            {
+                settleTerrain = (MotionCalcArray.UnkC_terrain_base & 0x1) != 0;
+                settlePitch = MotionParams.unk_a_pitch < 0;
+            }
             if (
                 (UWMotionParamArray.ACollisionIndex_dseg_67d6_416 == -1)
                 &&
-                ((MotionCalcArray.UnkC_terrain_base & 0x3) == 1)
+                settleTerrain
                 &&
                 (MotionCalcArray.Radius8_base + MotionCalcArray.Unk10_base >= MotionCalcArray.z4_base)
                 &&
-                (MotionParams.unk_a_pitch <= 0)
+                settlePitch
                 )
             {//seg031_2CFA_DDE: 
                 ZeroiseMotionValues_seg031_2CFA_7BF(MotionParams);
@@ -296,21 +313,19 @@ namespace Underworld
                         // seg030_2B26_788 and returns. Nothing restores the momentum, and
                         // nothing saves it either, so var6 is read on the UW2 path alone.
                         //
-                        // The condition itself is NOT faithful and is left as it was found.
-                        // DOS restores when (C & 3) == 3 and bit 2 of C is SET (test ...,4
-                        // then jnz to the restore at seg031_2CFA_10ED), and it SKIPS the
-                        // restore when bit 0x800 of E is set (test ...,800h then jnz to
-                        // seg031_2CFA_10F9). Both read inverted below. UW2 only, so it is
-                        // not fixed here.
+                        // UW2 puts the speed back, so a bounce on ice does not slow it, when
+                        // the centre stands on an ice floor (class 3, TERRAIN_ICE, with 4,
+                        // on the floor), or a corner is on ice (0x40) and none is over a
+                        // drop (0x800):
+                        // (hits0 & 3) == 3 && hits0 & 4 || hits1 & 0x40 && !(hits1 & 0x800),
+                        // uw2 MOTION.C:600-601.
                         if (
                             (_RES == GAME_UW2)
                             &&
                             (
-                            (((MotionCalcArray.UnkC_terrain_base & 3) == 3) && ((MotionCalcArray.UnkC_terrain_base & 0xC & 4) != 4))
+                            (((MotionCalcArray.UnkC_terrain_base & 3) == 3) && ((MotionCalcArray.UnkC_terrain_base & 4) != 0))
                             ||
-                            (((MotionCalcArray.UnkC_terrain_base & 3) == 3) && ((MotionCalcArray.UnkC_terrain_base & 0xC & 4) == 4) && ((MotionCalcArray.UnkE_base & 0x40) != 0) && ((MotionCalcArray.UnkE_base & 0x800) == 0x800))
-                            ||
-                            (((MotionCalcArray.UnkC_terrain_base & 3) != 3) && ((MotionCalcArray.UnkE_base & 0x40) != 0) && ((MotionCalcArray.UnkE_base & 0x800) == 0x800))
+                            (((MotionCalcArray.UnkE_base & 0x40) != 0) && ((MotionCalcArray.UnkE_base & 0x800) == 0))
                             )
                             )
                         {

@@ -104,6 +104,9 @@ public partial class ScenarioRunner : Node
         (() => new GuardLevelChange(), true),
         (() => new GuardSaveLoad(), true),
         (() => new GuardMelee(), true),
+        // issue #117
+        (() => new DoCollisionEntry(), true),
+        (() => new DoCollisionMomentumRestore(), true),
         (() => new HarnessFails(), false),
     };
 
