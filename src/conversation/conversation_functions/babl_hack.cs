@@ -88,18 +88,18 @@ namespace Underworld
                             ChargeChangeFactor: newCharge);
                         break;
                     }
-                case 8: //modify trade evaluation threshold
+                case 8: //multiply greed, the trade evaluation threshold, a 16-bit int (uw2 BABLHACK.C:118-119)
                     {
                         Debug.Print("untested change trade evaluation threshold");
                         var multiplier = at(at(stack + stackptr - 2));
-                        TradePatience = multiplier * TradePatience;
-                        result_register = TradePatience;
+                        TradeThreshold = (short)(multiplier * TradeThreshold);
+                        result_register = TradeThreshold;
                         break;
                     }
-                case 9: //trade bonus
+                case 9: //trade bonus, fudge, a signed char (uw2 BABLHACK.C:116-117, BARTER.C:53)
                     {
                         Debug.Print("untested babltradebonus");
-                        BablTradeBonus = at(at(stack + stackptr - 2));
+                        BablTradeBonus = (sbyte)at(at(stack + stackptr - 2));
                         result_register = BablTradeBonus;
                         break;
                     }
