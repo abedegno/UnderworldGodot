@@ -686,8 +686,13 @@ namespace Underworld
                             }
                             else
                             {
-                                //Clicked on inventory to activate. The only moonstone on the map is a different one so use the callback.
-                                Teleportation.JumpToMoonStoneOnLevel();
+                                //Clicked on inventory to activate. The only moonstone on the map is a different one: a teleport to its square,
+                                //searched for room like any other (uw2 SPELLS.C:891-903).
+                                var moonstone = objectsearch.FindMatchInFullObjectList(4, 2, 6, UWTileMap.current_tilemap.LevelObjects);
+                                if (moonstone != null && UWTileMap.ValidTile(moonstone.tileX, moonstone.tileY))
+                                {
+                                    Teleportation.Teleport(character: 0, tileX: moonstone.tileX, tileY: moonstone.tileY, newLevel: 0, HeadingHeightFlag: 0);
+                                }
                             }
                         }
                         else
@@ -696,7 +701,7 @@ namespace Underworld
                             Teleportation.CodeToRunOnTeleport = Teleportation.JumpToMoonStoneOnLevel;
                             Teleportation.Teleport(
                                 character: 0,
-                                tileX: 32, tileY: 32,
+                                tileX: 0x3F, tileY: 0x3F,//no square: CodeToRunOnTeleport sets it (uw2 SPELLS.C:905-908)
                                 newLevel: playerdat.GetMoonstone(si),
                                 HeadingHeightFlag: 0);
                         }
