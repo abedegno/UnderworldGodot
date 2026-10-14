@@ -93,6 +93,8 @@ public partial class ScenarioRunner : Node
         (() => new TeleportOccupied(), true),
         (() => new MissImpactSound(), true),
         (() => new WallHitSound(), true),
+        (() => new WeaponEachSwing(), true),
+        (() => new MissileBodyLocation(), true),
         (() => new TybalTalkTrap(), true),
         // batch D: guards
         (() => new GuardEat(), true),
