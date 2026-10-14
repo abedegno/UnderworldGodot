@@ -49,6 +49,7 @@ public partial class ScenarioRunner : Node
         (() => new FleeingCritterSteers(), true),
         (() => new CritterFlees(), true),
         (() => new CritterAttackFrames(), true),
+        (() => new AttackFindTarget(), true),
         (() => new AlliesJoinFight(), true),
         (() => new AlliesWearOff(), true),
         (() => new WanderingMonsters(), true),
