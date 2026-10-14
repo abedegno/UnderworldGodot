@@ -27,6 +27,19 @@ static class TradeHelp
         return index;
     }
 
+    /// <summary>A slot valuation cache with nothing valued yet (-1 in every slot), for TotalOffering.</summary>
+    public static int[] Unvalued() => new[] { -1, -1, -1, -1, -1, -1 };
+
+    /// <summary>
+    /// Forgets every slot's valuations, as barter_init does when a conversation starts (uw1 BARTER.C:185-188, uw2 BARTER.C:150-151),
+    /// for a scenario that puts new items straight into the slots within one conversation.
+    /// </summary>
+    public static void ForgetValuations()
+    {
+        foreach (var values in new[] { ConversationVM.NpcAppraisals, ConversationVM.PlayerAppraisals, ConversationVM.NpcJudgement, ConversationVM.PlayerJudgement })
+            System.Array.Fill(values, -1);
+    }
+
     /// <summary>Food items (0xB0 to 0xBF, not weapons) the trade values above 0, so setup_to_barter offers them.</summary>
     public static List<int> ValuedFood() =>
         Enumerable.Range(0xB0, 16).Where(id => commonObjDat.monetaryvalue(id) > 0).ToList();
