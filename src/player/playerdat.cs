@@ -709,6 +709,8 @@ namespace Underworld
                         }
                     }
 
+                    //DOS recomputes only in advance, on a level gain (uw1 SKILLS.C:132, SKILLCHK.C:104-105); LevelUp has already done so,
+                    //and recomputing again on every gain gives the same values
                     UpdateHPManaMax(false);
                     uimanager.RefreshStatsDisplay();
                     //Check if player can level up

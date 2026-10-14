@@ -229,11 +229,11 @@ namespace Underworld
         }
 
         /// <summary>
-        /// Possibly an alternative speed?
+        /// The critter's speed, byte 0xB of its record (uw1 critter.h:37)
         /// </summary>
         /// <param name="item_id"></param>
         /// <returns></returns>
-        public static int unk_b(int item_id)
+        public static int walkspeed(int item_id)
         {
             return (buffer[CritterOffset(item_id) + 0xB]);
         }
@@ -244,11 +244,11 @@ namespace Underworld
         }
 
         /// <summary>
-        /// Returns the movement speed of the NPC
+        /// The critter's running speed, byte 0xC of its record (uw1 critter.h:38)
         /// </summary>
         /// <param name="item_id"></param>
         /// <returns></returns>
-        public static int speed(int item_id)
+        public static int run(int item_id)
         {
             return buffer[CritterOffset(item_id) + 0xC];
         }

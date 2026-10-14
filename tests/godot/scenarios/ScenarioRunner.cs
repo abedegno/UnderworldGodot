@@ -96,6 +96,9 @@ public partial class ScenarioRunner : Node
         (() => new MissImpactSound(), true),
         (() => new WallHitSound(), true),
         (() => new TybalTalkTrap(), true),
+        (() => new DragonChoice(), true),
+        (() => new AltarasWandCutLine(), true),
+        (() => new RepelUndeadSquare(), true),
         // batch D: guards
         (() => new GuardEat(), true),
         (() => new GuardLight(), true),

@@ -197,6 +197,7 @@ namespace Underworld
                     playerdat.ChangeHunger(-2 - Rng.r.Next(0x1F));
                     UpdateIntoxication();
 
+                    //Only UW2 has this "revived" step (uw2 SKILLS.C:533-546); UW1 leaves HP at 0 through the dream, so the result is the same
                     if (playerdat.play_hp == 0 && sleepmethod >= 0)
                     {
                         playerdat.play_hp = 1;//keep player alive
@@ -209,6 +210,7 @@ namespace Underworld
                     }
                     else
                     {
+                        //The original only fades the view back in here (fadein3d, uw1 SKILLS.C:618-621, uw2 SKILLS.C:556-557)
                         uimanager.FlashColour(1, uimanager.Cuts3DWin, 0.5f);
                         uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x13 - foodregenfactor_var2));
                     }

@@ -410,7 +410,7 @@ namespace Underworld
             }
             TeleportTileX = tileX;
             TeleportTileY = tileY;
-            return 2;
+            return 2;//do_teleport returns 0x10 here (uw1 WORLDEV.C:199); no caller acts on the value
         }
 
         /// <summary>
