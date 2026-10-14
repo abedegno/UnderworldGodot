@@ -118,6 +118,11 @@ namespace Underworld
 
         public void SetAnimSprite(int animationNo, short frameNo, int relativeHeading)
         {
+            if (_RES != GAME_UW2)
+            {
+                SetAnimSpriteUW1(animationNo, frameNo, relativeHeading);
+                return;
+            }
             if (uwobject.AnimationFrame >= 8)
             {
                 uwobject.AnimationFrame = 0;
@@ -153,9 +158,45 @@ namespace Underworld
             }
         }
 
-        private short ApplyCritterAnimation(uwObject obj, int animationNo, short frameNo, string animname, CritterArt crit)
+        /// <summary>
+        /// Draws a UW1 critter the way do_obj and do_uwcrit do, without changing its sequence or
+        /// frame: the AI counts its frames whatever the art holds. A sequence below 0x20 other than
+        /// dying is drawn only when the critter faces the viewer, else its standing view
+        /// (uw1 DRAWOBJ.C:214-217). A frame the animation lacks draws the first image of its page,
+        /// and a sequence with no animation draws nothing (uw1 PGCACHE.ASM:917-934).
+        /// </summary>
+        private void SetAnimSpriteUW1(int animationNo, short frameNo, int relativeHeading)
         {
-            var anim = crit.Animations[animname];
+            if ((animationNo < 0x20) && (animationNo != ANIMATION_DEATH) && (((relativeHeading + 5) & 7) >= 3))
+            {
+                animationNo = ANIMATION_IDLE;
+            }
+            string animname = CritterArt.GetAnimName(animationNo, relativeHeading);
+            var crit = CritterArt.GetCritter(this.uwobject.item_id & 0x3F);
+            SetCritterMaterial(uwobject);
+            if (crit.Animations.TryGetValue(animname, out var anim))
+            {
+                ShowCritterSprite(crit, (frameNo < 8) && (anim.animIndices[frameNo] != -1) ? anim.animIndices[frameNo] : anim.pageFirstSprite);
+                if (sprite != null)
+                {
+                    sprite.Visible = true;
+                }
+            }
+            else if (sprite != null)
+            {
+                sprite.Visible = false;
+            }
+            if (ObjectCreator.printlabels)
+            {
+                if (myLabel != null)
+                {
+                    myLabel.Text = $"{uwobject.a_name} {uwobject.item_id & 0x3F} \nAnim={uwobject.npc_animation} Frame={uwobject.AnimationFrame} {animname}\n Goal {uwobject.npc_goal} Gtarg{uwobject.npc_gtarg}\nHP:{uwobject.npc_hp}/{critterObjectDat.avghit(uwobject.item_id)}";
+                }
+            }
+        }
+
+        private void SetCritterMaterial(uwObject obj)
+        {
             if (material == null)
             {//create the initial material
                 var newmaterial = new ShaderMaterial();
@@ -169,6 +210,31 @@ namespace Underworld
                 newmaterial.SetShaderParameter("objectindex_upperbytes", (obj.index>>8) & 0xFF);                
                 material = newmaterial;
             }
+        }
+
+        /// <summary>
+        /// Shows the critter's sprite spriteNo.
+        /// </summary>
+        private void ShowCritterSprite(CritterArt crit, int spriteNo)
+        {
+            //Render nonxfer bits
+            var texture = crit.animSprites[spriteNo];
+            FrameSize = new Vector2(
+                ArtLoader.NPCSpriteScale * texture.GetWidth(),
+                ArtLoader.NPCSpriteScale * texture.GetHeight()
+                );
+            material.SetShaderParameter("texture_albedo", (Texture)texture);
+            if (sprite != null)
+            {
+                sprite.Mesh.Set("size", FrameSize);
+                sprite.Layers = main.LayerGeo | main.LayerObjectInfo | main.LayerXFER;
+            }
+        }
+
+        private short ApplyCritterAnimation(uwObject obj, int animationNo, short frameNo, string animname, CritterArt crit)
+        {
+            var anim = crit.Animations[animname];
+            SetCritterMaterial(obj);
 
             //assign the params to the shader
             if (frameNo >= 8) { frameNo = 0; }
@@ -179,18 +245,7 @@ namespace Underworld
 
             if (anim.animIndices[frameNo] != -1)
             {
-                //Render nonxfer bits
-                var texture = crit.animSprites[anim.animIndices[frameNo]];
-                FrameSize = new Vector2(
-                    ArtLoader.NPCSpriteScale * texture.GetWidth(),
-                    ArtLoader.NPCSpriteScale * texture.GetHeight()
-                    );
-                material.SetShaderParameter("texture_albedo", (Texture)texture);
-                if (sprite != null)
-                {
-                    sprite.Mesh.Set("size", FrameSize);
-                    sprite.Layers = main.LayerGeo | main.LayerObjectInfo | main.LayerXFER;                 
-                }
+                ShowCritterSprite(crit, anim.animIndices[frameNo]);
                 return frameNo;
             }
             else

@@ -270,6 +270,8 @@ namespace Underworld
         /// <param name="regeneration"></param>
         public static void HPRegenerationChange(int regeneration)
         {
+            //restore_hp adds the random share only when the amount is above 0, so 0 adds nothing (uw1 SPELLS.C:191-195, uw2 SPELLS.C:181-186);
+            //here 0 gets the share. The original's sleep amount, regen + regen * comfort - 1, is never 0 (uw1 SKILLS.C:592, uw2 SKILLS.C:519)
             if (regeneration >= 0)
             {//when positive apply a random bonus
                 regeneration = 1 + (((Rng.r.Next(4) + regeneration) * max_hp) >> 4);
@@ -542,7 +544,7 @@ namespace Underworld
         private static void ApplyEquipmentEffects(bool CastOnEquip, ref int DamageResistance, ref int StealthBonus)
         {
             //apply spell effects from inventory objects
-            for (int slot = 0; slot < 10; slot++)
+            for (int slot = 0; slot <= 10; slot++)//slots 0 to 10, uw1 PLAYDATA.C:445, uw2 PLAYDATA.C:405
             {
                 var objindex = uimanager.GetPaperDollObjAtSlot(slot);
                 if (objindex != -1)
@@ -557,36 +559,10 @@ namespace Underworld
                             isValid = false;
                         }
 
-                        //filter for other scenarios that are not valid.  
-                        //Rings not in the ring slot.     
-                        if ((obj.majorclass == 0) && (obj.minorclass == 3))
+                        if ((slot >= 5) && (slot <= 8)
+                            && !(slot == 7 + playerdat.handednessvalue && obj.majorclass == 0 && obj.minorclass >= 2 && obj.classindex >= 0xB && obj.classindex <= 0xF))
                         {
-                            if (_RES == GAME_UW2)
-                            {
-                                if (((obj.classindex >= 7) && (obj.classindex <= 0xA)) || obj.classindex == 5)//rings
-                                {
-                                    if ((slot != 9) && (slot != 10))
-                                    {
-                                        isValid = false;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                if (((obj.classindex >= 7) && (obj.classindex <= 0xA)) || obj.classindex == 6)//rings
-                                {
-                                    if ((slot != 9) && (slot != 10))
-                                    {
-                                        isValid = false;
-                                    }
-                                }
-                            }
-                        }
-
-
-                        if ((slot >= 5) && (slot <= 8))
-                        {
-                            //shoulders and arms. do not cast effects from here.
+                            //shoulders and arms. do not cast effects from here, except from a shield in the shield hand (player->lefty + 7): ObjWorn, uw1 INVDATA.C:403-412, uw2 INVDATA.C:384-393; FixPlayerEquips, uw1 PLAYDATA.C:445-454, uw2 PLAYDATA.C:405-411
                             // if (uimanager.DominantHandSlot == slot)
                             // {//Check for weapon in dominant hand. 
                             //     if (

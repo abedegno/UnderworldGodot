@@ -62,8 +62,10 @@ namespace Underworld
             }
             else
             {
+                //nail_area: the handler acts 3d4 times within 2 squares of the square 4 ahead. uw1 SPELLS.C:549-550
+                rngProbablity = Rng.DiceRoll(3, 4);
                 distanceFromCaster = 4;
-                rngProbablity = 2;//these values are always the same in uw1.
+                tileRadius = 2;
                 switch (minorclass & 0x3F) //the other bits in minorclass define the target type for the area effect spell
                 {
                     case 1: //reveal
@@ -270,8 +272,17 @@ namespace Underworld
         /// <returns></returns>
         public static bool RepelUndead(int x, int y, uwObject targetObject, TileInfo tile, int srcIndex)
         {
+            if (srcIndex != 1)
+            {//only the player's spell does anything. uw2 SPELLS.C:555-556
+                return true;
+            }
             if (targetObject == null)
-            {
+            {//a square: one in three gets an effect at the caster's height plus 20. uw2 SPELLS.C:557-560
+                if (Rng.RandMod(3) == 0)
+                {
+                    var caster = UWTileMap.current_tilemap.LevelObjects[srcIndex];
+                    animo.SpawnAnimoInTile(subclassindex: 7, xpos: 3, ypos: 3, zpos: (short)(caster.zpos + 20), tileX: x, tileY: y);
+                }
                 return false;
             }
             else

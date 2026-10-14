@@ -13,8 +13,6 @@ uw1/npc-swing-charge-resets  ~attack charge after the blow expected 0  # charge 
 uw2/npc-swing-charge-resets  ~attack charge after the blow expected 0  # charge and cast slot never cleared when a sequence ends: src/npc/npcai.cs:441, 477; uw2 AI.C:1133, 1150-1151
 uw1/critter-melee-choice  ~melee manoeuvre differs from crit_attack  # UW2 sequence numbers in UW1, reach 0x100, attack choice >=: src/npc/npcai.cs:2912-2942, 2983, 2997; uw1 AI.C:395-458
 uw2/critter-melee-choice  ~melee manoeuvre differs from crit_attack  # reach 0x100 and attack choice >=: src/npc/npcai.cs:2983, 2997; uw2 AI.C:432-437
-uw1/fleeing-critter-steers  ~steering round the player differs from crit_avoid_player  # steers when far, measures from the target, keeps every heading: src/npc/npcai.cs:2808, 2816; uw1 AI.C:685-713
-uw2/fleeing-critter-steers  ~steering round the player differs from crit_avoid_player  # same as UW1: src/npc/npcai.cs:2808, 2816; uw2 AI.C:652-686
 uw1/allies-join-fight  ~ally's goal after the player hit a critter nearby (5, attack) expected 5  # allies skip the join-the-fight test: src/npc/npcai.cs:607; uw1 AI.C:1227-1233
 uw2/allies-join-fight  ~ally's goal after the player hit a critter nearby (5, attack) expected 5  # allies skip the join-the-fight test: src/npc/npcai.cs:607; uw2 AI.C:1218-1225
 uw1/allies-wear-off  ~allies after a slow tick expected fewer than 8  # no yearly_checkup in the slow tick: src/player/playerdatloop.cs:233; uw1 CRITTIME.C:78-89, PLAYTIME.C:135
@@ -41,13 +39,10 @@ uw1/natural-healing  ~hit points regained in one regeneration step  # Strength v
 uw2/natural-healing  ~hit points regained in one regeneration step  # same (playerdatloop.cs:240-243); uw2 PLAYTIME.C:148-149
 uw1/player-armour  ~player's defence (Defence + weapon skill / 2)  # armour ignores quality and +1, no shield, bare Defence (src/player/playerdatloop.cs:653, src/objectdata/critterObjectDat.cs:358); uw1 PLAYDATA.C:364-425
 uw2/player-armour  ~player's defence (Defence + weapon skill / 2)  # same (playerdatloop.cs:653, critterObjectDat.cs:358); uw2 PLAYDATA.C:322-385
-uw1/item-protection  ~slot 2 protection minor 0x3  # class 12 only for slots 0 and 1, no +1, toughness to protection (src/magic/spellcasting_objects.cs:61-77); uw1 PLAYDATA.C:271-286
-uw2/item-protection  ~slot 2 protection minor 0x3  # same (spellcasting_objects.cs:61-77); uw2 PLAYDATA.C:249-264
 uw1/sleep-night  ~hit points after the night  # heals HPRegenerationChange(regen * comfort), 2..32 hunger, 16 drunkenness, lights as a counter (src/World/sleep.cs:117, 163, 192, 197); uw1 SKILLS.C:549, 584-605
 uw2/sleep-night  ~hit points after the night  # same (sleep.cs:117, 163, 192, 197); uw2 SKILLS.C:472, 511-532
 uw2/sleep-killorn-crash  ~quest 50 set and 54 clear (Killorn crashes) expected 0  # needs world 2 and quest 54 set, the reverse (src/World/sleep.cs:105); uw2 SKILLS.C:467-471
 uw1/sleep-in-void  ~fatigue after trying to sleep in the Void  # no level 9 test (src/World/sleep.cs:25); uw1 SKILLS.C:525-528 refuses
-uw2/map-area-radius  ~open squares mapped within the radius 7 circle at Casting 20  # radius Max(Casting - 13, 0) / 5 + 2, flood-filled square (src/magic/spellcasting_class_13.cs:71); uw2 SPELLS.C:996-1002 circle
 uw2/britannia-spell-circle  ~mana spent on a circle 3 spell in Britannia  # refuses SpellLevel >= 3 (src/magic/runicmagic.cs:476); uw2 RUNES.C:232 refuses level > 3
 uw2/academy-mana-level  ~mana restored on level 41 at x 30 expected 5  # 1 + dungeon_level % 8 on a 1-based level (src/player/playerdatloop.cs:291); uw2 SPELLS.C:159-161
 uw2/targeted-spell-mana  ~mana spent on a targeted spell before its target  # class 7 leaves applyCost true (src/magic/spellcasting.cs:77, 108); uw2 RUNES.C:247-251 holds it in mspell_mused
@@ -61,7 +56,6 @@ uw1/repair-critical-failure  ~repair result on a critical failure (seed 1  # des
 uw2/repair-critical-failure  ~repair result on a critical failure (seed 1  # same (repair.cs:208); uw2 WORLDEV.C:1024
 uw1/uw1-create-object-trap  ~objects made by a quality 32 create object trap  # two chance rolls, random placement (src/traps/a_create_object_trap.cs:18, 59, 194); uw1 TRIGGER.C:299-314
 uw1/uw1-sounds-dat-length  ~UW1 effects whose length is read other than high byte first  # low byte first (src/audio/sfx/SoundsDatLoader.cs:45); uw1 SOUND.C:708 high byte first
-uw1/uw1-area-spells  ~critters upset by Mass Confusion  # UW1 count 2, radius 0 (src/magic/spellcasting_class_6.cs:23, 64-66, 85); uw1 SPELLS.C:549, 509 (3d4, radius 2)
 # end batch B
 # batch C
 uw2/time-of-day-hourly-step  ~time of day (X clock 0) after the 60th 20-second step  # no hourly X clock 0 step in play: playerdatloop.cs "every 20 mins" block only prints TODOs; uw2 PLAYTIME.C:151-163

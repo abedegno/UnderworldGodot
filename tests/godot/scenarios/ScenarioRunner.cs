@@ -43,7 +43,10 @@ public partial class ScenarioRunner : Node
         // batch A: combat and critters
         (() => new SwingChargeResets(), true),
         (() => new CritterMeleeChoice(), true),
+        (() => new NpcCastNeedsSlot(), true),
+        (() => new NpcShotFrameFour(), true),
         (() => new FleeingCritterSteers(), true),
+        (() => new CritterFlees(), true),
         (() => new AlliesJoinFight(), true),
         (() => new AlliesWearOff(), true),
         (() => new WanderingMonsters(), true),
@@ -91,7 +94,12 @@ public partial class ScenarioRunner : Node
         (() => new EndBarter(), true),
         (() => new TrapChainFlow(), true),
         (() => new TeleportOccupied(), true),
+        (() => new MissImpactSound(), true),
+        (() => new WallHitSound(), true),
         (() => new TybalTalkTrap(), true),
+        (() => new DragonChoice(), true),
+        (() => new AltarasWandCutLine(), true),
+        (() => new RepelUndeadSquare(), true),
         // batch D: guards
         (() => new GuardEat(), true),
         (() => new GuardLight(), true),

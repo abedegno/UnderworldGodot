@@ -260,6 +260,7 @@ namespace Underworld
                 {
                     SetGameVariable(v, 0);
                 }
+                //DOS clears 8 bytes (uw1 CHARGEN.C:128); the ninth here is already 0 in a new record, so this makes no difference
                 for (int l = 0; l < 9; l++)
                 {
                     SetLevelLore(l, 0);
