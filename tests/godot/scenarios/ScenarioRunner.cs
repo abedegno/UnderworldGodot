@@ -82,6 +82,7 @@ public partial class ScenarioRunner : Node
         (() => new RepairTime(), true),
         (() => new RepairFate(), true),
         (() => new ObjectGarbageCollect(), true),
+        (() => new PickupSplitFull(), true),
         (() => new JailTerm(), true),
         (() => new AltarasWand(), true),
         (() => new ScdSetQuestBit(), true),
