@@ -25,24 +25,11 @@ namespace Underworld
                 BlockIdentifier = blockno;
                 Debug.Print($"Processing SCD Block {blockno}");
                 var si_xclock = playerdat.GetXClock(blockno);
-                //Sched_Load: work on a copy of the stored block and clear the modified flag (uw2/src/event/SCHEDULE.C:122-133).
-                //scd_data holds the blocks written back so far, null is the block as it is in the file.
-                var storedData = scd_data[blockno]?.Data;
-                if (storedData == null)
+                if (!SchedLoad(blockno, out var storedData))
                 {
-                    if (!LoadSCDBlock(blockno))
-                    {
-                        Debug.Print($"Error loading scd block {blockno}");
-                        return; //stop                     
-                    }
+                    Debug.Print($"Error loading scd block {blockno}");
+                    return; //stop                     
                 }
-                else
-                {
-                    scd_data[blockno].Data = (byte[])storedData.Clone();
-                }
-                ArkHasBeenModified = false;
-
-                scd_data[blockno].Data[2] = (byte)blockno;
 
                 if (blockno == 0)
                 {
@@ -59,24 +46,89 @@ namespace Underworld
                         XClockValue: si_xclock,
                         mode: mode);
                 }
-                //Sched_Save writes the block back only when a row ran or deleted itself, so a clock change alone is not kept,
-                //and an error stops before the save (uw2/src/event/SCHEDULE.C:155-158, 213-217).
-                if (error_var2 == 0 && ArkHasBeenModified)
-                {
-                    Debug.Print("Ark file needs to be saved with new data.");
-                }
-                else if (storedData == null)
-                {
-                    scd_data[blockno] = null;//discard the unsaved changes: the block is as it is in the file.
-                }
-                else
-                {
-                    scd_data[blockno].Data = storedData;//discard the unsaved changes: back to the block last written.
-                }
+                //an error stops before the save (uw2/src/event/SCHEDULE.C:213-217).
+                SchedSave(blockno, storedData, error_var2 == 0 && ArkHasBeenModified);
                 if (error_var2 != 0)
                 {
                     return;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Runs only the day schedule, SCD.ARK block 0, up to the time of day in X clock 0, as the hourly step does
+        /// (Sched_Load(0), Sched_WrapTime(xclock[XC_TIME], DAY_STEPS, mode), Sched_Save(0): uw2 PLAYTIME.C:157-162).
+        /// ProcessSCDArk does the same for all 16 blocks.
+        /// </summary>
+        public static void ProcessSCDBlock0(int mode)
+        {
+            if (scd_data == null)
+            {
+                scd_data = new UWBlock[0x10];
+            }
+            BlockIdentifier = 0;
+            if (!SchedLoad(0, out var storedData))
+            {
+                Debug.Print("Error loading scd block 0");
+                return;
+            }
+            ProcessBlock0(
+                currentblock: scd_data[0].Data,
+                arg0_xclock: playerdat.GetXClock(0),
+                NoOfMaps: 72,
+                mode_arg4: mode);
+            //the hourly step saves whatever Sched_WrapTime returned, so a row that ran before an error is kept.
+            SchedSave(0, storedData, ArkHasBeenModified);
+        }
+
+        /// <summary>
+        /// Sched_Load: puts a copy of the block as last written back (or as it is in the file) in scd_data
+        /// to work on, and clears the modified flag (uw2/src/event/SCHEDULE.C:122-133).
+        /// scd_data holds the blocks written back so far, null is the block as it is in the file.
+        /// </summary>
+        /// <param name="blockno"></param>
+        /// <param name="storedData">the block as last written back, null if never written</param>
+        /// <returns>False if SCD.ARK could not be read</returns>
+        static bool SchedLoad(int blockno, out byte[] storedData)
+        {
+            storedData = scd_data[blockno]?.Data;
+            if (storedData == null)
+            {
+                if (!LoadSCDBlock(blockno))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                scd_data[blockno].Data = (byte[])storedData.Clone();
+            }
+            ArkHasBeenModified = false;
+            scd_data[blockno].Data[2] = (byte)blockno;
+            return true;
+        }
+
+        /// <summary>
+        /// Sched_Save: keeps the block worked on only when save is set, which Sched_Save gives as a row
+        /// having run or deleted itself (uw2/src/event/SCHEDULE.C:66-69, 137-158). Otherwise the changes
+        /// are discarded, so a clock change alone is not kept.
+        /// </summary>
+        /// <param name="blockno"></param>
+        /// <param name="storedData">what SchedLoad found in scd_data</param>
+        /// <param name="save"></param>
+        static void SchedSave(int blockno, byte[] storedData, bool save)
+        {
+            if (save)
+            {
+                Debug.Print("Ark file needs to be saved with new data.");
+            }
+            else if (storedData == null)
+            {
+                scd_data[blockno] = null;//discard the unsaved changes: the block is as it is in the file.
+            }
+            else
+            {
+                scd_data[blockno].Data = storedData;//discard the unsaved changes: back to the block last written.
             }
         }
 
