@@ -11,25 +11,9 @@ namespace Underworld
         /// </summary>
         public static IEnumerator do_judgement()
         {
-            int evaluation;
             int appraisal_certainty;
             int final_evaluation;
-            var appraise_accuracy = 50 - ((playerdat.Appraise * 45) / 30); //the variant range +/- that will be used to assess item values.
-
-            //Get total value of player offering
-            var playervalue = GetPCTradeValue(ApplyLikeDislike: false, appraise_accuracy: appraise_accuracy, applyAccuracy: true);
-
-            //Get total value of npc offering without applying likes dislikes.
-            var npcvalue = GetNPCTradeValue(ApplyLikeDislike: false, appraise_accuracy: appraise_accuracy, applyAccuracy: true);
-            npcvalue += BablTradeBonus; 
-            if (npcvalue == 0)
-            {
-                evaluation = 100;
-            }
-            else
-            {
-                evaluation = ((playervalue - npcvalue) * 100) / npcvalue;
-            }
+            var evaluation = AppraiseOffer(out _, out _);
 
             switch (playerdat.Appraise)
             {
@@ -85,6 +69,18 @@ namespace Underworld
                 yield return new WaitForSeconds(0.1f);
             }        
             yield return 0;
-        } 
+        }
+
+        /// <summary>
+        /// The player's appraisal of the offer: both sides valued without likes, blurred by 50 - appraise * 1.5 %, the babl_hack
+        /// bonus added to the NPC's side (UW2's fudge), and the gain in % (do_judgement, uw1 BARTER.C:757-765, uw2 BARTER.C:735-744).
+        /// </summary>
+        public static int AppraiseOffer(out int playervalue, out int npcvalue)
+        {
+            var appraise_accuracy = 50 - ((playerdat.Appraise * 45) / 30); //the variant range +/- that will be used to assess item values.
+            playervalue = TotalOffering(useLikes: false, playerSide: true, accuracy: appraise_accuracy);
+            npcvalue = (short)(TotalOffering(useLikes: false, playerSide: false, accuracy: appraise_accuracy) + BablTradeBonus);
+            return TradeGain(playervalue, npcvalue);
+        }
     }//end class
 }//end namespace
