@@ -283,7 +283,9 @@ public sealed class EndBarter : Scenario
 /// position in eighths of a tile, which tries 24 random spots within 5 eighths each way
 /// (drop_around_place, uw1/src/motion/COLLIDE.C:645-706, uw2/src/motion/COLLIDE.C:631-692).
 ///
-/// The scenario starts a conversation with the first NPC on level 1 that has one, gives it two coins
+/// The scenario first moves the player, and the NPC once the conversation has started, to level, open ground
+/// (TradeGround), since an item put down on the slope beside the UW1 start falls and may be culled when it
+/// lands. It starts a conversation with the first NPC on level 1 that has one, gives it two coins
 /// at the head of its inventory, and calls setup_to_barter, then do_decline, then setup_to_barter again,
 /// as a script does. It fills every player trade slot with a coin, alternately selected, and lets the
 /// conversation run to its own end as end-barter-returns-items does. Each item left in a slot must then
@@ -348,6 +350,10 @@ public sealed class BarterNearPut : Scenario
     public override async Task Setup(ScenarioContext c)
     {
         var objs = UWTileMap.current_tilemap.LevelObjects;
+        // Level, open ground for both owners, so every spot drop_around_place can pick keeps the item on the map.
+        var (gx, gy, gnx, gny) = TradeGround.FindPair();
+        if (gx < 0) { _problem = "no level, open ground near the start"; return; }
+        if (!await TradeGround.MovePlayer(c, gx, gy)) { _problem = $"the move to ({gx}, {gy}) did not happen"; return; }
         for (int i = 2; i < 256 && uimanager.CurrentGameMode != uimanager.GameModes.CONVERSATION; i++)
         {
             var o = objs[i];
@@ -357,6 +363,7 @@ public sealed class BarterNearPut : Scenario
             if (uimanager.CurrentGameMode == uimanager.GameModes.CONVERSATION) _talker = o;
         }
         if (_talker == null) { _problem = "no NPC on level 1 would talk"; return; }
+        TradeGround.MoveNpc(_talker, gnx, gny);
         ulong deadline = Time.GetTicksMsec() + StartMs;
         int frames = 0;
         while (Time.GetTicksMsec() < deadline && frames < 60) { await c.Frames(1); frames++; }
