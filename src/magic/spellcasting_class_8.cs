@@ -166,7 +166,7 @@ namespace Underworld
                 newObject.tileX = x0 >> 3;
                 newObject.tileY = y0 >> 3;
                 newObject.xpos = (short)(x0 & 7);
-                newObject.ypos = (short)(x0 & 7);
+                newObject.ypos = (short)(y0 & 7);//SET_FINEY(obj, y): uw1 SPELLS.C:618, uw2 SPELLS2.C:527
                 if (newObject.IsStatic)
                 {
                     newObject.quality = 0x3F;
