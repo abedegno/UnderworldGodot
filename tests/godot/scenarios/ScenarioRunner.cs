@@ -89,6 +89,7 @@ public partial class ScenarioRunner : Node
         (() => new EnchantRechargeWand(), true),
         (() => new GivePtrNpc(), true),
         (() => new EndBarter(), true),
+        (() => new BarterNearPut(), true),
         (() => new TrapChainFlow(), true),
         (() => new TeleportOccupied(), true),
         (() => new TybalTalkTrap(), true),
