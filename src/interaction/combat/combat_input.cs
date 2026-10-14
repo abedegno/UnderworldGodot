@@ -187,6 +187,7 @@ namespace Underworld
                             if (foundammo == null)
                             {
                                 uimanager.AddToMessageScroll($"{GameStrings.GetString(1, 207)}{GameStrings.GetSimpleObjectNameUW(16 + ammoType)}s");//sorry you have no Xs
+                                PlayerWeaponSound = 4;//uw2 COMBAT.C:588
                                 return;
                             }
                         }
@@ -236,8 +237,8 @@ namespace Underworld
                         AttackScoreFlankingBonus = 0;
                         AttackWasACrit = false;
 
-                        Debug.Print("PlacehholderInitialising PlayerWeaponSound to 1");
-                        PlayerWeaponSound = 1;
+                        // From the weapon hand at every swing, as GetPlayerWeapon does (uw2 COMBAT.C:573-606, called at 845)
+                        PlayerWeaponSound = PlayerWeaponSoundClass(playerdat.PrimaryHandObject);
 
                         //can start swing animation
                         uimanager.DrawWeaponAnimation(WeaponAnimGroup + WeaponAnimStrikeOffset + WeaponAnimHandednessOffset, 0);

@@ -89,6 +89,34 @@ namespace Underworld
             return 0;
         }
 
+        /// <summary>
+        /// UW2's player_weapon for the object in the weapon hand, as GetPlayerWeapon sets it at the
+        /// start of every swing (uw2 COMBAT.C:573-606): 3 for a launcher (a missile class object
+        /// whose ammunition byte is 0 to 0x0F), 2 for an edged weapon and 1 for a blunt one
+        /// (is_sharp), and 0 for bare hands or anything else. The 4 for a launcher with no
+        /// ammunition is set where the swing is refused. UW1 has no player_weapon, and the port
+        /// reads PlayerWeaponSound only for UW2.
+        /// </summary>
+        public static int PlayerWeaponSoundClass(uwObject weapon)
+        {
+            if (weapon != null)
+            {
+                switch (weapon.item_id >> 4)
+                {
+                    case 0://melee weapons
+                        return checkforPoisonableWeapon(weapon) ? 2 : 1;
+                    case 1://missiles, and missile weapons from 0x18
+                        var ammo = (sbyte)rangedObjectDat.RangedWeaponType(weapon.item_id);
+                        if (ammo >= 0 && ammo < 0x10)
+                        {
+                            return 3;
+                        }
+                        break;
+                }
+            }
+            return 0;
+        }
+
 
         /// <summary>
         /// Calculates the player attack accuracy and base damage scores
@@ -303,17 +331,65 @@ namespace Underworld
         {
             if (attackresult != 0)//a hit
             {
-                int var6 = 0;
-                int var7 = 0;
-                if (AttackingCharacter.index == 1)
+                UWsoundeffects.PlaySoundEffectAtObject((byte)MissImpactEffect(), DefendingCharacter, 0);
+            }
+            else
+            {
+                //a miss
+                // UW2 skips the whiff when the player's swing has just met a wall, which has
+                // played its own sound, and clears the flag instead (uw2 COMBAT.C:476-480).
+                // UW1 has no such flag and always plays it (uw1 COMBAT.C:438-439).
+                if ((_RES == GAME_UW2) && HitWall)
                 {
-                    var6 = PlayerWeaponSound;
+                    HitWall = false;
                 }
                 else
                 {
-                    if (AttackingCharacter.index < 0x100)
+                    UWsoundeffects.PlaySoundEffectAtObject(effectNo: 0xA, obj: AttackingCharacter, volDelta: 0);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The sound effect, 7 or 8, of a blocked blow (do_miss, uw1 COMBAT.C:429-476, uw2 COMBAT.C:466-511).
+        /// </summary>
+        static int MissImpactEffect()
+        {
+            {
+                int var6 = 0;
+                int var7 = 0;
+                var attackerItem = AttackingCharacter.item_id;
+                if (_RES == GAME_UW2)
+                {
+                    if (AttackingCharacter.index == 1)
                     {
-                        var6 = critterObjectDat.combatimpactsound_7_3(AttackingCharacter.item_id);
+                        var6 = PlayerWeaponSound;
+                    }
+                    else
+                    {
+                        if (AttackingCharacter.index < 0x100)
+                        {
+                            var6 = critterObjectDat.combatimpactsound_7_3(attackerItem);
+                        }
+                        else
+                        {
+                            var6 = 1;
+                        }
+                    }
+                }
+                else
+                {
+                    // UW1 overwrites fromwho with the attacker's item id before testing it
+                    // (uw1 COMBAT.C:445-451), so these tests are on the item id: 1 is item 1,
+                    // never the player, and the player (item 0x7F) takes Creature 0x3F's
+                    // weapon kind whatever he swings. Kept as DOS does it.
+                    if (attackerItem == 1)
+                    {
+                        var6 = 1;
+                    }
+                    else if (attackerItem < 0x100)
+                    {
+                        var6 = critterObjectDat.combatimpactsound_7_3(attackerItem);
                     }
                     else
                     {
@@ -361,7 +437,10 @@ namespace Underworld
                     //defender is not player
                     if (DefendingCharacter.index < 0x100)
                     {
-                        var7 = critterObjectDat.combatimpactsound_4_3(DefendingCharacter.item_id);
+                        // The attacker's armour kind, not the defender's, in both games
+                        // (uw1 COMBAT.C:463-466, uw2 COMBAT.C:500-501); probably meant to be the
+                        // defender's, but this is what DOS plays.
+                        var7 = critterObjectDat.combatimpactsound_4_3(attackerItem);
                     }
                     else
                     {
@@ -385,13 +464,7 @@ namespace Underworld
                     // first matched, and either mismatch falls through to 8.
                     effectVar8 = (var6 == 1 && var7 == 1) ? 7 : 8;
                 }
-                UWsoundeffects.PlaySoundEffectAtObject((byte)effectVar8, DefendingCharacter, 0);
-            }
-            else
-            {
-                //a miss
-                //TODO check a global variable that is related to missile impacts. if set do not play sound.
-                UWsoundeffects.PlaySoundEffectAtObject(effectNo: 0xA, obj: AttackingCharacter, volDelta: 0);
+                return effectVar8;
             }
         }
 
@@ -799,26 +872,22 @@ namespace Underworld
                     // hitting a wall is silent: seg022_230E_3BA in UW1, seg024_24E9_3B3 in
                     // UW2. They choose the effect differently. UW1 always plays 7. UW2
                     // plays 7 when the player's weapon sound class is 1 or 2 and 8
-                    // otherwise, at seg024_24E9_3BF.
-                    //
-                    // PlayerWeaponSound is still a placeholder pinned to 1 in
-                    // combat_input.cs, so the UW2 arm always yields 7 today. It is written
-                    // out anyway so it comes right on its own when that is derived from the
-                    // weapon.
+                    // otherwise, at seg024_24E9_3BF. UW2 also sets hit_wall there, which
+                    // makes CombatMissImpactSound skip the whiff that follows
+                    // (find_wall_coll, uw2 COMBAT.C:205-210).
                     //
                     // Not done here. The sound plays at the start of the walk rather than
-                    // at the step that stops it, under a tile short of DOS. UW2 also sets
-                    // ImpactSkipSound at seg024_24E9_3BA, which suppresses the whiff that
-                    // CombatMissImpactSound would otherwise play straight after this; that
-                    // belongs with the change to that routine. And DOS plays nothing at all
-                    // when the impact object cannot be allocated, because the sound sits
-                    // after PrepareNewObjectProps in the routine. The walk, the animation
-                    // and the skip flag are left for their own change. See #111.
+                    // at the step that stops it, under a tile short of DOS. And DOS plays
+                    // nothing at all, and sets no flag, when the impact object cannot be
+                    // allocated, because the sound sits after PrepareNewObjectProps in the
+                    // routine. The walk and the animation are left for their own change.
+                    // See #111.
                     if (AttackingCharacter.index == 1)
                     {
                         int impactEffect = 7;
                         if (_RES == GAME_UW2)
                         {
+                            HitWall = true;
                             impactEffect = (PlayerWeaponSound == 1 || PlayerWeaponSound == 2) ? 7 : 8;
                         }
                         UWsoundeffects.PlaySoundEffectAtCoordinate(
