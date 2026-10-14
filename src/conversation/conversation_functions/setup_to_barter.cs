@@ -18,32 +18,26 @@ namespace Underworld
             var objectcount = 0;
             var slotindex = 0;
             bool LargelootList = false;
-            while (nextObj!=0)
+            //at most 0x28 objects are looked at (uw1 BARTER.C:133, uw2 BARTER.C:100)
+            while ((nextObj!=0) && (objectcount++ < 0x28))
             {
                 bool skip = false;
-                objectcount++;
-                if (objectcount>=40)
-                {
-                    break;
-                }
                 var obj = UWTileMap.current_tilemap.LevelObjects[nextObj];
                 nextObj = obj.next;//before the object leaves the chain
-                if (!skippedprimaryweapon)
-                    {
-                        if (obj.OneF0Class==0)
-                        {   //item is a weapon
-                            //The first weapon in the npc inventory is excluded.
-                            skippedprimaryweapon = true;
-                            skip=true;
-                        }
-                    }
-                if (commonObjDat.monetaryvalue(obj.item_id)==0)
-                    {//Items of no monetary value will not be offered by the npc
-                        skip = true;
-                    }
-                if ((Rng.r.Next(0,7)<5) && (LargelootList))
-                {//RNG seems to happen when NPC has more inventory than slots. Randomly replace earlier items 
-                    skip=true;
+                //Skip the first weapon, anything worthless and, once every slot is full, a random 5 in 8 of the rest.
+                //The draw is made only when the first two tests let the item through (uw1 BARTER.C:137-140, uw2 BARTER.C:104-107).
+                if ((obj.OneF0Class==0) && (!skippedprimaryweapon))
+                {
+                    skippedprimaryweapon = true;
+                    skip = true;
+                }
+                else if (commonObjDat.monetaryvalue(obj.item_id)==0)
+                {
+                    skip = true;
+                }
+                else if ((LargelootList) && (Rng.RandMod(8) < 5))
+                {//(rand() & 7) < 5
+                    skip = true;
                 }
 
                 if (!skip)
