@@ -14,8 +14,8 @@ namespace Underworld
         /// <param name="objList"></param>
         public static void Activate(uwObject trapObj, int triggerX, int triggerY, uwObject[] objList)
         {
-            //rng test on trap.
-            if (Rng.r.Next(0x3F) < trapObj.quality)
+            //rng test on trap, (rand() * 0x3F) / 0x8000 < quality. uw1 TRIGGER.C:299, uw2 TRIGGER.C:526
+            if (Rng.RandScale(0x3F) < trapObj.quality)
             {
                 Debug.Print($"Cancelling createobject trap {trapObj.a_name} i:{trapObj.index} l:{trapObj.link} due to RNG");
                 return;
@@ -56,13 +56,8 @@ namespace Underworld
 
         static void CreateObjectUW1(uwObject template, uwObject trapObj, int triggerX, int triggerY, uwObject[] objList)
         {
-            if (Rng.r.Next(0, 63) >= trapObj.quality)
-            {
-                //there appears to be a logic check here first that runs in the area around the template. 
-                //not currently implemented as I suspect it is a check that the template is on the map and/or maybe the player 
-                //do spawn
-                DoCreateObject(triggerX, triggerY, template);
-            }
+            //The chance roll is made once, in Activate. uw1 TRIGGER.C:299-300
+            DoCreateObject(triggerX, triggerY, template);
         }
 
         /// <summary>
@@ -191,15 +186,52 @@ namespace Underworld
             if (UWTileMap.ValidTile(newobj.tileX, newobj.tileY))
             {
                 var tile = UWTileMap.current_tilemap.Tiles[newobj.tileX, newobj.tileY];
-                UWTileMap.GetRandomXYZForTile(tile, out int newxpos, out int newypos, out int newzpos);
-                newobj.xpos = (short)newxpos;//obj.xpos;
-                newobj.ypos = (short)newypos;///obj.ypos;
-                newobj.zpos = (short)newzpos; //obj.zpos;
+                //The copy keeps the template's fine x, fine y and z: put_at((x << 3) + finex, (y << 3) + finey, z, ...)
+                //uw1 TRIGGER.C:315-316, uw2 TRIGGER.C:570-571.
+                //Approximation of put_at/drop_around_place (uw1 COLLIDE.C:645-700, uw2 COLLIDE.C:631): with stay_centered the
+                //original tries the exact spot first and, when can_place refuses it, random spots nearby at the same z.
+                //Here the exact spot is refused only when a mobile object already stands on it, and the fallback is a
+                //random x and y in the same tile; z stays the template's, as in the original.
+                if (SpotHasMobile(tile, newobj.xpos, newobj.ypos))
+                {
+                    for (int tries = 0; tries < 8; tries++)
+                    {
+                        UWTileMap.GetRandomXYZForTile(tile, out int newxpos, out int newypos, out int _);
+                        newobj.xpos = (short)newxpos;
+                        newobj.ypos = (short)newypos;
+                        if (!SpotHasMobile(tile, newobj.xpos, newobj.ypos))
+                        {
+                            break;
+                        }
+                    }
+                }
                 newobj.next = tile.indexObjectList;//link to tile
                 tile.indexObjectList = newobj.index;
             }
             ObjectCreator.RenderObject(newobj, UWTileMap.current_tilemap);
             return newobj;
+        }
+
+        /// <summary>
+        /// True if a mobile object in the tile's object list stands at fine position x, y.
+        /// </summary>
+        static bool SpotHasMobile(TileInfo tile, int xpos, int ypos)
+        {
+            var objs = UWTileMap.current_tilemap.LevelObjects;
+            for (int i = tile.indexObjectList, guard = 0; i != 0 && guard < 1024; guard++)
+            {
+                var o = objs[i];
+                if (o == null)
+                {
+                    break;
+                }
+                if (!o.IsStatic && o.xpos == xpos && o.ypos == ypos)
+                {
+                    return true;
+                }
+                i = o.next;
+            }
+            return false;
         }
 
         /// <summary>
