@@ -106,6 +106,11 @@ public partial class ScenarioRunner : Node
         (() => new GuardMelee(), true),
         // issue #120
         (() => new ObjectCastCooldown(), true),
+        // fix/mana-and-food
+        (() => new SkillAdvanceMana(), true),
+        (() => new MushroomMana(), true),
+        (() => new FoodHeal(), true),
+        (() => new FoodClearsCastWait(), true),
         (() => new HarnessFails(), false),
     };
 
