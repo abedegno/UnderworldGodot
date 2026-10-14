@@ -334,11 +334,38 @@ namespace Underworld
         }
 
         /// <summary>
+        /// Puts the items in the NPC's trade slots back in its inventory: all of them, or only those not selected.
+        /// setup_to_barter takes them out of the inventory while they are in the slots.
+        /// (ReturnTradeObjectsToNPC, uw1 BARTER.C:544-565, uw2 BARTER.C:507-528)
+        /// </summary>
+        public static void ReturnTradeObjectsToNPC(uwObject talker, bool OnlyUnselected)
+        {
+            for (int i = 0; i < uimanager.NoOfTradeSlots; i++)
+            {
+                var objindex = uimanager.GetNPCTradeSlot(i, false);
+                if (objindex != -1)
+                {
+                    if (!OnlyUnselected || uimanager.GetNPCTradeSlot(i, true) == -1)
+                    {
+                        //insert at head of npcs object list
+                        var obj = UWTileMap.current_tilemap.LevelObjects[objindex];
+                        obj.next = talker.link;
+                        talker.link = obj.index;
+                        uimanager.SetNPCTradeSlot(i, -1, false);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Completes the trade between player and NPC and moves objects between their inventory
         /// </summary>
         /// <param name="talker"></param>
         private static void SwapTradedObjects(uwObject talker)
         {
+            //the NPC's unselected items go back to its inventory after an offer or demand is accepted (uw1 BARTER.C:660, 725, uw2 BARTER.C:623, 702, 1085)
+            ReturnTradeObjectsToNPC(talker, OnlyUnselected: true);
+
             //transfer trade item
             //player(world) to Npc
             for (int i = 0; i < uimanager.NoOfTradeSlots; i++)
@@ -361,15 +388,6 @@ namespace Underworld
                 while (uimanager.OpenedContainerIndex != -1)
                 {
                     container.Close(uimanager.OpenedContainerIndex, playerdat.InventoryObjects);
-                }
-            }
-
-            for (int i = 0; i < uimanager.NoOfTradeSlots; i++)
-            {//remove from the NPCs chain first
-                var objindex = uimanager.GetNPCTradeSlot(i);
-                if (objindex != -1)
-                {
-                    ObjectRemover_OLD.RemoveObjectFromLinkedList(talker.link, objindex, UWTileMap.current_tilemap.LevelObjects, talker.PTR + 6);
                 }
             }
 

@@ -271,3 +271,200 @@ public sealed class EndBarter : Scenario
         return k.Result;
     }
 }
+
+/// <summary>
+/// The trade slots' items leave their owner and come back near their owner (UW1 and UW2).
+///
+/// setup_to_barter takes each item it offers out of the NPC's inventory into a slot
+/// (uw1/src/conv/BARTER.C:143-148, uw2/src/conv/BARTER.C:111-116); do_decline puts them all back
+/// (ReturnTradeObjectsToNPC(0), uw1 BARTER.C:544-565, 741-744, uw2 BARTER.C:507-528, 718-721); and when
+/// the conversation ends end_barter puts every item still in a slot near its owner with
+/// near_mob_put_at(owner, obj, 5, 0) (uw1 BARTER.C:212-225, uw2 BARTER.C:172-190): put_at at the owner's
+/// position in eighths of a tile, which tries 24 random spots within 5 eighths each way
+/// (drop_around_place, uw1/src/motion/COLLIDE.C:645-706, uw2/src/motion/COLLIDE.C:631-692).
+///
+/// The scenario starts a conversation with the first NPC on level 1 that has one, gives it two coins
+/// at the head of its inventory, and calls setup_to_barter, then do_decline, then setup_to_barter again,
+/// as a script does. It fills every player trade slot with a coin, alternately selected, and lets the
+/// conversation run to its own end as end-barter-returns-items does. Each item left in a slot must then
+/// be on the map within 5 eighths of a tile of its owner's position (the owner's tile * 8 + fine
+/// position, as the conversation ended), added at the end of its square's list (Obj_AddEnd,
+/// uw1 COLLIDE.C:696, uw2 COLLIDE.C:682), so after any earlier slot's item in that square, and the NPC's items not
+/// in its inventory.
+/// </summary>
+public sealed class BarterNearPut : Scenario
+{
+    const ulong StartMs = 10000, EndMs = 30000;
+    const int MaxMenus = 40, Range = 5;
+
+    public override string Name => "barter-near-put";
+    public override string Cites => "underworld-exhumed uw1/src/conv/BARTER.C:143-148, 212-225, 544-565; uw2/src/conv/BARTER.C:111-116, 172-190, 507-528; uw1/src/motion/COLLIDE.C:645-706; uw2/src/motion/COLLIDE.C:631-692";
+
+    string _problem;
+    uwObject _talker;
+    readonly System.Collections.Generic.List<int> _npcItems = new(), _playerItems = new();
+    int _inChainAfterSetup = -1, _slotsAfterDecline = -1, _backAfterDecline = -1, _offeredFirst;
+    int _px, _py, _nx, _ny;
+    readonly System.Collections.Generic.List<string> _npcBad = new(), _playerBad = new();
+
+    static bool InChain(uwObject npc, int index)
+    {
+        var objs = UWTileMap.current_tilemap.LevelObjects;
+        int i = npc.link;
+        for (int guard = 0; i > 0 && i < objs.Length && guard < 256; guard++)
+        {
+            if (i == index) return true;
+            i = objs[i].next;
+        }
+        return false;
+    }
+
+    /// <summary>Finds index in a square's object list: the square and its place in the list.</summary>
+    static bool OnMap(int index, out int tx, out int ty, out int place)
+    {
+        var map = UWTileMap.current_tilemap;
+        for (ty = 0; ty < 64; ty++)
+            for (tx = 0; tx < 64; tx++)
+            {
+                int i = map.Tiles[tx, ty].indexObjectList;
+                for (place = 0; i != 0 && place < 1024; place++)
+                {
+                    if (i == index) return true;
+                    i = map.LevelObjects[i].next;
+                }
+            }
+        tx = ty = place = -1;
+        return false;
+    }
+
+    static int NewCoin()
+    {
+        int index = ObjectCreator.SpawnObjectInHand(ConvHelp.Coin);
+        playerdat.ObjectInHand = -1;
+        uimanager.instance.mousecursor.SetCursorToCursor();
+        return index;
+    }
+
+    public override async Task Setup(ScenarioContext c)
+    {
+        var objs = UWTileMap.current_tilemap.LevelObjects;
+        for (int i = 2; i < 256 && uimanager.CurrentGameMode != uimanager.GameModes.CONVERSATION; i++)
+        {
+            var o = objs[i];
+            if (o == null || o.majorclass != 1 || o.npc_whoami == 0 || o.npc_whoami == 255 || o.npc_hp == 0) continue;
+            if (!UWTileMap.ValidTile(o.tileX, o.tileY)) continue;
+            ConversationVM.StartConversation(o);
+            if (uimanager.CurrentGameMode == uimanager.GameModes.CONVERSATION) _talker = o;
+        }
+        if (_talker == null) { _problem = "no NPC on level 1 would talk"; return; }
+        ulong deadline = Time.GetTicksMsec() + StartMs;
+        int frames = 0;
+        while (Time.GetTicksMsec() < deadline && frames < 60) { await c.Frames(1); frames++; }
+        if (uimanager.CurrentGameMode != uimanager.GameModes.CONVERSATION) { _problem = "the conversation ended by itself"; return; }
+        c.Note($"talking to whoami 0x{_talker.npc_whoami:X} (object {_talker.index})");
+
+        // Two coins at the head of the NPC's inventory, so setup_to_barter has something to offer.
+        if (_talker.LootSpawnedFlag == 0) npc.spawnloot(_talker);
+        for (int k = 0; k < 2; k++)
+        {
+            int coin = NewCoin();
+            if (coin == 0) { _problem = "no coins could be made"; return; }
+            objs[coin].next = _talker.link;
+            _talker.link = (short)coin;
+        }
+
+        ConversationVM.setup_to_barter(_talker);
+        var first = new System.Collections.Generic.List<int>();
+        for (int s = 0; s < uimanager.NoOfTradeSlots; s++)
+        {
+            int item = uimanager.GetNPCTradeSlot(s, false);
+            if (item != -1) first.Add(item);
+        }
+        _offeredFirst = first.Count;
+        _inChainAfterSetup = first.Count(i => InChain(_talker, i));
+        ConversationVM.do_decline(_talker);
+        _slotsAfterDecline = Enumerable.Range(0, uimanager.NoOfTradeSlots).Count(s => uimanager.GetNPCTradeSlot(s, false) != -1);
+        _backAfterDecline = first.Count(i => InChain(_talker, i));
+        ConversationVM.setup_to_barter(_talker);
+        for (int s = 0; s < uimanager.NoOfTradeSlots; s++)
+        {
+            int item = uimanager.GetNPCTradeSlot(s, false);
+            if (item != -1) _npcItems.Add(item);
+        }
+        c.Note($"setup_to_barter offered {_offeredFirst}, {_inChainAfterSetup} still in the NPC's inventory; after do_decline {_slotsAfterDecline} in slots, {_backAfterDecline} back; offered again {_npcItems.Count}");
+
+        for (int s = 0; s < uimanager.NoOfTradeSlots; s++) uimanager.SetPlayerTradeSlot(s, -1);
+        for (int s = 0; s < uimanager.NoOfTradeSlots; s++)
+        {
+            int coin = NewCoin();
+            if (coin == 0) { _problem = "no coins could be made"; return; }
+            uimanager.SetPlayerTradeSlot(s, coin, selected: s % 2 == 0);
+            _playerItems.Add(coin);
+        }
+    }
+
+    public override async Task Act(ScenarioContext c)
+    {
+        if (_problem != null) return;
+        int menus = 0;
+        ulong deadline = Time.GetTicksMsec() + EndMs;
+        while (Time.GetTicksMsec() < deadline && uimanager.CurrentGameMode == uimanager.GameModes.CONVERSATION && menus <= MaxMenus)
+        {
+            // The owners' positions as the conversation ends, in eighths of a tile (OBJ_HOMEX << 3 + OBJ_FINEX).
+            var p = playerdat.playerObject;
+            _px = (p.npc_xhome << 3) + p.xpos; _py = (p.npc_yhome << 3) + p.ypos;
+            _nx = (_talker.npc_xhome << 3) + _talker.xpos; _ny = (_talker.npc_yhome << 3) + _talker.ypos;
+            if (MessageDisplay.WaitingForMore) MessageDisplay.WaitingForMore = false;
+            if (MessageDisplay.WaitingForTypedInput) MessageDisplay.WaitingForTypedInput = false;
+            if (ConversationVM.WaitingForInput)
+            {
+                ConversationVM.PlayerNumericAnswer = System.Math.Max(1, ConversationVM.MaxAnswer);
+                ConversationVM.WaitingForInput = false;
+                menus++;
+            }
+            await c.Frames(1);
+        }
+        c.Note($"{menus} menus answered; mode now {uimanager.CurrentGameMode}; player at ({_px}, {_py}), NPC at ({_nx}, {_ny}) in eighths; player tile ({playerdat.playerObject.tileX}, {playerdat.playerObject.tileY}), NPC tile ({_talker.tileX}, {_talker.tileY})");
+        if (uimanager.CurrentGameMode == uimanager.GameModes.CONVERSATION) { _problem = "the conversation did not end"; return; }
+
+        var objs = UWTileMap.current_tilemap.LevelObjects;
+        foreach (var (items, bad, ox, oy, who) in new[] { (_npcItems, _npcBad, _nx, _ny, "NPC"), (_playerItems, _playerBad, _px, _py, "player") })
+        {
+            var placed = new System.Collections.Generic.List<(int index, int tx, int ty, int place)>();
+            foreach (int i in items)
+            {
+                if (who == "NPC" && InChain(_talker, i)) { bad.Add($"{i} still in the NPC's inventory"); continue; }
+                if (!OnMap(i, out int tx, out int ty, out int place)) { bad.Add($"{i} not on the map"); continue; }
+                int x = (tx << 3) + objs[i].xpos, y = (ty << 3) + objs[i].ypos;
+                c.Note($"{who}'s item {i} at ({x}, {y}) in eighths, tile ({tx}, {ty}), place {place} in its list");
+                if (System.Math.Abs(x - ox) > Range || System.Math.Abs(y - oy) > Range)
+                    bad.Add($"{i} at ({x}, {y}), more than {Range} eighths from ({ox}, {oy})");
+                // drop_around_place adds at the end of the square's list (Obj_AddEnd), so items put
+                // down later in one square come after those put down earlier.
+                foreach (var e in placed)
+                    if (e.tx == tx && e.ty == ty && e.place > place)
+                    {
+                        bad.Add($"{i} ahead of the earlier slot's {e.index} in square ({tx}, {ty})'s list, not added at the end");
+                        break;
+                    }
+                placed.Add((i, tx, ty, place));
+            }
+        }
+    }
+
+    public override string Assert(ScenarioContext c)
+    {
+        if (_problem != null) return "precondition: " + _problem;
+        if (_offeredFirst == 0 || _npcItems.Count == 0) return "precondition: setup_to_barter offered nothing";
+        string setup = c.Game == "uw1" ? "uw1 BARTER.C:143-148" : "uw2 BARTER.C:111-116";
+        string decline = c.Game == "uw1" ? "uw1 BARTER.C:544-565, 741-744" : "uw2 BARTER.C:507-528, 718-721";
+        string end = c.Game == "uw1" ? "uw1 BARTER.C:217-225, COLLIDE.C:645-706" : "uw2 BARTER.C:178-182, COLLIDE.C:631-692";
+        var k = new Checks();
+        k.Equal("NPC's offered items still in its inventory after setup_to_barter", 0, _inChainAfterSetup, setup);
+        k.Equal("NPC's trade slots filled after do_decline", 0, _slotsAfterDecline, decline);
+        k.Equal("NPC's offered items back in its inventory after do_decline", _offeredFirst, _backAfterDecline, decline);
+        k.True(_npcBad.Count == 0, $"NPC's items left in the slots expected put near the NPC (near_mob_put_at 5): {string.Join("; ", _npcBad)} ({end})");
+        k.True(_playerBad.Count == 0, $"player's items left in the slots expected put near the player (near_mob_put_at 5): {string.Join("; ", _playerBad)} ({end})");
+        return k.Result;
+    }
+}

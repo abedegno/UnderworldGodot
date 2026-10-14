@@ -590,6 +590,17 @@ namespace Underworld
 			yield return null;
 		}
 
+		/// <summary>
+		/// Puts an item left in a trade slot near its owner, near_mob_put_at(owner, obj, 5, 0).
+		/// </summary>
+		static void ReturnTradeSlotToWorld(uwObject owner, int objindex)
+		{
+			if (objindex != -1)
+			{
+				motion.NearMobPutAt(owner, UWTileMap.current_tilemap.LevelObjects[objindex], 5, false);
+			}
+		}
+
 		private static void ExitConversation(uwObject talker, Conversation conv)
 		{
 
@@ -640,29 +651,21 @@ namespace Underworld
 			}
 			TemporaryTalker = false;
 			for (int i = 0; i < uimanager.NoOfTradeSlots; i++)
-			{//move remaining objects in the trade area to the players tile.
-				// Every item still in a slot goes back, selected or not (uw1 BARTER.C:217-221,
-				// uw2 BARTER.C:178-182); a deselected item is in no other list.
-				var objindex = uimanager.GetPlayerTradeSlot(i, false);
-				if (objindex != -1)
+			{//give back what is left in the trade area, selected or not: the player's items near the player,
+			 //the NPC's near the NPC, within 5 eighths of a tile (end_barter, uw1 BARTER.C:212-225,
+			 //uw2 BARTER.C:172-190). UW1 does the player's slot first, UW2 the NPC's.
+				if (_RES == GAME_UW2)
 				{
-					var tile = UWTileMap.current_tilemap.Tiles[playerdat.playerObject.tileX, playerdat.playerObject.tileY];
-					UWTileMap.GetRandomXYZForTile(tile, out int newxpos, out int newypos, out int newzpos);
-					var tradeObject = UWTileMap.current_tilemap.LevelObjects[objindex];
-					tradeObject.tileX = tile.tileX; tradeObject.tileY = tile.tileY;
-					tradeObject.xpos = (short)newxpos; tradeObject.ypos = (short)newypos; tradeObject.zpos = (short)newzpos;
-					tradeObject.next = tile.indexObjectList;
-					tile.indexObjectList = tradeObject.index;
-					objectInstance.RedrawFull(tradeObject);
-					// var dropcoordinate = uwObject.XYZToVector3(x: (newxpos << 5) + (playerdat.playerObject.tileX << 8), y: tile.floorHeight << 3, z: (newypos << 5) + (playerdat.playerObject.tileY << 8)); //uwObject.GetCoordinate_OBSOLETE(playerdat.playerObject.tileX, playerdat.playerObject.tileY, newxpos, newypos, newzpos);
-
-					// pickup.Drop_old(
-					// 	index: objindex,
-					// 	objList: UWTileMap.current_tilemap.LevelObjects,
-					// 	dropPosition: dropcoordinate,
-					// 	tileX: playerdat.playerObject.tileX,
-					// 	tileY: playerdat.playerObject.tileY);
+					ReturnTradeSlotToWorld(talker, uimanager.GetNPCTradeSlot(i, false));
+					ReturnTradeSlotToWorld(playerdat.playerObject, uimanager.GetPlayerTradeSlot(i, false));
 				}
+				else
+				{
+					ReturnTradeSlotToWorld(playerdat.playerObject, uimanager.GetPlayerTradeSlot(i, false));
+					ReturnTradeSlotToWorld(talker, uimanager.GetNPCTradeSlot(i, false));
+				}
+				uimanager.SetPlayerTradeSlot(i, -1, false);
+				uimanager.SetNPCTradeSlot(i, -1, false);
 			}
 			uimanager.instance.convo.Clear();
 			uimanager.CurrentGameMode = uimanager.GameModes.GAME;
