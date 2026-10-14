@@ -4,12 +4,17 @@ namespace Underworld
 {
     public class a_door_trap : trap
     {
-        public static void Activate(uwObject trapObj, int triggerX, int triggerY, uwObject[] objList)
+        /// <summary>
+        /// Opens, closes or toggles the door in the trap's square. Returns true when the trap ends the chain:
+        /// always in UW1 (uw1 TRIGGER.C:339-340), and in UW2 when there is a door and the trap's owner is not 0,
+        /// the case that swaps the door's lock for the trap's link (uw2 TRIGGER.C:633-636).
+        /// </summary>
+        public static bool Activate(uwObject trapObj, int triggerX, int triggerY, uwObject[] objList)
         {
             if (trapObj == null)
             {
                 Debug.Print("Null door trap");
-                return;
+                return _RES != GAME_UW2;
             }
             var tile = UWTileMap.current_tilemap.Tiles[triggerX, triggerY];
             var doorObj = objectsearch.FindMatchInObjectChain(
@@ -68,6 +73,7 @@ namespace Underworld
                 }
             }
 
+            var endsChain = _RES != GAME_UW2;
             if (_RES == GAME_UW2)
             {
                 //unlike UW1, UW2 has additional actions in the door trap when it's owner value is not 0. These will copy and link a lock that is located further up the chain.
@@ -77,6 +83,7 @@ namespace Underworld
                 {
                     if (trapObj.owner != 0)
                     {
+                        endsChain = true;//the link is the lock template, not the next trap (uw2 TRIGGER.C:633-636)
                         var lockObject = objectsearch.FindMatchInObjectChain(
                             ListHeadIndex: doorObj.link, 
                             majorclass: 4, minorclass: 0, classindex: 0xF, 
@@ -133,7 +140,7 @@ namespace Underworld
             // {
 
             //}
-
+            return endsChain;
         }
     }//end class
 }//end namespace

@@ -132,8 +132,11 @@ namespace Underworld
                 //template.MobileUnk_0xA |=0x80; //set bit
                 template.UnkBit_0XA_Bit7 = 1;
                 var spawned = DoCreateObject(triggerX, triggerY, template);
-                spawned.npc_attitude = 0;
-                spawned.SpawnedCritter_0XD_Bit8 = 1;
+                if (spawned != null)
+                {
+                    spawned.npc_attitude = 0;
+                    spawned.SpawnedCritter_0XD_Bit8 = 1;
+                }
                 //and then revert it back to a the adventurer template.
                 template.item_id = 127;
 
@@ -146,12 +149,18 @@ namespace Underworld
 
 
         /// <summary>
-        /// Standard create object
+        /// Standard create object. The copy is put at the template's fine x, fine y and z in the trap's square
+        /// with put_at(..., range 4, nocull 0) and stay_centered set, so the exact spot is tried first
+        /// (uw1 TRIGGER.C:314-317, uw2 TRIGGER.C:569-572). Returns null if the copy was not placed.
         /// </summary>
         /// <param name="triggerObj"></param>
         /// <param name="template"></param>
         private static uwObject DoCreateObject(int triggerX, int triggerY, uwObject template)
         {
+            if (!UWTileMap.ValidTile(triggerX, triggerY))
+            {
+                return null;
+            }
             int slot;
             if (template.IsStatic)
             {
@@ -162,6 +171,10 @@ namespace Underworld
             {
                 //mobile object spawn
                 slot = ObjectFreeLists.GetAvailableObjectSlot(ObjectFreeLists.ObjectListType.MobileList);
+            }
+            if (slot == 0)
+            {
+                return null;
             }
             var newobj = UWTileMap.current_tilemap.LevelObjects[slot];
             //copy from template to new obj
@@ -180,58 +193,18 @@ namespace Underworld
                 }
             }
 
-            //set new position and spawn
-            newobj.tileX = triggerX;//triggerObj.quality;
-            newobj.tileY = triggerY;//triggerObj.owner;
-            if (UWTileMap.ValidTile(newobj.tileX, newobj.tileY))
+            motion.StayCentered = true;
+            var placed = motion.PutAt(
+                x: (triggerX << 3) + newobj.xpos,
+                y: (triggerY << 3) + newobj.ypos,
+                z: newobj.zpos,
+                obj: newobj, range: 4, nocull: false);
+            motion.StayCentered = false;
+            if (placed)
             {
-                var tile = UWTileMap.current_tilemap.Tiles[newobj.tileX, newobj.tileY];
-                //The copy keeps the template's fine x, fine y and z: put_at((x << 3) + finex, (y << 3) + finey, z, ...)
-                //uw1 TRIGGER.C:315-316, uw2 TRIGGER.C:570-571.
-                //Approximation of put_at/drop_around_place (uw1 COLLIDE.C:645-700, uw2 COLLIDE.C:631): with stay_centered the
-                //original tries the exact spot first and, when can_place refuses it, random spots nearby at the same z.
-                //Here the exact spot is refused only when a mobile object already stands on it, and the fallback is a
-                //random x and y in the same tile; z stays the template's, as in the original.
-                if (SpotHasMobile(tile, newobj.xpos, newobj.ypos))
-                {
-                    for (int tries = 0; tries < 8; tries++)
-                    {
-                        UWTileMap.GetRandomXYZForTile(tile, out int newxpos, out int newypos, out int _);
-                        newobj.xpos = (short)newxpos;
-                        newobj.ypos = (short)newypos;
-                        if (!SpotHasMobile(tile, newobj.xpos, newobj.ypos))
-                        {
-                            break;
-                        }
-                    }
-                }
-                newobj.next = tile.indexObjectList;//link to tile
-                tile.indexObjectList = newobj.index;
+                return newobj;
             }
-            ObjectCreator.RenderObject(newobj, UWTileMap.current_tilemap);
-            return newobj;
-        }
-
-        /// <summary>
-        /// True if a mobile object in the tile's object list stands at fine position x, y.
-        /// </summary>
-        static bool SpotHasMobile(TileInfo tile, int xpos, int ypos)
-        {
-            var objs = UWTileMap.current_tilemap.LevelObjects;
-            for (int i = tile.indexObjectList, guard = 0; i != 0 && guard < 1024; guard++)
-            {
-                var o = objs[i];
-                if (o == null)
-                {
-                    break;
-                }
-                if (!o.IsStatic && o.xpos == xpos && o.ypos == ypos)
-                {
-                    return true;
-                }
-                i = o.next;
-            }
-            return false;
+            return null;
         }
 
         /// <summary>

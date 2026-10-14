@@ -18,11 +18,14 @@ namespace Underworld.Scenarios;
 /// chance (rand() * 0x3F / 0x8000 &lt; quality, uw1 TRIGGER.C:299, uw2 TRIGGER.C:526) never
 /// cancels it, takes the player to one trap's square through Teleportation.Teleport, and calls
 /// a_create_object_trap.FindAndRunCreateObjectTraps, the port's DoWanderingMonsters for the awake
-/// player (src/player/playerdatloop.cs:230). A trap that ran leaves a new object in its square. No
-/// trap within 8 squares may run; at least one further away must.
+/// player (src/player/playerdatloop.cs:230), once per trap with the others' flags set so that only
+/// that one is looked at. A trap that ran draws from the generator (its chance roll, TRIGGER.C:299 /
+/// :526), while one skipped by the range test draws nothing; a copy may be moved up to 4 eighths or
+/// culled by put_at (uw1 COLLIDE.C:645-706), so the draw, not the copy, is the test.
+/// No trap within 8 squares may run; at least one further away must.
 ///
 /// Both games. The port runs the trap only when the player is within 8 squares, the opposite
-/// (src/traps/a_create_object_trap.cs:236). The asleep case (DoWanderingMonsters(0) from sleep,
+/// (src/traps/a_create_object_trap.cs:241). The asleep case (DoWanderingMonsters(0) from sleep,
 /// which runs every trap) is not tested: the port has one function for both.
 /// </summary>
 public sealed class WanderingMonsters : Scenario
@@ -33,15 +36,21 @@ public sealed class WanderingMonsters : Scenario
     const ulong TeleportMs = 20000;
     string _problem;
     readonly List<(int x, int y, uwObject trap)> _traps = new();
-    readonly Dictionary<(int, int), int> _before = new();
+    readonly HashSet<int> _before = new();
     int _px, _py, _nearFired, _nearCount, _farFired, _farCount, _level;
 
-    static int ChainLength(int x, int y)
+    /// <summary>Every object in a square's list on the level.</summary>
+    static HashSet<int> OnMap()
     {
-        int n = 0;
+        var set = new HashSet<int>();
         var objs = UWTileMap.current_tilemap.LevelObjects;
-        for (int i = UWTileMap.current_tilemap.Tiles[x, y].indexObjectList; i != 0 && n < 1024; i = objs[i].next) n++;
-        return n;
+        for (int x = 0; x < 64; x++)
+        for (int y = 0; y < 64; y++)
+        {
+            int n = 0;
+            for (int i = UWTileMap.current_tilemap.Tiles[x, y].indexObjectList; i != 0 && n < 1024; i = objs[i].next, n++) set.Add(i);
+        }
+        return set;
     }
 
     void FindTraps()
@@ -97,25 +106,28 @@ public sealed class WanderingMonsters : Scenario
         if (_level == 0) { _problem = $"no level from {start} to {start + 4} has a create-object trap with others both near it and far from it"; return; }
         if (!await TeleportTo(c, _px, _py, _level)) { _problem = $"the teleport to ({_px}, {_py}) on level {_level} did not happen"; return; }
         FindTraps();   // the same level; re-read after the move
-        foreach (var t in _traps)
-        {
-            t.trap.quality = 0;
-            _before[(t.x, t.y)] = ChainLength(t.x, t.y);
-        }
+        foreach (var t in _traps) t.trap.quality = 0;
+        _before.UnionWith(OnMap());
     }
 
     public override Task Act(ScenarioContext c)
     {
         if (_problem != null) return Task.CompletedTask;
         int px = playerdat.playerObject.tileX, py = playerdat.playerObject.tileY;
-        a_create_object_trap.FindAndRunCreateObjectTraps();
+        if (Rng.Source is not BorlandRandSource) { _problem = "Rng.Source is not a BorlandRandSource"; return Task.CompletedTask; }
+        var flags = _traps.Select(t => t.trap.flags_full).ToList();
         foreach (var t in _traps)
         {
-            bool fired = ChainLength(t.x, t.y) > _before[(t.x, t.y)];
+            foreach (var o in _traps) o.trap.flags_full = (short)(o.trap == t.trap ? 0 : 1);
+            uint seed = ((BorlandRandSource)Rng.Source).Seed;
+            a_create_object_trap.FindAndRunCreateObjectTraps();
+            bool fired = ((BorlandRandSource)Rng.Source).Seed != seed;
             if (Near(t.x, t.y, px, py)) { _nearCount++; if (fired) _nearFired++; }
             else { _farCount++; if (fired) _farFired++; }
         }
-        c.Note($"level {_level}, player at ({px}, {py}): {_nearCount} traps within 8 squares ran {_nearFired}; {_farCount} further away ran {_farFired}");
+        for (int i = 0; i < _traps.Count; i++) _traps[i].trap.flags_full = flags[i];
+        int made = OnMap().Count(i => !_before.Contains(i));
+        c.Note($"level {_level}, player at ({px}, {py}): {_nearCount} traps within 8 squares ran {_nearFired}; {_farCount} further away ran {_farFired}; {made} new objects on the map");
         return Task.CompletedTask;
     }
 

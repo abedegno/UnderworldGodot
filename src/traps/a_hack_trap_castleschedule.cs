@@ -53,7 +53,9 @@ namespace Underworld
                 return; //at end game.
             }
 
-            for (int si_whoami = 0x82; si_whoami < 0x8F; si_whoami++)//note vanilla starts with a guard (0x81) but due to the way I've handled the arrays I'm skipping that npc for now
+            //DOS runs whoami 0x81 to 0x8F inclusive (uw2 WORLDEV.C:1166). 0x81 is skipped here: the tables start at 0x82,
+            //so for 0x81 DOS reads below them (uw2 CRITTIME.C:690-693), a bug in the original that is not copied.
+            for (int si_whoami = 0x82; si_whoami <= 0x8F; si_whoami++)
             {
                 var run = true;
                 switch (si_whoami)

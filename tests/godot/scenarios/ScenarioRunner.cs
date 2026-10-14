@@ -94,6 +94,9 @@ public partial class ScenarioRunner : Node
         (() => new TeleportOccupied(), true),
         (() => new TybalTalkTrap(), true),
         (() => new NumberedVariableRanges(), true),
+        (() => new CastleScheduleWhoami8F(), true),
+        (() => new CreateObjectTrapPutAt(), true),
+        (() => new Uw1SetVariableQuestBit(), true),
         // batch D: guards
         (() => new GuardEat(), true),
         (() => new GuardLight(), true),

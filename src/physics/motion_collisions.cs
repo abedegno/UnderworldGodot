@@ -1770,6 +1770,11 @@ namespace Underworld
         }
 
         /// <summary>
+        /// When set, DropAroundPlace tries the exact spot first (stay_centered, COLLIDE.C).
+        /// </summary>
+        public static bool StayCentered = false;
+
+        /// <summary>
         /// Tries up to 24 random spots within range of x, y for obj and adds it at the end of the first
         /// one's tile list that it fits in; a mobile object gets its home tile, a static one is settled
         /// by PlacedObjectCollision (drop_around_place, COLLIDE.C). Returns false if none fits.
@@ -1779,8 +1784,16 @@ namespace Underworld
             var span = range * 2 + 1;
             for (int tries = 0; tries < 24; tries++)
             {
-                var tx = x - range + Rng.RandMod(span);
-                var ty = y - range + Rng.RandMod(span);
+                int tx; int ty;
+                if (tries == 0 && StayCentered)
+                {
+                    tx = x; ty = y;
+                }
+                else
+                {
+                    tx = x - range + Rng.RandMod(span);
+                    ty = y - range + Rng.RandMod(span);
+                }
                 if (TestIfObjectFitsInTile(obj.item_id, obj.index, tx, ty, z, 1, 0))
                 {
                     var tile = UWTileMap.current_tilemap.Tiles[tx >> 3, ty >> 3];
