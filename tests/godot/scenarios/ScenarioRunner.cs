@@ -109,6 +109,10 @@ public partial class ScenarioRunner : Node
         (() => new DoCollisionEntry(), true),
         (() => new DoCollisionMomentumRestore(), true),
         (() => new MusicThemeChoice(), true),
+        // edge cases
+        (() => new RaceAttitudeRange(), true),
+        (() => new CollisionScanLimit(), true),
+        (() => new DemoFallbackRecompute(), true),
         (() => new HarnessFails(), false),
     };
 
@@ -351,14 +355,15 @@ public partial class ScenarioRunner : Node
         playerdat.InitEmptyPlayer();
         // InitEmptyPlayer leaves max_hp and play_hp at 0 and the attributes unset, and with
         // those alone the Avatar dies on the first PlayerTimedLoop. These are the values
-        // main.LaunchUWDemo itself gives a demo with no DPLAYER file (main.cs:212-217), the
-        // game's own stand-in for chargen. The chargen screens would roll real ones.
+        // main.LaunchUWDemo itself gives a demo with no DPLAYER file (main.cs:216-222), the
+        // game's own stand-in for chargen, followed by its player_compute(1) recompute of the
+        // maxima, the mana and the carrying limit. The chargen screens would roll real ones.
         playerdat.CharName = "DEMO";
-        playerdat.max_hp = 30;
         playerdat.play_hp = 30;
         playerdat.STR = 20;
         playerdat.INT = 20;
         playerdat.DEX = 20;
+        playerdat.RecalculateHPManaMaxWeight(true);
         uimanager.instance.JourneyOnwards("DATA");
         await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
 
