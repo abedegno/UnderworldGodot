@@ -93,6 +93,7 @@ public partial class ScenarioRunner : Node
         (() => new BarterNearPut(), true),
         (() => new BarterAcceptDeal(), true),
         (() => new BarterAssessValue(), true),
+        (() => new BarterInit(), true),
         (() => new TakeFromNpcNear(), true),
         (() => new TrapChainFlow(), true),
         (() => new TeleportOccupied(), true),
