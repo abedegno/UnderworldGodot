@@ -100,6 +100,7 @@ public partial class ScenarioRunner : Node
         (() => new TeleportOccupied(), true),
         (() => new TybalTalkTrap(), true),
         (() => new MessagesAndSounds(), true),
+        (() => new RepairDebrisAndCastMessages(), true),
         // batch D: guards
         (() => new GuardEat(), true),
         (() => new GuardLight(), true),

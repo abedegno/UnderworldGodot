@@ -30,7 +30,8 @@ namespace Underworld
         /// <param name="basedamage"></param>
         /// <param name="damagetype"></param>
         /// <param name="damagesource"></param>
-        public static bool DamageObject(uwObject objToDamage, int basedamage, int damagetype, uwObject[] objList, bool WorldObject, int damagesource)
+        /// <param name="NotOnMap">The object is in the player's inventory with no map square, damage_item(obj, 0, -1, -1, ...): when destroyed it is left for the caller to remove</param>
+        public static bool DamageObject(uwObject objToDamage, int basedamage, int damagetype, uwObject[] objList, bool WorldObject, int damagesource, bool NotOnMap = false)
         {
             basedamage = ScaleDamage(objToDamage.item_id, ref basedamage, damagetype);
             if (basedamage != 0)
@@ -49,6 +50,10 @@ namespace Underworld
             {
                 if (DamageOtherObjectTypes(objToDamage, basedamage, 0))
                 {
+                    if (NotOnMap)
+                    {//remove_object returns 1 at once when x < 0. uw1 DAMAGE.C:98-99, uw2 DAMAGE.C:89-90
+                        return true;
+                    }
                     //object should be destroyed
                     return ObjectDestruction(
                         objToDestroy: objToDamage,
@@ -705,7 +710,7 @@ namespace Underworld
                 }
 
                 //apply damage
-                var result = DamageObject(objToDamage: obj, basedamage: damage, damagetype: damagetype, objList: playerdat.InventoryObjects, WorldObject: false, damagesource: 0);
+                var result = DamageObject(objToDamage: obj, basedamage: damage, damagetype: damagetype, objList: playerdat.InventoryObjects, WorldObject: false, damagesource: 0, NotOnMap: true);//damage_item(obj, 0, -1, -1, ...), uw1 INVDATA.C:438, uw2 INVDATA.C:419
                 if (result)
                 {//taken damage and can be destroyed
                     if (arg8 != 0)
@@ -720,12 +725,12 @@ namespace Underworld
                         {
                             debris = 0xD5 + Rng.RandScale(2);//0xD5 or 0xD6 at random, rand() * 2 / 0x8000, uw1 INVDATA.C:440
                         }
-                        var tile = UWTileMap.current_tilemap.Tiles[playerdat.playerObject.tileX, playerdat.playerObject.tileY];
-                        ObjectCreator.spawnObjectInTile(
-                            itemid: debris,
-                            tileX: playerdat.playerObject.tileX, tileY: playerdat.playerObject.tileY,
-                            xpos: 3, ypos: 3, zpos: (short)(tile.floorHeight << 3),
-                            WhichList: ObjectFreeLists.ObjectListType.StaticList);
+                        //near the player, near_mob_put_at(ThePlayer, junk, 6, 0). uw1 INVDATA.C:441, uw2 INVDATA.C:422
+                        var junk = ObjectCreator.PrepareNewObject(debris, ObjectFreeLists.ObjectListType.StaticList);
+                        if (junk != 0)
+                        {
+                            motion.NearMobPutAt(playerdat.playerObject, UWTileMap.current_tilemap.LevelObjects[junk], 6, false);
+                        }
                     }
                     ObjectCreator.Consume(obj, true);//removes from inventory     
                     playerdat.PlayerStatusUpdate();
