@@ -1128,83 +1128,76 @@ namespace Underworld
         }
 
 
-        static void AttackGoalSearchForTarget(uwObject critter, ref int xhome, ref int yhome, int arg4_dist)
+        /// <summary>
+        /// crit_offense_find_target (uw1 AI.C:464-500, uw2 AI.C:452-484). Heads for the target's square (x, y)
+        /// unless the critter is on it or within how tiles of it. One time in eight, if its destination is out of
+        /// date, it first checks whether it still perceives the target (target_found).
+        /// </summary>
+        static void AttackGoalSearchForTarget(uwObject critter, int x, int y, int how)
         {
-            if ((xhome != critter.TargetTileX) && (yhome != critter.TargetTileY))
+            if (((critter.TargetTileX != x) || (critter.TargetTileY != y)) && (Rng.r.Next(8) == 0))
             {
-                if (Rng.r.Next(8) == 0)
-                {
-                    var result = SearchForGoalTarget(critter, ref xhome, ref yhome);
+                var result = SearchForGoalTarget(critter, ref x, ref y);
+                if (_RES == GAME_UW2)
+                {//uw2 AI.C:458-464
+                    if ((result == 0) || ((result == 2) && (Rng.r.Next(2) == 0)))
+                    {
+                        SetNPCTargetDestination(critter, x, y, currentGTargFloorHeight);
+                    }
+                    else
+                    {
+                        critter.UnkBit_0x19_0_likelyincombat = 0;
+                        critter.UnkBit_0x19_1 = (short)(result == 1 ? 1 : 0);
+                        ResetGoalAndTarget(critter);
+                    }
+                }
+                else
+                {//uw1 AI.C:470-487
                     switch (result)
                     {
                         case 0:
-                            {//npc is aware of target
-                                SetNPCTargetDestination(critter, xhome, yhome, currentGTargFloorHeight);
-                                break;
-                            }
+                            SetNPCTargetDestination(critter, x, y, currentGTargFloorHeight);
+                            break;
                         case 1:
-                            {//npc loses target?
+                            critter.UnkBit_0x19_0_likelyincombat = 0;
+                            critter.UnkBit_0x19_1 = 0;
+                            ResetGoalAndTarget(critter);
+                            return;
+                        case 2:
+                            if (Rng.r.Next(2) == 0)
+                            {
                                 critter.UnkBit_0x19_0_likelyincombat = 0;
                                 critter.UnkBit_0x19_1 = 1;
                                 ResetGoalAndTarget(critter);
-                                break;
+                                return;
                             }
-                        case 2:
-                            {//no change to detection.
-                                if (Rng.r.Next(2) == 1)
-                                {
-                                    SetNPCTargetDestination(critter, xhome, yhome, currentGTargFloorHeight);
-                                }
-                                else
-                                {
-                                    critter.UnkBit_0x19_0_likelyincombat = 0;
-                                    critter.UnkBit_0x19_1 = 0;
-                                    ResetGoalAndTarget(critter);
-                                }
-                                break;
-                            }
-                        default:
-                            Debug.Print("unknown detection state. Exiting AttackGoalSearchForTarget()");
-                            return;//not a valid case
+                            SetNPCTargetDestination(critter, x, y, currentGTargFloorHeight);
+                            break;
                     }
-
                 }
             }
             //seg007_17A2_D3D:
-            if ((xhome == currObj_YHome) && (yhome == currObj_YHome) && (Math.Abs(currObj_FloorHeight - currentGTargFloorHeight) < 4))
+            if ((x == currObj_XHome) && (y == currObj_YHome) && (Math.Abs(currObj_FloorHeight - currentGTargFloorHeight) < 4))
             {
-                //close to target
-                return;
+                return;//on the target's square
             }
-            else
+            //seg007_17A2_D68:
+            if (
+                ((how > 1) && (how * how < currentGTargSquaredDistanceByTiles))
+                ||
+                (how * how * 8 * 8 < currentGTargSquaredDistanceByCoordinates)
+                ||
+                ((how <= 1) && (Math.Abs(currObj_FloorHeight - currentGTargFloorHeight) >= 4))
+                )
             {
-                //seg007_17A2_D68:
-                //This chain of logic is fairly complex. Bet I made a mistake here.
-                if ((arg4_dist <= 1) || ((arg4_dist > 1) && (arg4_dist * arg4_dist >= currentGTargSquaredDistanceByTiles)))
-                {//seg007_17A2_D80:
-                    if ((((arg4_dist * arg4_dist) << 3) << 3) >= currentGTargSquaredDistanceByCoordinates)
-                    {
-                        if (arg4_dist > 1)
-                        {
-                            return;
-                        }
-                        else
-                        {
-                            if (Math.Abs(currentGTargFloorHeight - currObj_FloorHeight) < 4)
-                            {
-                                return;
-                            }
-                        }
-                    }
-                }
                 //seg007_17A2_DBD:
-                NPC_Goto(critter, xhome, yhome, currentGTargFloorHeight);
+                NPC_Goto(critter, x, y, currentGTargFloorHeight);
                 if (critter.UnkBit_0x18_6 != 0)
                 {
+                    ResetGoalAndTarget(critter);
                     critter.UnkBit_0x19_1 = 0;
                 }
             }
-
         }
 
         /// <summary>
@@ -1226,11 +1219,11 @@ namespace Underworld
             var si_dist = (int)Math.Pow(xvector, 2) + Math.Pow(yvector, 2);
             var score = (int)Math.Pow((critterObjectDat.noisedetectionrange(critter.item_id) * critterObjectDat.StealthQuietness(gtargObject.item_id)) / 16, 2);
 
-            if (score / 4 < si_dist)
+            if (score / 4 <= si_dist)//target_found (uw1 AI.C:838-856, uw2 AI.C:801-819)
             {
                 var var8 = (int)Math.Pow((critterObjectDat.sightdetectionrange(critter.item_id) * critterObjectDat.StealthVisibility(gtargObject.item_id)) / 16, 2);
 
-                if (si_dist < var8)
+                if (si_dist <= var8)
                 {
                     var HeadingToTarget_var3 = Pathfind.GetVectorHeading(xvector, yvector);
                     var var5 = (8 + (HeadingToTarget_var3 - critter.heading)) % 8;
@@ -1248,7 +1241,7 @@ namespace Underworld
                     }
                 }
 
-                if ((score << 2) < si_dist)
+                if ((score << 2) <= si_dist)
                 {
                     critter.UnkBit_0x19_0_likelyincombat = 0;
                     return 1;
@@ -2547,7 +2540,8 @@ namespace Underworld
                         {
                             if (critter.UnkBit_0x19_5 == 0)
                             {
-                                if (Math.Pow(critterObjectDat.maybemorale(critter.item_id), 2) < diDistFromHome)
+                                var range = critterObjectDat.TravelRange(critter.item_id);
+                                if (range * range * 4 < diDistFromHome)//uw1 AI.C:378, uw2 AI.C:366
                                 {
                                     //seg007_17A2_953:
                                     //NPC Gives up.
@@ -2563,11 +2557,11 @@ namespace Underworld
                     //seg007_17A2_97D: 
                     if (critterObjectDat.isCaster(critter.item_id))
                     {
-                        AttackGoalSearchForTarget(critter: critter, xhome: ref currentGTargXHome, yhome: ref currentGTargYHome, arg4_dist: var4_dist);
+                        AttackGoalSearchForTarget(critter: critter, x: currentGTargXHome, y: currentGTargYHome, how: var4_dist);
                     }
                     else
                     {
-                        AttackGoalSearchForTarget(critter: critter, xhome: ref currentGTargXHome, yhome: ref currentGTargYHome, arg4_dist: 1);
+                        AttackGoalSearchForTarget(critter: critter, x: currentGTargXHome, y: currentGTargYHome, how: 1);
                     }
                 }
             }
