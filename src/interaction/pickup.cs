@@ -221,17 +221,8 @@ namespace Underworld
         public static bool PickUp(int index, uwObject[] objList, bool WorldObject = true)
         {
             var objPicked = objList[index];
-            var ObjectMass = container.GetTotalMass(objectToWeight: objPicked, objList: UWTileMap.current_tilemap.LevelObjects, IgnoreNext: true);
-            if (playerdat.WeightCapacity < ObjectMass)
-            {
-                //Object is too heavy to pick up
-                uimanager.AddToMessageScroll(GameStrings.GetString(1,GameStrings.str_that_is_too_heavy_for_you_to_pick_up_));
-                return false;
-            }
-            
-
             if (useon.CurrentItemBeingUsed != null)
-            {
+            {//the target of a use-on is not weighed (uw1 INTERACT.C:605-609, uw2 INTERACT.C:506-510)
                 return useon.UseOn(objPicked, useon.CurrentItemBeingUsed, WorldObject);
             }
             else
@@ -253,10 +244,31 @@ namespace Underworld
                 else
                 {
                     //single instance object
+                    if (TooHeavyToPickUp(objPicked))
+                    {
+                        return false;
+                    }
                     DoPickup(index, objList, objPicked);
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// The weight check of a pick-up, EncumCheck: only what is taken is weighed, after a stack is split (uw1 INTERACT.C:462, uw2 INTERACT.C:365)
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns>true, with the message, when the player cannot carry obj as well</returns>
+        static bool TooHeavyToPickUp(uwObject obj)
+        {
+            var ObjectMass = container.GetTotalMass(objectToWeight: obj, objList: UWTileMap.current_tilemap.LevelObjects, IgnoreNext: true);
+            if (playerdat.WeightCapacity < ObjectMass)
+            {
+                //Object is too heavy to pick up
+                uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_that_is_too_heavy_for_you_to_pick_up_));
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -286,6 +298,11 @@ namespace Underworld
                 {
                     if (obj.ObjectQuantity <= result)
                     {//at least all of the stack is selected
+                        if (TooHeavyToPickUp(obj))
+                        {
+                            yield return false;
+                            yield break;
+                        }
                         DoPickup(index, objList, obj);
                     }
                     else
@@ -309,6 +326,15 @@ namespace Underworld
                         //the copy goes next after the stack in the tile's list (uw1 INTERACT.C:460, uw2 INTERACT.C:363)
                         newObj.next = obj.next;
                         obj.next = (short)newObjIndex;
+                        if (TooHeavyToPickUp(obj))
+                        {//only the part taken is weighed; too heavy, the stack is put back together and the copy freed (uw2 INTERACT.C:365-369).
+                         //UW1 leaves the copy on no list and never frees it (uw1 INTERACT.C:462-465), an original bug the port does not copy
+                            obj.link += newObj.link;
+                            obj.next = newObj.next;
+                            ObjectFreeLists.ReleaseFreeObject(newObj);
+                            yield return false;
+                            yield break;
+                        }
                         newObj.tileX = obj.tileX; newObj.tileY = obj.tileY;
                         ObjectCreator.RenderObject(newObj, UWTileMap.current_tilemap);
                         //then the stack is picked up as any other object, with its triggers and owner checks (uw1 INTERACT.C:476-481, uw2 INTERACT.C:370-387)
