@@ -326,6 +326,15 @@ namespace Underworld
                         }
                         break;
                     }
+                case 37://brings all the schedules up to date, Sched_SetAllClocks(1) (uw2 TRIGGER.C:872-873, SCHEDULE.C:202-223)
+                    {
+                        if (_RES == GAME_UW2)
+                        {
+                            scd.ProcessSCDArk(1);
+                            return true;
+                        }
+                        break;
+                    }
                 case 38:
                     {//transform red potions to poison
                         if (_RES == GAME_UW2)
