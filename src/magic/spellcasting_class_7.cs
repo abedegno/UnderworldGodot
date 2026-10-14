@@ -32,7 +32,7 @@ namespace Underworld
                         break;
                     case 4:
                         //Poison
-                        works = PoisonSpell(index: index, objList: objList, WorldObject: WorldObject);//unused in uw2
+                        works = PoisonSpell(index: index, objList: objList, WorldObject: WorldObject, damagesource: caster.index);//unused in uw2
                         break;
                     case 5:
                         //paralyse  
@@ -95,31 +95,45 @@ namespace Underworld
                 }
                 RunicMagic.PendingSpellCost = 0;
             }
-            else
-            {//the uw1 list of class 7 spells is much shorter
-                switch (minorclass)
-                {
-                    case 1:
-                        //Cause fear
-                        Causefear(index, objList);
-                        break;
-                    case 2:
-                        //smite undead
-                        SmiteUndead(index: index, objList: objList, caster: caster);
-                        break;
-                    case 3:
-                        //ally
-                        Ally(index: index, objList: objList);
-                        break;
-                    case 4:
-                        //poison
-                        PoisonSpell(index: index, objList: objList, WorldObject: WorldObject);
-                        break;
-                    case 5:
-                        //paralyse
-                        Paralyse(index: index, objList: objList, caster: caster);
-                        break;
-                }
+            //UW1's class 7 spells never wait for a click. See CastClass7_SpellsAheadUW1.
+        }
+
+        /// <summary>
+        /// UW1's class 7 spells (nail_1area, uw1 SPELLS.C:553-559). There is no target cursor: only the player's casts work, and
+        /// the spell acts once, on the first critter within 2 squares of the square 4 ahead whose handler returns true.
+        /// With no such critter nothing happens and nothing is said; the mana was paid at the cast (uw1 RUNES.C:260-263).
+        /// </summary>
+        /// <param name="minorclass"></param>
+        /// <param name="caster"></param>
+        static void CastClass7_SpellsAheadUW1(int minorclass, uwObject caster)
+        {
+            if (caster != playerdat.playerObject)
+            {
+                return;
+            }
+            var objList = UWTileMap.current_tilemap.LevelObjects;
+            CallBacks.AreaEffectCallBack methodtorun = null;
+            switch (minorclass & 0x3F) //area1_spells, uw1 SPELLS.C:539-541. The top bits are the target type, 0 for every critter but the caster.
+            {
+                case 1://Cause fear. sp_fear returns 1 even if resisted (uw1 SPELLS.C:366-375, 399-403)
+                    methodtorun = (x, y, critter, tile, srcIndex) => Causefear(critter.index, objList);
+                    break;
+                case 2://smite undead. sp_ward_undead returns 0 for the living, so the spell goes on to the next critter (uw1 SPELLS.C:344-353)
+                    methodtorun = (x, y, critter, tile, srcIndex) => SmiteUndead(index: critter.index, objList: objList, caster: caster);
+                    break;
+                case 3://ally. sp_charm returns 1 (uw1 SPELLS.C:379-390)
+                    methodtorun = (x, y, critter, tile, srcIndex) => { Ally(index: critter.index, objList: objList); return true; };
+                    break;
+                case 4://poison. sp_poison returns 1 (uw1 SPELLS.C:355-361)
+                    methodtorun = (x, y, critter, tile, srcIndex) => PoisonSpell(index: critter.index, objList: objList, WorldObject: true, damagesource: srcIndex);
+                    break;
+                case 5://paralyse. sp_hold returns 1 even if resisted (uw1 SPELLS.C:366-375, 406-411)
+                    methodtorun = (x, y, critter, tile, srcIndex) => { Paralyse(index: critter.index, objList: objList, caster: caster); return true; };
+                    break;
+            }
+            if (methodtorun != null)
+            {//gronk_area with count 1, 4 squares ahead, radius 2
+                CallBacks.RunCodeOnTargetsAroundObject(methodtorun, 1, 1, minorclass & 0xC0, 4, 2);
             }
         }
 
@@ -390,7 +404,10 @@ namespace Underworld
             {
                 if (critter.majorclass == 1)
                 {//npc class
-                    critter.npc_attitude = 1;
+                    if (_RES == GAME_UW2)
+                    {//UW2 sets attitude 1 whether or not the critter resists (uw2 SPELLS.C:538). UW1's sp_fear leaves it alone (uw1 SPELLS.C:399-403).
+                        critter.npc_attitude = 1;
+                    }
 
                     ApplyAIChangingSpell(
                         targetObject: critter,
@@ -504,7 +521,8 @@ namespace Underworld
                         ApplyAIChangingSpell(
                             targetObject: critter,
                             newgoal: (byte)npc.npc_goals.npc_goal_stand_still_7,
-                            newattitude: 1);
+                            newattitude: 1,
+                            newgtarg: 1);//hit_critter_goal gives gtarg 1 (uw1 SPELLS.C:370)
                     }
                 }
             }
@@ -752,8 +770,9 @@ namespace Underworld
         /// <param name="index"></param>
         /// <param name="objList"></param>
         /// <param name="WorldObject"></param>
+        /// <param name="damagesource">the caster's index, or 0 for a caster that is not a mobile object</param>
         /// <returns></returns>
-        static bool PoisonSpell(int index, uwObject[] objList, bool WorldObject)
+        static bool PoisonSpell(int index, uwObject[] objList, bool WorldObject, int damagesource)
         {
             if (!WorldObject)
             {
@@ -764,7 +783,7 @@ namespace Underworld
             {
                 animo.SpawnAnimoAtTarget(target: target, subclassindex: 7, si_zpos: 7, tileX: target.tileX, tileY: target.tileY);
                 var damagetoapply = Rng.DiceRoll(5,4);
-                damage.DamageObject(objToDamage: target, basedamage: damagetoapply, damagetype: 0x13, objList: objList, WorldObject: WorldObject, damagesource: 0);//applies raw, magic and poison damage
+                damage.DamageObject(objToDamage: target, basedamage: damagetoapply, damagetype: 0x13, objList: objList, WorldObject: WorldObject, damagesource: damagesource);//applies raw, magic and poison damage. The source is the caster (uw1 SPELLS.C:359, uw2 SPELLS.C:357)
                 return true;
             }
             else
