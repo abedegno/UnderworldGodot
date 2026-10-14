@@ -45,8 +45,11 @@ public sealed class PathsFreedOnLevelChange : Scenario
 
     async Task<bool> Go(ScenarioContext c, int level)
     {
-        var p = playerdat.playerObject;
-        Teleportation.Teleport(character: 0, tileX: p.tileX, tileY: p.tileY, newLevel: level, HeadingHeightFlag: 0);
+        // Any square will do. A stand-in square (0x3F) with a callback queued parks the player in
+        // the middle of the map without a search for room, so he cannot be killed by arriving in rock
+        // (new_player_pos, uw1/src/game/UWEDIT.C:466-471, uw2/src/game/UWEDIT.C:480-486).
+        Teleportation.CodeToRunOnTeleport = () => { };
+        Teleportation.Teleport(character: 0, tileX: 0x3F, tileY: 0x3F, newLevel: level, HeadingHeightFlag: 0);
         ulong deadline = Time.GetTicksMsec() + TeleportMs;
         int stable = 0;
         while (Time.GetTicksMsec() < deadline && stable < 10)

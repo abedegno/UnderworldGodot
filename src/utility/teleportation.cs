@@ -32,6 +32,9 @@ namespace Underworld
         /// </summary>
         public static void HandleTeleportation()
         {
+            // new_player_pos searches for room round the queued square, after any level change, and
+            // if there is none the player is not moved and dies (uw1 UWEDIT.C:466-471, uw2 UWEDIT.C:480-486).
+            bool roomFound = true;
             if (TeleportLevel != -1)
             {
                 uimanager.WaitingForFade = true;
@@ -56,6 +59,7 @@ namespace Underworld
 
                 }
 
+                int fromX = playerdat.playerObject.tileX, fromY = playerdat.playerObject.tileY;
                 //remove player from the level
                 playerdat.PlacePlayerInTile(newTileX: -1, newTileY: -1, previousTileX: playerdat.playerObject.tileX, previousTileY: playerdat.playerObject.tileY);//removes the player from the tile map data
 
@@ -88,12 +92,21 @@ namespace Underworld
                 //Reset the camera reference as the old reference belonged to a previous map
                 playerdat.CameraReference = playerdat.playerObject;
 
-                if ((TeleportTileX != -1) && (TeleportTileY != -1))
+                int tileX = TeleportTileX, tileY = TeleportTileY;
+                if ((tileX != -1) && (tileY != -1))
+                {
+                    roomFound = FindRoomForPlayer(ref tileX, ref tileY);
+                }
+                if (!roomFound)
+                {// the original does not call player_setup, so the player keeps his old position, now on this map
+                    playerdat.playerObject.tileX = fromX; playerdat.playerObject.tileY = fromY;
+                }
+                else if ((tileX != -1) && (tileY != -1))
                 {
                     if (_RES == GAME_UW2)
                     {
                         //move to new tile on different level
-                        InitialisePlayerOnLevelOrPositionChange(tileX: TeleportTileX, tileY: TeleportTileY, CeilingSpawn: (HeadingHeightTeleportFlag & 0x1) == 1);
+                        InitialisePlayerOnLevelOrPositionChange(tileX: tileX, tileY: tileY, CeilingSpawn: (HeadingHeightTeleportFlag & 0x1) == 1);
                         if ((HeadingHeightTeleportFlag & 0x20) != 0)
                         {
                             HeadingHeightTeleportFlag &= 0xFFDC;
@@ -105,7 +118,7 @@ namespace Underworld
                     else
                     {
                         //move to new tile on different level
-                        InitialisePlayerOnLevelOrPositionChange(tileX: TeleportTileX, tileY: TeleportTileY, CeilingSpawn: false);
+                        InitialisePlayerOnLevelOrPositionChange(tileX: tileX, tileY: tileY, CeilingSpawn: false);
                     }
                 }
 
@@ -121,14 +134,19 @@ namespace Underworld
             else
             {
                 //teleport within a map
-                if ((TeleportTileX != -1) && (TeleportTileY != -1))
+                int tileX = TeleportTileX, tileY = TeleportTileY;
+                if ((tileX != -1) && (tileY != -1))
+                {
+                    roomFound = FindRoomForPlayer(ref tileX, ref tileY);
+                }
+                if ((tileX != -1) && (tileY != -1) && roomFound)
                 {
                     uimanager.WaitingForFade = true;
                     uimanager.FlashColour(1, uimanager.CutsSmall, HaltGame:true);
                     //move to new tile
                     if (_RES == GAME_UW2)
                     {
-                        InitialisePlayerOnLevelOrPositionChange(tileX: TeleportTileX, tileY: TeleportTileY, CeilingSpawn: (HeadingHeightTeleportFlag & 0x1) == 1, removefromtile: true);
+                        InitialisePlayerOnLevelOrPositionChange(tileX: tileX, tileY: tileY, CeilingSpawn: (HeadingHeightTeleportFlag & 0x1) == 1, removefromtile: true);
                         if ((HeadingHeightTeleportFlag & 0x20) != 0)
                         {
                             HeadingHeightTeleportFlag &= 0xFFDC;
@@ -139,7 +157,7 @@ namespace Underworld
                     }
                     else
                     {
-                        InitialisePlayerOnLevelOrPositionChange(tileX: TeleportTileX, tileY: TeleportTileY, CeilingSpawn: false, removefromtile: true);
+                        InitialisePlayerOnLevelOrPositionChange(tileX: tileX, tileY: tileY, CeilingSpawn: false, removefromtile: true);
                     }
                 }
             }
@@ -154,7 +172,35 @@ namespace Underworld
                 CodeToRunOnTeleport();
                 CodeToRunOnTeleport = null;//although this should be handled by the method itself
             }
+            if (!roomFound)
+            {// after the callback, as the original runs npp_func before its search
+                playerdat.play_hp = 0;
+            }
             uimanager.WaitingForFade = false;
+        }
+
+        /// <summary>
+        /// The search new_player_pos makes before it places the player (uw1 UWEDIT.C:466-471, uw2 UWEDIT.C:480-486):
+        /// find_good_x_and_y round the square, and if that finds nothing, again with clear set. A square of 0x3F
+        /// with a callback queued is a stand-in, as the callback sets the real square (moveto in the
+        /// original, uw1 SKILLS.C:769-784, uw2 SKILLS.C:647-661): the player is parked in the middle
+        /// of the map with no search until it runs.
+        /// </summary>
+        /// <returns>false when there is no room even after clearing</returns>
+        static bool FindRoomForPlayer(ref int tileX, ref int tileY)
+        {
+            if ((tileX == 0x3F || tileY == 0x3F) && CodeToRunOnTeleport != null)
+            {
+                tileX = 32; tileY = 32;
+                return true;
+            }
+            if (FindGoodXAndY(playerdat.playerObject, tileX, tileY, out int x, out int y)
+                || FindGoodXAndY(playerdat.playerObject, tileX, tileY, out x, out y, clear: true))
+            {
+                tileX = x; tileY = y;
+                return true;
+            }
+            return false;
         }
 
 
@@ -433,13 +479,6 @@ namespace Underworld
             {
                 TeleportLevel = -1;
             }
-            if ((tileX == 0x3F || tileY == 0x3F) && CodeToRunOnTeleport != null)
-            {
-                // Gate travel and resurrection pass square 0x3F, 0x3F (uw1 SPELLS.C:805,
-                // SKILLS.C:863): the real square comes later from CodeToRunOnTeleport. Park
-                // the player in the middle of the map until it runs.
-                tileX = 32; tileY = 32;
-            }
             TeleportTileX = tileX;
             TeleportTileY = tileY;
             return 2;
@@ -451,11 +490,12 @@ namespace Underworld
         /// xmin..xmin+9, ymin..ymin+9 round it, for the first square where the object fits at the
         /// square's centre (can_place at x * 8 + 3, y * 8 + 3, on the floor, raised by 4 on a slope).
         /// Solid squares are not searched through and diagonals only through their open sides.
-        /// The original's clear argument (punting objects out of the way, used only by
-        /// new_player_pos, uw1 UWEDIT.C:466-467) is not ported: do_teleport always passes 0.
+        /// With clear set (only new_player_pos sets it, uw1 UWEDIT.C:467, uw2 UWEDIT.C:481) each
+        /// square searched first loses the first object with a height, or the first mobile object,
+        /// that Obj_Punt is allowed to delete (uw1 WORLDEV.C:114-122, uw2 WORLDEV.C:103-111).
         /// </summary>
         /// <returns>false when there is no such square</returns>
-        public static bool FindGoodXAndY(uwObject obj, int x, int y, out int newX, out int newY)
+        public static bool FindGoodXAndY(uwObject obj, int x, int y, out int newX, out int newY, bool clear = false)
         {
             newX = x; newY = y;
             int xmin = System.Math.Min(System.Math.Max(1, x - 4), 0x3A);
@@ -488,6 +528,27 @@ namespace Underworld
                 foreach (var (tx, ty) in cur)
                 {
                     var tile = UWTileMap.current_tilemap.Tiles[tx, ty];
+                    if (clear)
+                    {
+                        var objIndex = tile.indexObjectList;
+                        while (objIndex != 0)
+                        {
+                            var o = UWTileMap.current_tilemap.LevelObjects[objIndex];
+                            objIndex = o.next;
+                            if (commonObjDat.height(o.item_id) != 0 || o.index < 0x100)//a height, or a mobile object (IsMobElem)
+                            {
+                                if (ObjectRemover.RemoveObject_experimental(
+                                    objectlist: UWTileMap.current_tilemap.LevelObjects,
+                                    buffer: UWTileMap.current_tilemap.lev_ark_block.Data,
+                                    ListHeadPTR: (int)(tile.Ptr + 2),
+                                    objToRemove: o,
+                                    ForceCull: false) == null)
+                                {
+                                    break;// unlinking the deleted object cleared its next, which ends the original's walk
+                                }
+                            }
+                        }
+                    }
                     int z = (tile.floorHeight << 3) + (((motion.TileTraversalFlags_dseg_67d6_1BA6[tile.tileType] & 0x20) != 0) ? 4 : 0);
                     if (motion.TestIfObjectFitsInTile(obj.item_id, obj.index, tx * 8 + 3, ty * 8 + 3, z, 0, 8))
                     {
@@ -532,7 +593,17 @@ namespace Underworld
             {
                 if (UWTileMap.ValidTile(moonstone.tileX, moonstone.tileY))
                 {
-                    InitialisePlayerOnLevelOrPositionChange(moonstone.tileX, moonstone.tileY, CeilingSpawn: false);
+                    // do_mstone only sets the square; new_player_pos then searches round it as for
+                    // any move (uw1 SKILLS.C:809-812, uw2 SKILLS.C:726-729).
+                    int tileX = moonstone.tileX, tileY = moonstone.tileY;
+                    if (FindRoomForPlayer(ref tileX, ref tileY))
+                    {
+                        InitialisePlayerOnLevelOrPositionChange(tileX, tileY, CeilingSpawn: false, removefromtile: true);
+                    }
+                    else
+                    {
+                        playerdat.play_hp = 0;
+                    }
                 }
             }
         }

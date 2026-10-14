@@ -61,15 +61,21 @@ public sealed class WanderingMonsters : Scenario
 
     static bool Near(int x, int y, int px, int py) => System.Math.Abs(px - x) < 8 && System.Math.Abs(py - y) < 8;
 
+    /// <summary>Teleports to (x, y) of level, or with x 0x3F to anywhere on it. new_player_pos lands the player on the
+    /// nearest square with room, within the search box round (x, y), and kills him if there is none
+    /// (uw1/src/game/UWEDIT.C:466-471, uw2/src/game/UWEDIT.C:480-486). A stand-in square (0x3F) with a callback
+    /// queued parks him in the middle of the map with no search, so a level can be visited without knowing its map.</summary>
     async Task<bool> TeleportTo(ScenarioContext c, int x, int y, int level)
     {
+        if (x == 0x3F) Teleportation.CodeToRunOnTeleport = () => { };
         Teleportation.Teleport(character: 0, tileX: x, tileY: y, newLevel: level == playerdat.dungeon_level ? 0 : level, HeadingHeightFlag: 0);
         ulong deadline = Time.GetTicksMsec() + TeleportMs;
         int stable = 0;
         while (Time.GetTicksMsec() < deadline && stable < 10)
         {
             await c.Frames(1);
-            bool there = playerdat.dungeon_level == level && playerdat.playerObject.tileX == x && playerdat.playerObject.tileY == y;
+            bool there = playerdat.dungeon_level == level
+                && (x == 0x3F || (System.Math.Abs(playerdat.playerObject.tileX - x) <= 4 && System.Math.Abs(playerdat.playerObject.tileY - y) <= 4));
             stable = (there && !uimanager.WaitingForFade && uimanager.InGame) ? stable + 1 : 0;
         }
         return stable >= 10;
@@ -81,7 +87,7 @@ public sealed class WanderingMonsters : Scenario
         int start = playerdat.dungeon_level;
         for (int level = start; level < start + 5; level++)
         {
-            if (level != playerdat.dungeon_level && !await TeleportTo(c, playerdat.playerObject.tileX, playerdat.playerObject.tileY, level))
+            if (level != playerdat.dungeon_level && !await TeleportTo(c, 0x3F, 0x3F, level))
                 continue;
             FindTraps();
             foreach (var t in _traps)
