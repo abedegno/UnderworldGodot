@@ -67,6 +67,7 @@ public partial class ScenarioRunner : Node
         (() => new BritanniaSpellCircle(), true),
         (() => new AcademyManaLevel(), true),
         (() => new TargetedSpellMana(), true),
+        (() => new TargetedSpellWaived(), true),
         (() => new Uw1CastingCheck(), true),
         (() => new SummonMonsterLevel(), true),
         (() => new CarryCapacity(), true),

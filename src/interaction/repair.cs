@@ -256,7 +256,7 @@ namespace Underworld
     /// </summary>
     /// <param name="index"></param>
     /// <param name="objList"></param>
-    public static void MendingSpell(int index, uwObject[] objList)
+    public static bool MendingSpell(int index, uwObject[] objList)
     {
         var objToRepair = objList[index];
 
@@ -266,10 +266,12 @@ namespace Underworld
             uimanager.AddToMessageScroll($"{GameStrings.GetString(1, 0x12F)}{GameStrings.GetObjectNounUW(objToRepair.item_id)}");
             uimanager.UpdateInventoryDisplay();
             playerdat.PlayerStatusUpdate();
+            return true;
         }
         else
         {
             uimanager.AddToMessageScroll(GameStrings.GetString(1,0x142)); //Spell has no noticeable effect.           
+            return false;
         }
     }
 
