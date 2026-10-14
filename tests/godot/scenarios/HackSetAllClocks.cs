@@ -62,8 +62,10 @@ public sealed class HackSetAllClocks : Scenario
             playerdat.SetXClock(Block, Due);
             trap.ActivateTrap(1, hack, null, playerdat.playerObject.tileX, playerdat.playerObject.tileY, UWTileMap.current_tilemap.LevelObjects);
             _kept = scd.scd_data[Block] == block;
-            _clockAfter = data[4 + _level * 4];
-            _nextAfter = data[6 + _level * 4];
+            //read the block the game holds now: Sched_Load works on a copy and Sched_Save stores it back
+            var after = scd.scd_data[Block]?.Data ?? data;
+            _clockAfter = after[4 + _level * 4];
+            _nextAfter = after[6 + _level * 4];
             c.Note($"level {_level}: block {Block} clock {Due - 1} -> {_clockAfter}, next row 0 -> {_nextAfter}, block kept in memory {_kept}");
         }
         finally
