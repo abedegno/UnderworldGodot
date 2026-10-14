@@ -362,8 +362,8 @@ namespace Underworld
                     //seg007_17A2_246A
                     if (critter.npc_animation == ANIMATION_DEATH)
                     {
-                        //death animation
-                        if (critter.AnimationFrame >= MaxAnimFrame)
+                        //death animation. UW1 removes the critter after frame 3 whatever its art holds (uw1 AI.C:1135-1147). UW2 ends on the art's last frame.
+                        if ((_RES == GAME_UW2) ? (critter.AnimationFrame >= MaxAnimFrame) : (critter.AnimationFrame == 3))
                         {
                             //Special death cases
                             SpecialDeathCases(critter, 1); //mode 1
@@ -410,11 +410,12 @@ namespace Underworld
                                     XMIMusic.CombatMusicTimer = main.GlobalPITTimer;
                                 }
                             }
-                            //either hit at the standard hit frame or if the animation is short of frames hit at the last frame in the sequence.
+                            //either hit at the standard hit frame or, in UW2, if the animation is short of frames hit at the last frame in the sequence.
+                            //UW1 counts the frames itself and strikes on frame 4 whatever the art holds (uw1 AI.C:1154).
                             if (
                                 (critter.AnimationFrame == COMBAT_HITFRAME)
                                 ||
-                                ((MaxAnimFrame < COMBAT_HITFRAME) && (critter.AnimationFrame == MaxAnimFrame))
+                                ((_RES == GAME_UW2) && (MaxAnimFrame < COMBAT_HITFRAME) && (critter.AnimationFrame == MaxAnimFrame))
                             )
                             {
                                 //apply attack
@@ -438,7 +439,8 @@ namespace Underworld
                                         poisondamage: critterObjectDat.poisondamage(critter.item_id));
                                 }
                             }
-                            if (critter.AnimationFrame >= MaxAnimFrame)
+                            //UW1 ends the attack on the strike frame (uw1 AI.C:1154-1158). UW2 ends on the art's last frame.
+                            if ((_RES == GAME_UW2) ? (critter.AnimationFrame >= MaxAnimFrame) : (critter.AnimationFrame == COMBAT_HITFRAME))
                             {
                                 critter.npc_animation = ANIMATION_COMBAT_IDLE;
                                 critter.AnimationFrame = 0;
@@ -2949,7 +2951,13 @@ namespace Underworld
             //seg007_17A2_A9D:
             critter.ProjectileHeading = (ushort)(headingvar2 << 5);
             critter.UnkBit_0X13_Bit0to6 = (short)AttackTypeVar6;
-            if (critter.npc_animation != animVar4)
+            var attackStarted = false;
+            if (_RES != GAME_UW2)
+            {
+                //UW1 sets the sequence without touching the frame, and steps the frame below unless an attack starts (uw1 AI.C:410-455)
+                critter.npc_animation = (short)animVar4;
+            }
+            else if (critter.npc_animation != animVar4)
             {
                 critter.npc_animation = (short)animVar4;
                 critter.AnimationFrame = 0;
@@ -3011,7 +3019,13 @@ namespace Underworld
                     }
 
                     critter.AnimationFrame = 0;
+                    attackStarted = true;
                 }
+            }
+            if ((_RES != GAME_UW2) && !attackStarted)
+            {
+                //UW1 counts the frames itself, 0 to 3, whatever the art holds (uw1 AI.C:455)
+                critter.AnimationFrame = (byte)((critter.AnimationFrame + 1) % 4);
             }
 
             //seg007_17A2_C68:
