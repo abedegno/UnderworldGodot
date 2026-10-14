@@ -15,7 +15,6 @@ namespace Underworld
         public static void ProcessSCDArk(int mode)
         {
             Debug.Print("Starting to process SCU.ARK");
-            ArkHasBeenModified = false;
             if (scd_data == null)
             {
                 scd_data = new UWBlock[0x10];
@@ -26,7 +25,10 @@ namespace Underworld
                 BlockIdentifier = blockno;
                 Debug.Print($"Processing SCD Block {blockno}");
                 var si_xclock = playerdat.GetXClock(blockno);
-                if (scd_data[blockno] == null)
+                //Sched_Load: work on a copy of the stored block and clear the modified flag (uw2/src/event/SCHEDULE.C:122-133).
+                //scd_data holds the blocks written back so far, null is the block as it is in the file.
+                var storedData = scd_data[blockno]?.Data;
+                if (storedData == null)
                 {
                     if (!LoadSCDBlock(blockno))
                     {
@@ -34,6 +36,11 @@ namespace Underworld
                         return; //stop                     
                     }
                 }
+                else
+                {
+                    scd_data[blockno].Data = (byte[])storedData.Clone();
+                }
+                ArkHasBeenModified = false;
 
                 scd_data[blockno].Data[2] = (byte)blockno;
 
@@ -52,20 +59,23 @@ namespace Underworld
                         XClockValue: si_xclock,
                         mode: mode);
                 }
-                if (error_var2 != 0)
+                //Sched_Save writes the block back only when a row ran or deleted itself, so a clock change alone is not kept,
+                //and an error stops before the save (uw2/src/event/SCHEDULE.C:155-158, 213-217).
+                if (error_var2 == 0 && ArkHasBeenModified)
                 {
-                    return;
+                    Debug.Print("Ark file needs to be saved with new data.");
+                }
+                else if (storedData == null)
+                {
+                    scd_data[blockno] = null;//discard the unsaved changes: the block is as it is in the file.
                 }
                 else
                 {
-                    if (ArkHasBeenModified)
-                    {
-                        Debug.Print("Ark file needs to be saved with new data.");
-                    }
-                    else
-                    {
-                        scd_data[blockno]= null;//simulate discarding of data that is unsaved.
-                    }
+                    scd_data[blockno].Data = storedData;//discard the unsaved changes: back to the block last written.
+                }
+                if (error_var2 != 0)
+                {
+                    return;
                 }
             }
         }
@@ -183,10 +193,9 @@ namespace Underworld
                                 ArkHasBeenModified = true;
                                 si++;
                                 break;
-                            case 4: //deleted record (do not come here until record deletion is in place!)                                
+                            case 4: //deleted record: the next row has moved into this index, so look at it next (uw2/src/event/SCHEDULE.C:68-69, 76)
                                 ArkHasBeenModified = true;
-                                Debug.Print("Deleted Record"); 
-                                si--;                                
+                                Debug.Print("Deleted Record");
                                 break;
                             case 5:
                                 si++;

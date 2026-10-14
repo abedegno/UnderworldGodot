@@ -83,6 +83,7 @@ public partial class ScenarioRunner : Node
         (() => new JailTerm(), true),
         (() => new AltarasWand(), true),
         (() => new ScdSetQuestBit(), true),
+        (() => new ScdBlockWriteBack(), true),
         (() => new QbertGate(), true),
         (() => new CastleSchedule(), true),
         (() => new EnchantWeaponTier(), true),
