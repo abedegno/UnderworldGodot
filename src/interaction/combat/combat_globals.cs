@@ -19,6 +19,12 @@ namespace Underworld
         public static int CurrentWeaponRadius = 0;
 
         public static int PlayerWeaponSound = 1;
+
+        /// <summary>
+        /// UW2's hit_wall: set when the player's swing meets a wall, so the whiff that follows is
+        /// skipped (uw2 COMBAT.C:205-210, 476-480). UW1 has no such flag.
+        /// </summary>
+        static bool HitWall = false;
         public static int OnHitSpell = 0;
 
         public static int WeaponSwingTypePlayer = 0;
