@@ -72,13 +72,13 @@ namespace Underworld
             //pick music
             if (_RES == GAME_UW2)
             {
-                //XMIMusic.ChangeTheme(XMIMusic.PickLevelThemeMusic(0));                
-                XMIMusic.PickLevelThemeMusic(0);
+                XMIMusic.PickLevelThemeMusic(0);//uw2 SKILLS.C:452-453
             }
             else
             {
-                XMIMusic.ChangeThemeMusic(0xD);
+                XMIMusic.ChangeThemeMusic(0xD);//uw1 SKILLS.C:538-539
             }
+            XMIMusic.RefreshMusic();
 
             if (sleepmethod >= 0)
             {
@@ -140,6 +140,7 @@ namespace Underworld
 
             if (playerdat.play_hp == 0)
             {
+                XMIMusic.PickLevelThemeMusic(-1);//uw1 SKILLS.C:558-561, uw2 SKILLS.C:485-489
                 return;//player has died. Handle their death on the next update()
             }
             else
@@ -222,6 +223,9 @@ namespace Underworld
 
                 playerdat.PlayerStatusUpdate();
                 //Cancel all motion.
+
+                //back to a walking theme: uw1 SKILLS.C:617, uw2 SKILLS.C:555
+                XMIMusic.PickLevelThemeMusic(-1);
 
             }
 

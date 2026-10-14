@@ -52,18 +52,16 @@ namespace Underworld
 
                 motion.GetCoordinateInDirection(heading, distanceFromObject, ref tileX, ref tileY);
 
-                if (UWTileMap.ValidTile (tileX, tileY))
-                {
-                    RunCodeOnTargetsInArea(
-                        methodToCall: methodToCall,
-                        Rng_arg0: rngProbablity,
-                        srcItemIndex: CentreObject,
-                        typeOfTargetArg8: targetType,
-                        tileX0: tileX - tileRadius,
-                        tileY0: tileY - tileRadius,
-                        xWidth: 1 + (tileRadius << 1),
-                        yHeight: 1 + tileRadius << 1);
-                }     
+                //No test of the centre: an area whose centre is off the map is clipped to the map by RunCodeOnTargetsInArea, as process_area does. uw1 SPELLS.C:428-450, 509, uw2 SPELLS.C:614-636, 696
+                RunCodeOnTargetsInArea(
+                    methodToCall: methodToCall,
+                    Rng_arg0: rngProbablity,
+                    srcItemIndex: CentreObject,
+                    typeOfTargetArg8: targetType,
+                    tileX0: tileX - tileRadius,
+                    tileY0: tileY - tileRadius,
+                    xWidth: 1 + (tileRadius << 1),
+                    yHeight: 1 + (tileRadius << 1));//radius * 2 + 1. uw1 SPELLS.C:509, uw2 SPELLS.C:696
         }
 
         /// <summary>
@@ -78,7 +76,7 @@ namespace Underworld
         /// <param name="xWidth"></param>
         /// <param name="yHeight"></param>
         public static void RunCodeOnTargetsInArea(AreaEffectCallBack methodToCall, int Rng_arg0, int srcItemIndex, int typeOfTargetArg8, int tileX0, int tileY0, int xWidth, int yHeight)
-        {
+        {//process_area, uw1 SPELLS.C:416-483, uw2 SPELLS.C:602-670
             int varE = 0;
             if (
                 (tileX0 < 64) && (tileY0 < 64)
@@ -101,7 +99,7 @@ namespace Underworld
 
                 if (tileY0 >= 0)
                 {
-                    if (tileY0 + yHeight >= 64)
+                    if (tileY0 + yHeight > 64)//> here where x has >=. uw1 SPELLS.C:444, uw2 SPELLS.C:630
                     {
                         yHeight = yHeight - (tileY0 + yHeight - 64);
                     }
@@ -114,79 +112,25 @@ namespace Underworld
                 Debug.Print($"Running code on area {tileX0},{tileY0} to {tileX0 + xWidth},{tileY0 + yHeight}");
                 if (xWidth > 0 && yHeight > 0)
                 {
-                    for (int di_X = tileX0; di_X <= tileX0 + xWidth; di_X++)
+                    do
                     {
-                        if (di_X > tileX0 + xWidth)
-                        {//why is UW doing this??
-                            if (typeOfTargetArg8 == 0x40)
-                            {
-                                if (Rng_arg0 > 0)
-                                {
-                                    if (varE >= 4)
-                                    {
-                                        return;
-                                    }
-                                    varE++;
-                                }
-                                else
-                                {
-                                    return;
-                                }
-                            }
-                            else
-                            {
-                                return;
-                            }
-                        }
-                        for (int si_Y = tileY0; si_Y <= tileY0 + yHeight; si_Y++)
+                        for (int di_X = tileX0; di_X <= tileX0 + xWidth; di_X++)
                         {
-                            //Debug.Print($"testing tile {di_X} {si_Y}");
-                            if (UWTileMap.ValidTile(di_X, si_Y))
+                            for (int si_Y = tileY0; si_Y <= tileY0 + yHeight; si_Y++)
                             {
-                                var currenttile = UWTileMap.current_tilemap.Tiles[di_X, si_Y];
-                                if (
-                                    (typeOfTargetArg8 == 0x40 || typeOfTargetArg8 == 0x80)
-                                    &&
-                                    (currenttile.tileType > 0)
-                                )
+                                //Debug.Print($"testing tile {di_X} {si_Y}");
+                                if (UWTileMap.ValidTile(di_X, si_Y))
                                 {
-                                    //do rng call based on the distance from the centre    
-                                    var rnd = Rng.r.Next(0, 3 + xWidth * yHeight);
-                                    if ((rnd > Rng_arg0) || (typeOfTargetArg8 == 0x80))
+                                    var currenttile = UWTileMap.current_tilemap.Tiles[di_X, si_Y];
+                                    //Random open squares (0x40). UW2 also visits every open square for 0x80, drawing rand() first; UW1 does not.
+                                    //uw1 SPELLS.C:463-468, uw2 SPELLS.C:649-655
+                                    if ((typeOfTargetArg8 == 0x40) || ((typeOfTargetArg8 == 0x80) && (_RES == GAME_UW2)))
                                     {
-                                        if (methodToCall(di_X, si_Y, null, currenttile, srcItemIndex))
+                                        if (currenttile.tileType > 0)
                                         {
-                                            Rng_arg0--;
-                                            if (Rng_arg0 == 0)
+                                            if ((Rng.r.Next(0, 3 + xWidth * yHeight) < Rng_arg0) || (typeOfTargetArg8 == 0x80))
                                             {
-                                                return;
-                                            }
-                                        }
-                                    }
-                                }
-                                if (typeOfTargetArg8 != 0x40)
-                                {
-                                    var listIndex = currenttile.indexObjectList;
-                                    while (listIndex != 0)
-                                    {
-                                        var nextObj = UWTileMap.current_tilemap.LevelObjects[listIndex];
-                                        if (
-                                            (typeOfTargetArg8 == 0x80)
-                                            ||
-                                            (
-                                                (typeOfTargetArg8 == 0)
-                                                &&
-                                                (nextObj.majorclass == 1)
-                                                &&
-                                                (nextObj.index != srcItemIndex)
-                                            )
-                                            ||
-                                            (typeOfTargetArg8 == 0xC0)
-                                        )
-                                        {
-                                            if (nextObj.majorclass != 7)//this is not vanilla but I don't think these functions are meant to target animos.
-                                            {
-                                                if (methodToCall(di_X, si_Y, nextObj, currenttile, srcItemIndex))
+                                                if (methodToCall(di_X, si_Y, null, currenttile, srcItemIndex))
                                                 {
                                                     Rng_arg0--;
                                                     if (Rng_arg0 == 0)
@@ -195,15 +139,48 @@ namespace Underworld
                                                     }
                                                 }
                                             }
-
                                         }
-                                        listIndex = nextObj.next;
-                                    }//while loop                                        
+                                    }
+                                    if (typeOfTargetArg8 != 0x40)
+                                    {
+                                        var listIndex = currenttile.indexObjectList;
+                                        while (listIndex != 0)
+                                        {
+                                            var nextObj = UWTileMap.current_tilemap.LevelObjects[listIndex];
+                                            if (
+                                                (typeOfTargetArg8 == 0x80)
+                                                ||
+                                                (
+                                                    (typeOfTargetArg8 == 0)
+                                                    &&
+                                                    (nextObj.majorclass == 1)
+                                                    &&
+                                                    (nextObj.index != srcItemIndex)
+                                                )
+                                                ||
+                                                (typeOfTargetArg8 == 0xC0)
+                                            )
+                                            {
+                                                if (nextObj.majorclass != 7)//this is not vanilla but I don't think these functions are meant to target animos.
+                                                {
+                                                    if (methodToCall(di_X, si_Y, nextObj, currenttile, srcItemIndex))
+                                                    {
+                                                        Rng_arg0--;
+                                                        if (Rng_arg0 <= 0)//<= for objects, == for squares. uw1 SPELLS.C:476, uw2 SPELLS.C:663
+                                                        {
+                                                            return;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            listIndex = nextObj.next;
+                                        }//while loop
+                                    }
                                 }
-
                             }
                         }
                     }
+                    while ((typeOfTargetArg8 == 0x40) && (Rng_arg0 > 0) && (varE++ < 4));//up to five passes for random squares. uw1 SPELLS.C:482, uw2 SPELLS.C:669
                 }
             }
         }

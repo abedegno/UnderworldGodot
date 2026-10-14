@@ -176,6 +176,10 @@ public partial class main : Node3D
 		// ObjectCreator.grObjectsInfo.XFER = ArtLoader.XferChannnelMode.AllColours;
 
 		Palette.CurrentPalette = 0;
+		// music_ok is 1 when the program starts and nothing sets it again (uw1 SOUND.C:139,
+		// uw2 SOUND.C:170). The port's static outlives the game scene, so it is set here, where a
+		// game starts, or a theme that failed to load would keep the music off in the next one.
+		XMIMusic.MusicOk = true;
 		uimanager.instance.InitUI();
 		if (UWClass._RES != UWClass.GAME_UWDEMO)
 		{
@@ -210,11 +214,12 @@ public partial class main : Node3D
 		else
 		{
 			playerdat.CharName = "DEMO";
-			playerdat.max_hp = 30;
 			playerdat.play_hp = 30;
 			playerdat.STR = 20;
 			playerdat.INT = 20;
 			playerdat.DEX = 20;
+			//derive max hp, max mana and the carrying limit from the attributes and fill the mana, as player_compute(1) does after the attributes are set. uw1 CHARGEN.C:137, 259, SKILLS.C:102-116
+			playerdat.RecalculateHPManaMaxWeight(true);
 		}
 
 		uimanager.instance.JourneyOnwards("DATA");
@@ -375,7 +380,17 @@ public partial class main : Node3D
 		{
 			combat.CombatInputHandler(delta);//may need to be moved outside this block
 			playerdat.PlayerTimedLoop(delta);
-			RefreshWorldState();//handles teleports, tile redraws	
+			RefreshWorldState();//handles teleports, tile redraws
+		}
+
+		if (!cutsplayer.IsPlaying &&
+			(uimanager.AtMainMenu || uimanager.InConversation || uimanager.InAutomap || uimanager.CurrentGameMode == uimanager.GameModes.OPTIONS))
+		{
+			//the screens that wait for input outside the game loop keep their music going: the menus
+			//(uw1 MAINMENU.C:320-323, uw2 MAINMENU.C:296-297, CHARGEN.C:466-468), conversations
+			//(uw1 CONVERSE.C:348, uw2 CONVERSE.C:335), the automap (uw1 AUTOMAP.C:672, uw2 AUTOMAP.C:818)
+			//and the options (uw1 OPTIONS.C:103, uw2 WRAPPER.C:109)
+			XMIMusic.LoopMusicMaybe();
 		}
 
 		//Other updates
