@@ -211,7 +211,7 @@ namespace Underworld
         static void GoToJail()
         {
             Teleportation.CodeToRunOnTeleport = null;
-            play_hp = max_hp;
+            play_hp = STR;//hit points set to strength (uw2 WORLDEV.C:2287)
             ChangeExperience(DeathExperienceChange());//loss of exp
             //PlayerInDeathMode = false;
             playerdat.playerObject.npc_animation = 1;
@@ -223,7 +223,7 @@ namespace Underworld
             var newtime = (ClockValue / 0x3C00) % 20;
             newtime = Math.Abs(0x28 - newtime);
             newtime = newtime * 0x3C;
-            newtime = newtime - Rng.r.Next(0x5A) + 0x3C;            
+            newtime = newtime - (Rng.r.Next(0x5A) + 0x3C);//the random part is subtracted (uw2 WORLDEV.C:2295)
             AdvanceTime(newtime);
             
             CallBacks.RunCodeOnRace(npc.set_attitude_by_array, 0x1C, new int[] { 2 }, true);
