@@ -111,6 +111,8 @@ static class TradeHelp
 /// and moved the NPC's selected items straight into the player's pack or onto the player's square
 /// (src/conversation/conversation_functions/conversationtrade.cs:363-431). Its NPC slots could never be picked up from.
 ///
+/// The scenario first moves the player, and the NPC once the conversation has started, to level, open ground
+/// (TradeGround), since an item put down on the slope beside the UW1 start falls and may be culled when it lands.
 /// The scenario starts a conversation with the first NPC on level 1 that has one. It gives the NPC three valued items
 /// and calls setup_to_barter, which puts them in slots 0, 1 and 2, then gives the NPC a pile of 10 coins, and selects
 /// the NPC's slots 0 and 1. The player's slots get 5 coins, an item the NPC dislikes (set_likes_dislikes' list, made
@@ -147,6 +149,10 @@ public sealed class BarterAcceptDeal : Scenario
     public override async Task Setup(ScenarioContext c)
     {
         var objs = UWTileMap.current_tilemap.LevelObjects;
+        // Level, open ground for both owners, so every spot drop_around_place can pick keeps the item on the map.
+        var (gx, gy, gnx, gny) = TradeGround.FindPair();
+        if (gx < 0) { _problem = "no level, open ground near the start"; return; }
+        if (!await TradeGround.MovePlayer(c, gx, gy)) { _problem = $"the move to ({gx}, {gy}) did not happen"; return; }
         for (int i = 2; i < 256 && uimanager.CurrentGameMode != uimanager.GameModes.CONVERSATION; i++)
         {
             var o = objs[i];
@@ -156,6 +162,7 @@ public sealed class BarterAcceptDeal : Scenario
             if (uimanager.CurrentGameMode == uimanager.GameModes.CONVERSATION) _talker = o;
         }
         if (_talker == null) { _problem = "no NPC on level 1 would talk"; return; }
+        TradeGround.MoveNpc(_talker, gnx, gny);
         ulong deadline = Time.GetTicksMsec() + StartMs;
         int frames = 0;
         while (Time.GetTicksMsec() < deadline && frames < 60) { await c.Frames(1); frames++; }
@@ -318,7 +325,8 @@ public sealed class BarterAcceptDeal : Scenario
 /// take_from_npc took the item out of the NPC's inventory and left it nowhere when it was too heavy and the slots
 /// were full.
 ///
-/// The scenario gives the first NPC on level 1 three valued items, fills every player trade slot with a coin and
+/// The scenario moves the first NPC on level 1 to level, open ground (TradeGround), so nothing it puts down falls and is culled.
+/// It gives the NPC three valued items, fills every player trade slot with a coin and
 /// sets the player's weight limit to 0 (restored afterwards), so nothing can go in the hand or a slot. With the
 /// VM's own argument layout and dispatcher, take_id_from_npc of the first item and take_from_npc of the second
 /// item's type must each return 2 and put the item within 5 eighths of the NPC, out of its inventory. Then with an
@@ -351,6 +359,10 @@ public sealed class TakeFromNpcNear : Scenario
             talker = o;
         }
         if (talker == null) { _problem = "no NPC on level 1"; return Task.CompletedTask; }
+        // Level, open ground around the NPC, so every spot drop_around_place can pick keeps the item on the map.
+        var (gx, _, gnx, gny) = TradeGround.FindPair();
+        if (gx < 0) { _problem = "no level, open ground near the start"; return Task.CompletedTask; }
+        TradeGround.MoveNpc(talker, gnx, gny);
         (_nx, _ny) = TradeHelp.Eighths(talker);
         var food = TradeHelp.ValuedFood();
         if (food.Count < 3) { _problem = $"only {food.Count} valued food items"; return Task.CompletedTask; }
