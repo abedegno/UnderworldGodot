@@ -37,8 +37,10 @@ namespace Underworld
 
             if (playerdemandscore > npcdemandscore)
             {
-                //succeed
+                //succeed: the NPC's unselected items go back, its selected ones stay for the player to take (uw1 BARTER.C:724-726)
                 yield return say_op(ifYouInsist);
+                ReturnTradeObjectsToNPC(talker, OnlyUnselected: true);
+                TradeResult = 1;
                 result_register = 1;
                 if (attitude > 1)
                 {
@@ -84,8 +86,10 @@ namespace Underworld
                 }
                 if (playerdemandscore > npcdemandscore)
                 {
-                    //succeed
+                    //succeed: the NPC's unselected items go back, its selected ones stay for the player to take (uw2 BARTER.C:701-703)
                     yield return say_op(ifYouInsist);
+                    ReturnTradeObjectsToNPC(talker, OnlyUnselected: true);
+                    TradeResult = 1;
                     result_register = 1;
                     if (attitude > 1)
                     {

@@ -39,6 +39,10 @@ namespace Underworld
         /// </summary>
         public static int Dislikes = 0;
 
+        /// <summary>
+        /// 1 when the last offer or demand was accepted (or give_all_stuff gave), so the player may take the NPC's items
+        /// from its trade slots (barter_result, uw1 BARTER.C:92, 356, uw2 BARTER.C:63, 317).
+        /// </summary>
         public static int TradeResult = 0;
 
         /// <summary>
@@ -357,77 +361,68 @@ namespace Underworld
         }
 
         /// <summary>
-        /// Completes the trade between player and NPC and moves objects between their inventory
+        /// On an accepted offer the NPC takes each selected item of the player's that it does not dislike, adding coins to a pile
+        /// it already has as npc_inv_add does, and the item leaves its slot. A disliked item stays in the slot.
+        /// UW1 adds the rest at the head of the NPC's inventory, UW2 at the end.
+        /// The NPC's selected items stay in its slots for the player to take.
+        /// (probablyTradeObjects, uw1 BARTER.C:567-602, uw2 BARTER.C:530-565)
         /// </summary>
         /// <param name="talker"></param>
-        private static void SwapTradedObjects(uwObject talker)
+        private static void TradeObjectsToNPC(uwObject talker)
         {
-            //the NPC's unselected items go back to its inventory after an offer or demand is accepted (uw1 BARTER.C:660, 725, uw2 BARTER.C:623, 702, 1085)
-            ReturnTradeObjectsToNPC(talker, OnlyUnselected: true);
-
-            //transfer trade item
-            //player(world) to Npc
             for (int i = 0; i < uimanager.NoOfTradeSlots; i++)
             {
                 var objindex = uimanager.GetPlayerTradeSlot(i);
                 if (objindex != -1)
                 {
                     var tradedobject = UWTileMap.current_tilemap.LevelObjects[objindex];
-                    //insert at head of npcs object list
-                    tradedobject.next = talker.link;
-                    talker.link = tradedobject.index;
-                    uimanager.SetPlayerTradeSlot(i, -1, false);
-                }
-            }
-
-            //npc to player. use free backpack slots or else drop at player position
-            //Some deliberate jank here. close opened containers
-            if (uimanager.OpenedContainerIndex != -1)
-            {//keep closing until we reach the top
-                while (uimanager.OpenedContainerIndex != -1)
-                {
-                    container.Close(uimanager.OpenedContainerIndex, playerdat.InventoryObjects);
-                }
-            }
-
-            for (int i = 0; i < uimanager.NoOfTradeSlots; i++)
-            {
-                var objindex = uimanager.GetNPCTradeSlot(i);
-                if (objindex != -1)
-                {
-                    var tradedobject = UWTileMap.current_tilemap.LevelObjects[objindex];
-
-                    uimanager.CurrentSlot = uimanager.FreeGeneralUseSlot;
-                    if (uimanager.CurrentSlot != -1)
+                    if (DoesNpcLike(tradedobject) != -1)
                     {
-                        playerdat.ObjectInHand = tradedobject.index;
-                        uimanager.PickupToEmptySlot(tradedobject.index);
-                        uimanager.CurrentSlot = -1;
+                        NpcInvAdd(talker, tradedobject, AddAtEnd: _RES == GAME_UW2);
+                        uimanager.SetPlayerTradeSlot(i, -1, false);
                     }
-                    else
-                    {
-                        var desttile = UWTileMap.current_tilemap.Tiles[playerdat.playerObject.tileX, playerdat.playerObject.tileY];
-                        UWTileMap.GetRandomXYZForTile(desttile, out int newxpos, out int newypos, out int newzpos);
-                        //var dropcoordinate = uwObject.XYZToVector3(x: (newxpos << 5) + (playerdat.playerObject.tileX << 8), y: tile.floorHeight << 3, z: (newypos << 5) + (playerdat.playerObject.tileY << 8));//uwObject.GetCoordinate_OBSOLETE(playerdat.playerObject.tileX, playerdat.playerObject.tileY, newxpos, newypos, newzpos);
-                        //move object to tile
-                        tradedobject.tileX = desttile.tileX; tradedobject.tileY = desttile.tileY;
-                        tradedobject.xpos = (short)newxpos; tradedobject.ypos = (short)newypos; tradedobject.zpos = (short)newzpos;
-                        //link to tile
-                        tradedobject.next = desttile.indexObjectList;
-                        desttile.indexObjectList = tradedobject.index;
-                        objectInstance.RedrawFull(tradedobject);
-                        //drop at players location
-                        // pickup.Drop_old(
-                        //     index: objindex,
-                        //     objList: UWTileMap.current_tilemap.LevelObjects,
-                        //     dropPosition: dropcoordinate,
-                        //     tileX: playerdat.playerObject.tileX,
-                        //     tileY: playerdat.playerObject.tileY);
-                    }
-                    uimanager.SetNPCTradeSlot(i, -1, false);
                 }
             }
             uimanager.UpdateInventoryDisplay();
+        }
+
+        /// <summary>
+        /// 1 when the NPC likes the object, -1 when it dislikes it or it is worthless, else 0.
+        /// A list entry of 1000 or more names a class, (item_id >> 4) + 1000. An exact like wins at once;
+        /// otherwise a dislike, exact or by class, beats a like by class.
+        /// (does_npc_like, uw1 BARTER.C:1083-1109, uw2 BARTER.C:1046-1072)
+        /// </summary>
+        static int DoesNpcLike(uwObject obj)
+        {
+            if (commonObjDat.monetaryvalue(obj.item_id) == 0)
+            {
+                return -1;
+            }
+            var category = (obj.item_id >> 4) + 1000;
+            var liked = 0;
+            if (Likes != 0)
+            {
+                for (var i = Likes; at(i) > -1; i++)
+                {
+                    if (at(i) < 1000)
+                    {
+                        if (at(i) == obj.item_id) { return 1; }
+                    }
+                    else if (at(i) == category) { liked = 1; }
+                }
+            }
+            if (Dislikes != 0)
+            {
+                for (var i = Dislikes; at(i) > -1; i++)
+                {
+                    if (at(i) < 1000)
+                    {
+                        if (at(i) == obj.item_id) { return -1; }
+                    }
+                    else if (at(i) == category) { liked = -1; }
+                }
+            }
+            return liked;
         }
 
     } //end class

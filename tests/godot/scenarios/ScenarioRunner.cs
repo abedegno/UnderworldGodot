@@ -91,6 +91,8 @@ public partial class ScenarioRunner : Node
         (() => new GiveMergeCoins(), true),
         (() => new EndBarter(), true),
         (() => new BarterNearPut(), true),
+        (() => new BarterAcceptDeal(), true),
+        (() => new TakeFromNpcNear(), true),
         (() => new TrapChainFlow(), true),
         (() => new TeleportOccupied(), true),
         (() => new TybalTalkTrap(), true),
