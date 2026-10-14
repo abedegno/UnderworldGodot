@@ -104,13 +104,6 @@ namespace Underworld
                             DoRepair();
                         } 
                     }
-                    else
-                    {
-                        if (result == -2)
-                        {
-
-                        }
-                    }
                     yield return 0;
                 }
                 else
@@ -235,9 +228,10 @@ namespace Underworld
                     }
                 case playerdat.SkillCheckResult.Success:
                     {
+                        //Fully repaired only above 63; reaching exactly 63 is a partial repair. uw1 WORLDEV.C:647-655, uw2 WORLDEV.C:1028-1036
                         var newq = itemToRepair.quality + 3 + (repairskill / 5);
                         itemToRepair.quality = (short)Math.Min(0x3f, newq);
-                        if (itemToRepair.quality == 0x3F)
+                        if (newq > 0x3F)
                         {
                             return 3;
                         }

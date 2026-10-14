@@ -47,7 +47,20 @@ namespace Underworld
                         break;
                     case 8:
                         //Dispel rune
-                        works = WorldObject && DispelRune(index, objList);
+                        if (WorldObject)
+                        {
+                            works = DispelRune(index, objList);
+                        }
+                        else
+                        {
+                            //An inventory object is never dispelled. Anything but a rune gets the same refusal, uncharged (uw2 SPELLS.C:819-822).
+                            works = false;
+                            var objToDispel = objList[index];
+                            if ((objToDispel != null) && (objToDispel.item_id != 0x19e) && (objToDispel.item_id != 0x19f))
+                            {
+                                uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x12E));//that is not a rune
+                            }
+                        }
                         break;
                     case 9:
                         //Mending
