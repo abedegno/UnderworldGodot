@@ -85,6 +85,14 @@ namespace Underworld
             }
         }
 
+        /// <summary>
+        /// Frees every object in the list whose head link is at ptrListHead in buffer, and everything inside them. uw2 OBJECTS.C:316-330 (Obj_FreeChain)
+        /// </summary>
+        public static void FreeChain(uwObject[] objectlist, byte[] buffer, long ptrListHead)
+        {
+            ClearLinkedList(objectlist, buffer, buffer, ptrListHead);
+        }
+
         static void ClearLinkedList(uwObject[] objectlist, byte[] objectdata, byte[] listheaddata, long ptrListHead)
         {
             var ListHeadObject = GetLinkNextObject(
