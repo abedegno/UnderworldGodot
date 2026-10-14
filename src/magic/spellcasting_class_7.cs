@@ -95,31 +95,45 @@ namespace Underworld
                 }
                 RunicMagic.PendingSpellCost = 0;
             }
-            else
-            {//the uw1 list of class 7 spells is much shorter
-                switch (minorclass)
-                {
-                    case 1:
-                        //Cause fear
-                        Causefear(index, objList);
-                        break;
-                    case 2:
-                        //smite undead
-                        SmiteUndead(index: index, objList: objList, caster: caster);
-                        break;
-                    case 3:
-                        //ally
-                        Ally(index: index, objList: objList);
-                        break;
-                    case 4:
-                        //poison
-                        PoisonSpell(index: index, objList: objList, WorldObject: WorldObject);
-                        break;
-                    case 5:
-                        //paralyse
-                        Paralyse(index: index, objList: objList, caster: caster);
-                        break;
-                }
+            //UW1's class 7 spells never wait for a click. See CastClass7_SpellsAheadUW1.
+        }
+
+        /// <summary>
+        /// UW1's class 7 spells (nail_1area, uw1 SPELLS.C:553-559). There is no target cursor: only the player's casts work, and
+        /// the spell acts once, on the first critter within 2 squares of the square 4 ahead whose handler returns true.
+        /// With no such critter nothing happens and nothing is said; the mana was paid at the cast (uw1 RUNES.C:260-263).
+        /// </summary>
+        /// <param name="minorclass"></param>
+        /// <param name="caster"></param>
+        static void CastClass7_SpellsAheadUW1(int minorclass, uwObject caster)
+        {
+            if (caster != playerdat.playerObject)
+            {
+                return;
+            }
+            var objList = UWTileMap.current_tilemap.LevelObjects;
+            CallBacks.AreaEffectCallBack methodtorun = null;
+            switch (minorclass & 0x3F) //area1_spells, uw1 SPELLS.C:539-541. The top bits are the target type, 0 for every critter but the caster.
+            {
+                case 1://Cause fear. sp_fear returns 1 even if resisted (uw1 SPELLS.C:366-375, 399-403)
+                    methodtorun = (x, y, critter, tile, srcIndex) => Causefear(critter.index, objList);
+                    break;
+                case 2://smite undead. sp_ward_undead returns 0 for the living, so the spell goes on to the next critter (uw1 SPELLS.C:344-353)
+                    methodtorun = (x, y, critter, tile, srcIndex) => SmiteUndead(index: critter.index, objList: objList, caster: caster);
+                    break;
+                case 3://ally. sp_charm returns 1 (uw1 SPELLS.C:379-390)
+                    methodtorun = (x, y, critter, tile, srcIndex) => { Ally(index: critter.index, objList: objList); return true; };
+                    break;
+                case 4://poison. sp_poison returns 1 (uw1 SPELLS.C:355-361)
+                    methodtorun = (x, y, critter, tile, srcIndex) => PoisonSpell(index: critter.index, objList: objList, WorldObject: true);
+                    break;
+                case 5://paralyse. sp_hold returns 1 even if resisted (uw1 SPELLS.C:366-375, 406-411)
+                    methodtorun = (x, y, critter, tile, srcIndex) => { Paralyse(index: critter.index, objList: objList, caster: caster); return true; };
+                    break;
+            }
+            if (methodtorun != null)
+            {//gronk_area with count 1, 4 squares ahead, radius 2
+                CallBacks.RunCodeOnTargetsAroundObject(methodtorun, 1, 1, minorclass & 0xC0, 4, 2);
             }
         }
 
