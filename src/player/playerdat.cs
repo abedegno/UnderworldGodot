@@ -784,7 +784,7 @@ namespace Underworld
         public static void RecalculateHPManaMaxWeight(bool RestoreMana)
         {
             max_hp = 0x1E + ((STR * play_level) / 5);
-            max_mana = ((ManaSkill + 1) * INT) >> 3; //TODO: This needs to account for tybals Orb.
+            SetComputedMaxMana();
             if (RestoreMana)
             {
                 play_mana = max_mana;
@@ -792,6 +792,27 @@ namespace Underworld
             // uimanager.RefreshManaFlask();
             // uimanager.RefreshHealthFlask();
             WeightMax = (short)(300 + (STR * 13));
+            if (_RES == GAME_UW2)
+            {
+                ManaRegenChange(0);//restore_mana(ThePlayer, 0) adds nothing but caps mana at the new maximum (uw2 SKILLS.C:84)
+            }
+        }
+
+        /// <summary>
+        /// Sets the max mana from the mana skill and intelligence. In UW1 on level 7 (Tybals lair) the value goes to backup_mana instead,
+        /// where the max mana is kept while the level holds it at 0, and is applied on leaving the level (uw1 SKILLS.C:107-111, GAMEWRAP.C:459-469).
+        /// </summary>
+        static void SetComputedMaxMana()
+        {
+            var mana = ((ManaSkill + 1) * INT) >> 3;
+            if ((_RES != GAME_UW2) && (dungeon_level == 7))
+            {
+                backup_mana = mana;
+            }
+            else
+            {
+                max_mana = mana;
+            }
         }
     } //end class
 }//end namespace
