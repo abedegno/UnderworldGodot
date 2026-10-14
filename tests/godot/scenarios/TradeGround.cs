@@ -72,16 +72,21 @@ static class TradeGround
     /// <summary>Teleports the player to (x, y) on this level and waits until the move has happened and the game is running.</summary>
     public static async Task<bool> MovePlayer(ScenarioContext c, int x, int y)
     {
-        Teleportation.Teleport(character: 0, tileX: x, tileY: y, newLevel: 0, HeadingHeightFlag: 0);
-        ulong deadline = Time.GetTicksMsec() + 20000;
-        int stable = 0;
-        while (Time.GetTicksMsec() < deadline && stable < 10)
+        //a teleport asked for while the game is still settling can be dropped, so ask again (up to three times)
+        for (int attempt = 0; attempt < 3; attempt++)
         {
-            await c.Frames(1);
-            var p = playerdat.playerObject;
-            stable = (p.tileX == x && p.tileY == y && !uimanager.WaitingForFade && uimanager.InGame) ? stable + 1 : 0;
+            Teleportation.Teleport(character: 0, tileX: x, tileY: y, newLevel: 0, HeadingHeightFlag: 0);
+            ulong deadline = Time.GetTicksMsec() + 20000;
+            int stable = 0;
+            while (Time.GetTicksMsec() < deadline && stable < 10)
+            {
+                await c.Frames(1);
+                var p = playerdat.playerObject;
+                stable = (p.tileX == x && p.tileY == y && !uimanager.WaitingForFade && uimanager.InGame) ? stable + 1 : 0;
+            }
+            if (stable >= 10) return true;
         }
-        return stable >= 10;
+        return false;
     }
 
     /// <summary>Moves an NPC to the middle of square (x, y), on its floor, taking it out of its old square's list and putting it at the head of the new one's.</summary>
