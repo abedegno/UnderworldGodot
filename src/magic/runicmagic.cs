@@ -332,7 +332,6 @@ namespace Underworld
                 {
                     //apply mana cost
                     //playerdat.play_mana = System.Math.Max(0, playerdat.play_mana - spell.ManaCost);
-                    PendingSpellCost = spell.ManaCost;
 
                     Debug.Print($"{spell.spellname}");
                     //do the skill check
@@ -344,36 +343,50 @@ namespace Underworld
                     if (chkresult != playerdat.SkillCheckResult.Fail)
                     {
                         StartSpellCastInterval(spell.SpellLevel);
+                        // The cost is held only once the skill check has passed, so a failed
+                        // incantation leaves nothing for a later object cast to pay
+                        // (uw2 RUNES.C:238-239, 248; uw1 RUNES.C:249-250, 259).
+                        PendingSpellCost = spell.ManaCost;
                     }
                     switch (chkresult)
                     {
                         case playerdat.SkillCheckResult.CritFail:
                             {
                                 //In a crit fail the spell class turns into a curse and subclass into spell level/2
-                                SpellCasting.CastSpell(
+                                uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_the_spell_backfires_));
+                                if (!SpellCasting.CastSpell(
                                     majorclass: 9,
                                     minorclass: spell.SpellLevel / 2,
                                     caster: playerdat.playerObject, target: null,
                                     tileX: playerdat.playerObject.tileX, tileY: playerdat.playerObject.tileY,
-                                    CastOnEquip: false);
-                                uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_the_spell_backfires_));
+                                    CastOnEquip: false))
+                                {
+                                    CastingNotSuccessful();
+                                }
                                 break;
                             }
                         case playerdat.SkillCheckResult.Fail:
                             {
+                                //fail_spell(2): the failure sound and "The incantation failed." (uw1 RUNES.C:221-226, 249-250; uw2 RUNES.C:202-207, 238-239)
+                                UWsoundeffects.PlaySoundEffectAtAvatar(effectno: UWsoundeffects.SoundEffectSpellFailure, pan: 0x40, velocityOffset: 0);
                                 uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_the_incantation_failed_));
                                 break;
                             }
                         default:
-                            
-                            UWsoundeffects.PlaySoundEffectAtAvatar(effectno: GetSpellSFX(spell.SpellMajorClass, spell.SpellMinorClass), pan: 0x40, velocityOffset: 0);
-
-                            SpellCasting.CastSpell(
+                            //The casting sound plays only once do_spell has taken the spell (uw1 RUNES.C:264-265, uw2 RUNES.C:253, 306)
+                            if (SpellCasting.CastSpell(
                                 majorclass: spell.SpellMajorClass,
                                 minorclass: spell.SpellMinorClass,
                                 caster: playerdat.playerObject, target: null,
                                 tileX: playerdat.playerObject.tileX, tileY: playerdat.playerObject.tileY,
-                                CastOnEquip:false);
+                                CastOnEquip:false))
+                            {
+                                UWsoundeffects.PlaySoundEffectAtAvatar(effectno: GetSpellSFX(spell.SpellMajorClass, spell.SpellMinorClass), pan: 0x40, velocityOffset: 0);
+                            }
+                            else
+                            {
+                                CastingNotSuccessful();
+                            }
                             break;
                     }
                 }
@@ -384,6 +397,16 @@ namespace Underworld
             }
         }
 
+
+        /// <summary>
+        /// fail_spell(3), when do_spell refuses the player's spell: the failure sound and "Casting was not successful."
+        /// (uw1 RUNES.C:221-226, 268-269; uw2 RUNES.C:202-207, 309-310)
+        /// </summary>
+        static void CastingNotSuccessful()
+        {
+            UWsoundeffects.PlaySoundEffectAtAvatar(effectno: UWsoundeffects.SoundEffectSpellFailure, pan: 0x40, velocityOffset: 0);
+            uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_casting_was_not_successful_));
+        }
 
         /// <summary>
         /// Calcs what sound should play when this specified spell is cast by the player. Wasted my time coding this since spell sounds are midi based and I only have a .voc loader....

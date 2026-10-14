@@ -17,8 +17,8 @@ namespace Underworld
         /// <param name="minorclass"></param>
         /// <param name="caster">Casting object (use if not the player casting)</param>
         /// <param name="target"></param>
-        /// <returns></returns>
-        public static void CastSpell(int majorclass, int minorclass, uwObject caster, uwObject target, int tileX, int tileY, bool CastOnEquip)
+        /// <returns>false if the spell is refused, as do_spell returns 0 on an anti-magic square or (UW1) in the Ethereal Void (uw1 SPELLS.C:98-102, uw2 SPELLS.C:86-90)</returns>
+        public static bool CastSpell(int majorclass, int minorclass, uwObject caster, uwObject target, int tileX, int tileY, bool CastOnEquip)
         {
             bool PlayerCast = caster == playerdat.playerObject;
             bool applyCost = true;//unless otherwise specified a cost is applied now in this function.
@@ -27,7 +27,8 @@ namespace Underworld
             {
                 if (playerdat.dungeon_level==9)
                 {
-                    return; //no casting in the ethereal void.
+                    RefuseCast(majorclass, PlayerCast);
+                    return false; //no casting in the ethereal void.
                 }
             }
             //if no magic allow bit return
@@ -36,7 +37,8 @@ namespace Underworld
                 var tile = UWTileMap.current_tilemap.Tiles[tileX, tileY];
                 if (tile.noMagic == 1)
                 {
-                    return;
+                    RefuseCast(majorclass, PlayerCast);
+                    return false;
                 }
             }
 
@@ -74,8 +76,19 @@ namespace Underworld
                     break;
                 case 7://spells with prompts and code callbacks.
                     {
-                        currentSpell = new RunicMagic(majorclass,minorclass);
-                        uimanager.instance.mousecursor.SetCursorToCursor(10);
+                        if (_RES == GAME_UW2)
+                        {//UW2 holds the cost until the target is clicked, and pays it only if the spell works (uw2 RUNES.C:248-251, SPELLS.C:772-773, 915).
+                            currentSpell = new RunicMagic(majorclass,minorclass);
+                            uimanager.instance.mousecursor.SetCursorToCursor(10);
+                            if (PlayerCast)
+                            {
+                                applyCost = false;
+                            }
+                        }
+                        else
+                        {//UW1 has no target cursor: the spell finds its critter ahead of the player at once (uw1 SPELLS.C:553-559), and is paid now (uw1 RUNES.C:260-263).
+                            CastClass7_SpellsAheadUW1(minorclass: minorclass, caster: caster);
+                        }
                     }
                     break;
                 case 8://spells that create or summon
@@ -111,7 +124,25 @@ namespace Underworld
                 RunicMagic.PendingSpellCost = 0;
             }
             playerdat.PlayerStatusUpdate();
+            return true;
         } 
+
+        /// <summary>
+        /// A refused cast. player_cast has already paid for every class but those whose cost it holds, the missiles
+        /// and (UW2) class 7 (uw1 RUNES.C:259-263, uw2 RUNES.C:248-251), and it drops the held cost (uw1 RUNES.C:268, uw2 RUNES.C:309).
+        /// </summary>
+        static void RefuseCast(int majorclass, bool PlayerCast)
+        {
+            if (PlayerCast)
+            {
+                if ((majorclass != 5) && ((majorclass != 7) || (_RES != GAME_UW2)))
+                {
+                    playerdat.play_mana = System.Math.Max(0, playerdat.play_mana - RunicMagic.PendingSpellCost);
+                    playerdat.PlayerStatusUpdate();
+                }
+                RunicMagic.PendingSpellCost = 0;
+            }
+        }
         
         /// <summary>
         /// Casts the pre-stored spell on the currently clicked object

@@ -23,8 +23,6 @@ uw1/wandering-monsters-out-of-sight  ~create-object traps within 8 squares of th
 uw2/wandering-monsters-out-of-sight  ~create-object traps within 8 squares of the awake player that ran expected 0  # range test inverted: src/traps/a_create_object_trap.cs:236; uw2 TRIGGER.C:1020-1029, 1044-1045
 uw2/special-deaths-uw2  ~race 0xB kin's attitude after a Trilkhai's death  # SetRaceAttitude args swapped, Bishop quest 100, Dorstag to quest 137, record/tally reversed: src/npc/npcdeath.cs:128, 189, 351, 510; uw2 WORLDEV.C:707-708, 789, 772-773, 905-906
 uw2/poison-weapon-damage  ~poisoned blow of 10 with Casting 0 expected 17  # adds (Casting+30)/40, not damage*(Casting+30)/40: src/interaction/combat/combat.cs:422; uw2 COMBAT.C:325
-uw1/combat-equipment-wear  ~weapon wear from a door strike expected  # frp_check's three DamageInventory calls are debug prints: src/interaction/combat/combat.cs:452, 467, 488; uw1 COMBAT.C:290-320
-uw2/combat-equipment-wear  ~weapon wear from a door strike expected  # frp_check's three DamageInventory calls are debug prints: src/interaction/combat/combat.cs:452, 467, 488; uw2 COMBAT.C:310-345
 uw1/critter-line-of-sight  ~line of sight differs from DOS  # divides by dy/dx not -dy/-dx, hyp_see second branch east/west swapped: src/npc/pathfind.cs:1553, 1623, 1833; uw1 PATHFIND.C:837-870, 571-603
 uw2/critter-line-of-sight  ~line of sight differs from DOS  # same as UW1: src/npc/pathfind.cs:1553, 1623, 1833; uw2 PATHFIND.C:943-1047, 711-743
 uw1/paths-freed-on-level-change  ~free paths after entering level  # free-path mask never reset on entering a level: src/npc/npcai.cs:185, src/utility/teleportation.cs:567; uw1 PATHFIND.C:945-954, CRITTIME.C:406
@@ -50,7 +48,6 @@ uw1/sleep-in-void  ~fatigue after trying to sleep in the Void  # no level 9 test
 uw2/map-area-radius  ~open squares mapped within the radius 7 circle at Casting 20  # radius Max(Casting - 13, 0) / 5 + 2, flood-filled square (src/magic/spellcasting_class_13.cs:71); uw2 SPELLS.C:996-1002 circle
 uw2/britannia-spell-circle  ~mana spent on a circle 3 spell in Britannia  # refuses SpellLevel >= 3 (src/magic/runicmagic.cs:476); uw2 RUNES.C:232 refuses level > 3
 uw2/academy-mana-level  ~mana restored on level 41 at x 30 expected 5  # 1 + dungeon_level % 8 on a 1-based level (src/player/playerdatloop.cs:291); uw2 SPELLS.C:159-161
-uw2/targeted-spell-mana  ~mana spent on a targeted spell before its target  # class 7 leaves applyCost true (src/magic/spellcasting.cs:77, 108); uw2 RUNES.C:247-251 holds it in mspell_mused
 uw1/uw1-casting-check  ~mana spent casting a circle 1 spell at Casting 13  # SkillCheck(Casting, circle * 3) for both games (src/magic/runicmagic.cs:339); uw1 RUNES.C:249 skill_check(Casting + 5, circle * 2)
 uw1/summon-monster  ~creature summoned at Casting 10  # picks 0..lvl-1 (src/magic/spellcasting_class_8.cs:84); uw1 SPELLS.C:605-612 picks lvl..2lvl-1
 uw2/summon-monster  ~creature summoned at Casting 10  # same (spellcasting_class_8.cs:84); uw2 SPELLS2.C:511-518
@@ -65,8 +62,6 @@ uw1/uw1-area-spells  ~critters upset by Mass Confusion  # UW1 count 2, radius 0 
 # end batch B
 # batch C
 uw2/time-of-day-hourly-step  ~time of day (X clock 0) after the 60th 20-second step  # no hourly X clock 0 step in play: playerdatloop.cs "every 20 mins" block only prints TODOs; uw2 PLAYTIME.C:151-163
-uw1/repair-time-floor  ~repair whose formula gives 5 min expected  # repair time capped at 15 min, not floored, plus Math.Abs: repair.cs:83-84; uw1 WORLDEV.C:629-630
-uw2/repair-time-floor  ~repair whose formula gives 5 min expected  # repair time capped at 15 min, not floored, plus Math.Abs: repair.cs:83-84; uw2 WORLDEV.C:1010-1011
 uw2/jail-term  ~jail term in seconds expected  # GoToJail adds the random part DOS subtracts and sets HP to max not STR: playerdatdeath.cs:203-207; uw2 WORLDEV.C:2287, 2295
 uw2/altaras-wand-scan  ~player (40, 20), marker (42, 20): marker within two squares expected removed  # y loop starts at cX - range, ValidTile axes swapped: spellcasting_class_13.cs:160-162; uw2 SPELLS2.C:807, 820-848
 uw2/scd-set-quest-bit  ~after an SCD row setting it to 1 expected 1  # SCD event 4 only prints: scd_changequest.cs:7; uw2 SCDEVENT.C:220-230

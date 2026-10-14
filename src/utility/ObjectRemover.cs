@@ -798,8 +798,9 @@ namespace Underworld
         /// </summary>
         /// <param name="obj"></param>
         /// <param name="CullingRange"></param>
+        /// <param name="objList">The list obj lives in, whose indices its link uses; the level's objects when null</param>
         /// <returns>True if object can be culled, false to preserve</returns>
-        public static bool ObjectCullingTest(uwObject obj, int CullingRange)
+        public static bool ObjectCullingTest(uwObject obj, int CullingRange, uwObject[] objList = null)
         {
             if (obj == null)
             {
@@ -814,7 +815,8 @@ namespace Underworld
             {
                 if ((obj.is_quant == 0) && (obj.link != 0))
                 {//object is a container that needs it's contents to be tested 
-                    if (CallBacks.RunCodeOnObjectsInChain(ObjectCullingRngTest, obj, UWTileMap.current_tilemap.LevelObjects))
+                    objList ??= UWTileMap.current_tilemap.LevelObjects;
+                    if (CallBacks.RunCodeOnObjectsInChain(ObjectCullingRngTest, objList[obj.link], objList))//Obj_Check from the contents (not obj, whose next objects are not its contents), in the item's own list. uw1 OBJECTS.C:116-127, 163-166, uw2 OBJECTS.C:104-122, 157-160
                     {
                         return false;
                     }

@@ -31,6 +31,16 @@ namespace Underworld
         public const byte SoundEffectSpellRing2 = 0x2c;
         public const byte SoundEffectFail = 0x2D;
 
+#if DEBUG
+        /// <summary>
+        /// Test seam. Invoked with the effect number at the start of every request to play a sound
+        /// at the avatar, before the footstep and sound-enabled checks, so a headless test can see
+        /// which sound the game asked for. Nothing in the game assigns it, and it is internal because
+        /// the Godot tests compile into this same assembly.
+        /// </summary>
+        internal static System.Action<byte> AvatarRequestObserver;
+#endif
+
         /// <summary>
         /// The sink every sound eventually flows through. pan is 0..0x7F
         /// (0x40 = centre); velocityOffset is a signed-byte delta added to
@@ -40,6 +50,9 @@ namespace Underworld
         /// </summary>
         public static void PlaySoundEffectAtAvatar(byte effectno, byte pan, byte velocityOffset)
         {
+#if DEBUG
+            AvatarRequestObserver?.Invoke(effectno);
+#endif
             if ((effectno == 90) || (effectno == 91))
             {
                 // TODO footstep sounds from NPCs, needs special handling

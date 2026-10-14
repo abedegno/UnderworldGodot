@@ -80,8 +80,8 @@ namespace Underworld
                 if (response.ToUpper() == "YES")
                 {
                     //Attempt repair
-                    var repairtime = Math.Min(15, ((itemToRepair.Durability * 3) - repairskill) - (itemToRepair.quality / 2));
-                    repairtime = Math.Abs(repairtime * 60);
+                    var repairtime = Math.Max(15, ((itemToRepair.Durability * 3) - repairskill) - (itemToRepair.quality / 2));//minutes, at least 15. uw1 WORLDEV.C:629-630, uw2 WORLDEV.C:1010-1011
+                    repairtime = repairtime * 60;//in seconds. uw1 WORLDEV.C:705, uw2 WORLDEV.C:1085
                     var result = RepairObjectSkillCheck(repairskill, itemToRepair);
                     
                     //Set variables for the function callback.
@@ -103,13 +103,6 @@ namespace Underworld
                         {
                             DoRepair();
                         } 
-                    }
-                    else
-                    {
-                        if (result == -2)
-                        {
-
-                        }
                     }
                     yield return 0;
                 }
@@ -142,6 +135,13 @@ namespace Underworld
             uimanager.EnableDisable(uimanager.instance.uwviewport,true); 
             playerdat.AdvanceTime(CallBackRepairTime);
 
+            if (CallBackRepairResult == -2)
+            {//a destroyed item survives unless its fate (range 10) lets it go. uw1 WORLDEV.C:706-712, uw2 WORLDEV.C:1086-1092
+                if (!ObjectRemover_OLD.ObjectCullingTest(CallBackItemToRepair, 10, CallBackWorldObject ? UWTileMap.current_tilemap.LevelObjects : playerdat.InventoryObjects))
+                {
+                    CallBackRepairResult = 0;
+                }
+            }
             switch (CallBackRepairResult)
             {
                 case -2: //critical fail
@@ -164,6 +164,7 @@ namespace Underworld
                     }
                 case 0://unable to repair
                     {
+                        uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_you_cannot_repair_that_));
                         break;
                     }
                 case 1:
@@ -227,9 +228,10 @@ namespace Underworld
                     }
                 case playerdat.SkillCheckResult.Success:
                     {
+                        //Fully repaired only above 63; reaching exactly 63 is a partial repair. uw1 WORLDEV.C:647-655, uw2 WORLDEV.C:1028-1036
                         var newq = itemToRepair.quality + 3 + (repairskill / 5);
                         itemToRepair.quality = (short)Math.Min(0x3f, newq);
-                        if (itemToRepair.quality == 0x3F)
+                        if (newq > 0x3F)
                         {
                             return 3;
                         }
@@ -256,7 +258,7 @@ namespace Underworld
     /// </summary>
     /// <param name="index"></param>
     /// <param name="objList"></param>
-    public static void MendingSpell(int index, uwObject[] objList)
+    public static bool MendingSpell(int index, uwObject[] objList)
     {
         var objToRepair = objList[index];
 
@@ -266,10 +268,12 @@ namespace Underworld
             uimanager.AddToMessageScroll($"{GameStrings.GetString(1, 0x12F)}{GameStrings.GetObjectNounUW(objToRepair.item_id)}");
             uimanager.UpdateInventoryDisplay();
             playerdat.PlayerStatusUpdate();
+            return true;
         }
         else
         {
             uimanager.AddToMessageScroll(GameStrings.GetString(1,0x142)); //Spell has no noticeable effect.           
+            return false;
         }
     }
 
