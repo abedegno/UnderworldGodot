@@ -595,17 +595,28 @@ namespace Underworld
                 {
                     // do_mstone only sets the square; new_player_pos then searches round it as for
                     // any move (uw1 SKILLS.C:809-812, uw2 SKILLS.C:726-729).
-                    int tileX = moonstone.tileX, tileY = moonstone.tileY;
-                    if (FindRoomForPlayer(ref tileX, ref tileY))
-                    {
-                        InitialisePlayerOnLevelOrPositionChange(tileX, tileY, CeilingSpawn: false, removefromtile: true);
-                    }
-                    else
+                    if (!PlacePlayerNear(moonstone.tileX, moonstone.tileY))
                     {
                         playerdat.play_hp = 0;
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// For a teleport callback that sets the square itself, as npp_func does in the original: the rest of
+        /// new_player_pos, which searches for room round the square and puts the player there
+        /// (uw1 UWEDIT.C:466-471, uw2 UWEDIT.C:480-486).
+        /// </summary>
+        /// <returns>false when there is no room even after clearing; the player is not moved</returns>
+        public static bool PlacePlayerNear(int tileX, int tileY)
+        {
+            if (!FindRoomForPlayer(ref tileX, ref tileY))
+            {
+                return false;
+            }
+            InitialisePlayerOnLevelOrPositionChange(tileX, tileY, CeilingSpawn: false, removefromtile: true);
+            return true;
         }
 
 
@@ -789,6 +800,7 @@ namespace Underworld
                                     {
                                         playerdat.backup_mana = 0;
                                     }
+                                    playerdat.AutomapEnabled = false;//and the automap is off in the Void (uw1 GAMEWRAP.C:473-475)
                                     break;
                                 case ExitLevelMode:
                                     playerdat.AutomapEnabled = (playerdat.backup_mana > 0);
