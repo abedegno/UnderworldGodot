@@ -6,7 +6,8 @@ namespace Underworld
     public partial class ConversationVM : UWClass
     {
         /// <summary>
-        /// Finds all matches and total quantity of a matching item.
+        /// Finds all matches and total quantity of a matching item. The result array holds the object indices of the matching trade items
+        /// (uw1 CONVERSE.C:642-667, uw2 CONVERSE.C:628-653), which scripts pass on to give_to_npc or x_obj_stuff.
         /// </summary>
         public static void find_barter_total()
         {
@@ -26,7 +27,7 @@ namespace Underworld
                 {
                     if (itemIds[si] == item_id)
                     {
-                        MatchingIndices[NoOfMatches] = itemIds[si];
+                        MatchingIndices[NoOfMatches] = itemIndices[si];
                         //match found.
                         var obj = UWTileMap.current_tilemap.LevelObjects[itemIndices[si]];
                         if (obj != null)
