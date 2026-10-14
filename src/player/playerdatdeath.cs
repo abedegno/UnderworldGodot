@@ -45,10 +45,18 @@ namespace Underworld
             }
             else
             {
-                //die fully with cutscene.
-                uimanager.EnableDisable(uimanager.instance.uwviewport,false); 
-                cutsplayer.PlayCutscene(CutsceneNo: 0x103, callBackMethod: uimanager.ReturnToMainMenu, useSingleRedChannel: true);
+                RealDeath();
             }
+        }
+
+        /// <summary>
+        /// The end of the game, real_death(1) (uw1 UWEDIT.C:393-424, uw2 UWEDIT.C:408-439): the death
+        /// cutscene 0x103, then back to the main menu.
+        /// </summary>
+        static void RealDeath()
+        {
+            uimanager.EnableDisable(uimanager.instance.uwviewport,false); 
+            cutsplayer.PlayCutscene(CutsceneNo: 0x103, callBackMethod: uimanager.ReturnToMainMenu, useSingleRedChannel: _RES != GAME_UW2);
         }
 
         /// <summary>
@@ -152,15 +160,13 @@ namespace Underworld
                 Teleportation.CodeToRunOnTeleport = ResurrectAtBlackrockGem;
                 Teleportation.Teleport(
                     character: 0,
-                    tileX: 28, tileY: 37,
+                    tileX: 0x3F, tileY: 0x3F,//no square: ResurrectAtBlackrockGem sets it (uw2 SKILLS.C:853-854)
                     newLevel: 5,
                     HeadingHeightFlag: 0);
             }
             else
             {
-                //die fully with cutscene.
-                uimanager.EnableDisable(uimanager.instance.uwviewport,false); 
-                cutsplayer.PlayCutscene(0x103, uimanager.ReturnToMainMenu);
+                RealDeath();
             }
 
             return true;
@@ -170,37 +176,57 @@ namespace Underworld
 
 
         /// <summary>
-        /// In UW1 finds the silver tree on a level and jumps to it's location, heals the player. Runs as a teleport callback
+        /// UW1's do_resurrect (uw1 SKILLS.C:790-806), run as the teleport callback once the tree's level is loaded:
+        /// the square is the silver tree's (moveto, which leaves 0, 0 when there is none, SKILLS.C:769-784), and
+        /// new_player_pos then searches for room round it. With no room even after clearing, player_is_dead
+        /// ends the game (real_death(1), SKILLS.C:863-875). The hit points were set by ResurrectionEffects.
         /// </summary>
         static void TeleportToSilverTree()
         {
             Teleportation.CodeToRunOnTeleport = null;
-            play_hp = max_hp;
             //PlayerInDeathMode = false;
+            int tileX = 0, tileY = 0;
             var tree = objectsearch.FindMatchInFullObjectList(7, 0, 0xA, UWTileMap.current_tilemap.LevelObjects);
-            if (tree != null)
+            if (tree != null && UWTileMap.ValidTile(tree.tileX, tree.tileY))
             {
-                if (UWTileMap.ValidTile(tree.tileX, tree.tileY))
-                {
-                    Teleportation.Teleport(
-                        character: 0,
-                        tileX: tree.tileX, tileY: tree.tileY,
-                        newLevel: 0, HeadingHeightFlag: 0);
-                }
+                tileX = tree.tileX; tileY = tree.tileY;
+            }
+            if (!Teleportation.PlacePlayerNear(tileX, tileY))
+            {
+                RealDeath();
             }
         }
 
 
         /// <summary>
-        /// Avatar will respawn at the black rock if they die in another world
+        /// Avatar will respawn at the black rock if they die in another world. UW2's do_gem (uw2 SKILLS.C:663-711),
+        /// run as the teleport callback once level 5 is loaded: the square is 0x1C, 0x28 moved by
+        /// move_along(rand(), 8), and a blood stain is left on it if it is an open square. new_player_pos then
+        /// searches for room round it, and with no room even after clearing, player_is_dead ends the game
+        /// (real_death(1), SKILLS.C:853-865). The hit points were set by ResurrectionEffects.
         /// </summary>
         static void ResurrectAtBlackrockGem()
         {
             ChangeExperience(DeathExperienceChange());
             Teleportation.CodeToRunOnTeleport = null;
-            play_hp = max_hp;
             //PlayerInDeathMode = false;
-            uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x169));
+            int x = 0x1C, y = 0x28;
+            int xoff = Rng.RandMod(5) + 1;
+            int yoff = Rng.RandMod(5) + 1;
+            motion.GetCoordinateInDirection(heading: Rng.Source.Rand(), distance: 8, X0: ref x, Y0: ref y);
+            var tile = UWTileMap.current_tilemap.Tiles[x, y];
+            if (tile.tileType == UWTileMap.TILE_OPEN)
+            {// put_at with a range of 0 leaves it at this spot; the original then sets its fine x from yoff and its fine y from xoff
+                ObjectCreator.spawnObjectInTile(0xDF, x, y, (short)yoff, (short)xoff, (short)(tile.floorHeight << 3));
+            }
+            if (Teleportation.PlacePlayerNear(x, y))
+            {
+                uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x169));
+            }
+            else
+            {
+                RealDeath();
+            }
         }
 
         /// <summary>
@@ -211,7 +237,7 @@ namespace Underworld
         static void GoToJail()
         {
             Teleportation.CodeToRunOnTeleport = null;
-            play_hp = max_hp;
+            play_hp = STR;//hit points set to strength (uw2 WORLDEV.C:2287)
             ChangeExperience(DeathExperienceChange());//loss of exp
             //PlayerInDeathMode = false;
             playerdat.playerObject.npc_animation = 1;
@@ -223,7 +249,7 @@ namespace Underworld
             var newtime = (ClockValue / 0x3C00) % 20;
             newtime = Math.Abs(0x28 - newtime);
             newtime = newtime * 0x3C;
-            newtime = newtime - Rng.r.Next(0x5A) + 0x3C;            
+            newtime = newtime - (Rng.r.Next(0x5A) + 0x3C);//the random part is subtracted (uw2 WORLDEV.C:2295)
             AdvanceTime(newtime);
             
             CallBacks.RunCodeOnRace(npc.set_attitude_by_array, 0x1C, new int[] { 2 }, true);
@@ -280,18 +306,6 @@ namespace Underworld
             ResurrectionManaRestoration();
             play_poison = 0;
             ActiveSpellEffectCount = 0;
-
-            //IN UW2 a blood stain should be spawned at where the player has died.
-            if (_RES == GAME_UW2)
-            {
-                var bloodstain = UWTileMap.current_tilemap.LevelObjects[ObjectCreator.PrepareNewObject(0xDF)];
-                bloodstain.tileX = playerObject.tileX; bloodstain.tileY= playerObject.tileY;
-                bloodstain.xpos = playerObject.xpos; 
-                bloodstain.ypos= playerObject.ypos;
-                var tile = UWTileMap.current_tilemap.Tiles[playerObject.tileX, playerObject.tileY];
-                bloodstain.zpos = (short)(tile.floorHeight<<3);
-                ObjectCreator.RenderObject(bloodstain, UWTileMap.current_tilemap);                
-            }
             AutomapEnabled = true;
         }
 
@@ -302,7 +316,7 @@ namespace Underworld
         {
             if (max_hp > 8)
             {
-                play_hp = max_hp - 2 - Rng.r.Next(3);
+                play_hp = max_hp - 2 - Rng.RandScale(3);//rand() * 3L / 0x8000L (uw1 SKILLS.C:794, uw2 SKILLS.C:686)
             }
             else
             {
