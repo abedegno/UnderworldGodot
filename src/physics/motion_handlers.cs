@@ -194,7 +194,8 @@ namespace Underworld
                         animo.SpawnAnimoInTile(subclassindex: 6, xpos: 3, ypos: 3, zpos: (short)(tile.floorHeight << 3), tileX: tile.tileX, tileY: tile.tileY);
                         obj.npc_animation = npc.ANIMATION_DEATH;
                         npc.GetCritterAnimationGlobalsForCurrObj(obj);
-                        obj.AnimationFrame = (byte)npc.MaxAnimFrame;
+                        //UW1 sets the last dying frame, 3, whatever the art holds (uw1 PATHFIND.C:251-252). UW2 sets the art's last frame (uw2 PATHFIND.C:402-404).
+                        obj.AnimationFrame = (byte)((UWClass._RES == UWClass.GAME_UW2) ? npc.MaxAnimFrame : 3);
                         obj.Projectile_Speed = 1;
                         return true;
                     }
