@@ -823,7 +823,8 @@ namespace Underworld
                     critter.UnkBit_0X13_Bit0to6 = (short)Rng.r.Next(2);
                     critter.ProjectileHeading = (ushort)Rng.r.Next(0x100);
                     critter.Projectile_Pitch = (short)(0xF + Rng.r.Next(3));
-                    critter.AnimationFrame = (byte)((critter.AnimationFrame + 1) % MaxAnimFrame);
+                    //UW2 steps by the sequence's frame count, seq_len (uw2 AI.C:1301), UW1 by 4 (uw1 AI.C:1315)
+                    critter.AnimationFrame = (byte)((critter.AnimationFrame + 1) % ((_RES == GAME_UW2) ? MaxAnimFrame + 1 : 4));
                     critter.UnkBit_0X15_6 = 1;
                     break;
                 case 0xC://stand at location
@@ -1780,7 +1781,8 @@ namespace Underworld
                         //already in walk animation;
                         //seg006_1413_3620:
                         var tmp = critter.AnimationFrame + 1;
-                        critter.AnimationFrame = (byte)(tmp % MaxAnimFrame);
+                        //UW2 steps by the sequence's frame count, seq_len (uw2 PATHFIND.C:1354), UW1 by 4 (uw1 PATHFIND.C:1224)
+                        critter.AnimationFrame = (byte)(tmp % ((_RES == GAME_UW2) ? MaxAnimFrame + 1 : 4));
                     }
                     //seg006_1413_3657:
                     //set frames as in above branches   
@@ -2475,45 +2477,42 @@ namespace Underworld
                     critter.npc_attitude = 0;
                 }
 
-                if ((siDist < 0x64) || ((siDist >= 0x64) && (currObj_XHome == currentGTargXHome) && (currObj_YHome == currentGTargYHome)))
+                if (
+                    ((siDist < 0x64) || ((siDist >= 0x64) && (currObj_XHome == currentGTargXHome) && (currObj_YHome == currentGTargYHome)))
+                    &&
+                    ((Math.Abs(currObj_FloorHeight - currentGTargFloorHeight) < 4) || critterObjectDat.isFlier(critter.item_id))
+                    )
                 {
-                    //seg007_17A2_81D: 
-                    if (Math.Abs(currObj_FloorHeight - currentGTargFloorHeight) < 4)
+                    //seg007_17A2_844:
+                    ChooseMeleeAttackToMake(critter, siDist);
+                    if (_RES == GAME_UW2)
                     {
-                        //seg007_17A2_844:
-                        ChooseMeleeAttackToMake(critter, siDist);
-                        return;
+                        return;//uw2 AI.C:349-352
                     }
-                    else
-                    {
-                        if (critterObjectDat.isFlier(critter.item_id))
-                        {
-                            //seg007_17A2_844:
-                            ChooseMeleeAttackToMake(critter, siDist);
-                            return;
-                        }
-                    }
-                }
-
-                //seg007_17A2_84F:
-                if (critterObjectDat.NPCPower_0x2DBits1To7(critter.item_id) <= 0)
-                {
-                    //Check if NPC Weapon loot is a ranged weapon
-                    //seg007_17A2_87F:
-                    if ((critterObjectDat.weaponloot(critter.item_id, 0) >> 4) == 1)
-                    {
-                        //seg007_17A2_895:
-                        RangeAttackStarted = NPCStartRangedAttack(critter);
-                    }
+                    //UW1 goes on with nothing attacked to the give-up test and crit_offense_find_target (uw1 AI.C:362-385)
                 }
                 else
                 {
-                    if (!TryToDoMagicAttack(critter))
+                    //seg007_17A2_84F:
+                    if (critterObjectDat.NPCPower_0x2DBits1To7(critter.item_id) <= 0)
                     {
-                        //seg007_17A2_86E
-                        if (critterObjectDat.isCaster(critter.item_id))
+                        //Check if NPC Weapon loot is a ranged weapon
+                        //seg007_17A2_87F:
+                        if ((critterObjectDat.weaponloot(critter.item_id, 0) >> 4) == 1)
                         {
-                            RangeAttackStarted = NPCStartMagicAttack(critter);
+                            //seg007_17A2_895:
+                            RangeAttackStarted = NPCStartRangedAttack(critter);
+                        }
+                    }
+                    else
+                    {
+                        if (!TryToDoMagicAttack(critter))
+                        {
+                            //seg007_17A2_86E
+                            if (critterObjectDat.isCaster(critter.item_id))
+                            {
+                                RangeAttackStarted = NPCStartMagicAttack(critter);
+                            }
                         }
                     }
                 }
@@ -2600,7 +2599,7 @@ namespace Underworld
                     critter.Projectile_Pitch = (short)(var6 + Rng.r.Next(5) + 13);
                 }
 
-                if (currentGTargSquaredDistanceByTiles <= 3 && zDiffVar4 < 0x10)
+                if (currentGTargSquaredDistanceByTiles <= 3 && Math.Abs(zDiffVar4) < 0x10)//abs(dz), uw1 AI.C:627, uw2 AI.C:597
                 {
                     //seg007_17A2_1214:
                     if (Rng.r.Next(0x100) >= (critterObjectDat.maybemorale(critter.item_id) >> 3))
@@ -2611,7 +2610,7 @@ namespace Underworld
                             critter.ProjectileHeading = (ushort)(((headingvar1 + 4) % 8) << 5);
                             critter.heading = (short)headingvar1;
                             critter.npc_heading = 0;
-                            UpdateAnimation(critter, 1, true);
+                            FleeAnimation(critter, uw1Sequence: 7, uw2Sequence: 1);//back off
                             critter.UnkBit_0X13_Bit0to6 = (short)((critterObjectDat.unk_b(critter.item_id) + 1) / 2);
                             return;
                         }
@@ -2631,7 +2630,9 @@ namespace Underworld
                         if (currentGTargSquaredDistanceByTiles >= 9)
                         {
                             //seg007_17A2_137D
-                            HeadingVar3 = Rng.r.Next(0x20) + (((critter.ProjectileHeading >> 5) + ((Rng.r.Next(2) << 1) - 1) + 8) % 5) << 5;
+                            //turn 90 degrees left or right, then up to 45 degrees more: uw1 AI.C:655, uw2 AI.C:623 (the rand() % 2 is drawn first)
+                            var turn = (Rng.r.Next(2) << 1) - 1;
+                            HeadingVar3 = ((((critter.ProjectileHeading >> 5) + (turn * 2) + 8) % 8) << 5) + Rng.r.Next(0x20);
                             //goto 17a2:1444
                         }
                         else
@@ -2642,7 +2643,7 @@ namespace Underworld
                                 critter.UnkBit_0X13_Bit0to6 = 0;
                                 ChangeNpcHeadings(critter, headingvar1);
                                 critter.Projectile_Speed = 4;
-                                UpdateAnimation(critter, 2, true);
+                                FleeAnimation(critter, uw1Sequence: 0, uw2Sequence: 2);//combat stance
                                 return;
                             }
                             else
@@ -2697,8 +2698,27 @@ namespace Underworld
                     //seg007_17A2_1493
                     critter.UnkBit_0X13_Bit0to6 = (short)critterObjectDat.speed(critter.item_id);
                 }
-                UpdateAnimation(critter, 1, true);
+                FleeAnimation(critter, uw1Sequence: 0x2C, uw2Sequence: 1);//walk
                 critter.Projectile_Speed = 4;
+            }
+        }
+
+        /// <summary>
+        /// Sets the fleeing critter's sequence. UW1 sets the sequence and always counts the frame on,
+        /// even from another sequence: SET_SEQ then SET_FRAME((frame + 1) % 4) (uw1 AI.C:636-637, 647-648, 677-678;
+        /// sequences in uw1 critter.h:124-133). UW2 calls change_or_inc_seq(seq, 1), which starts a new
+        /// sequence at frame 0 (uw2 AI.C:125-132, 606, 616, 645).
+        /// </summary>
+        static void FleeAnimation(uwObject critter, int uw1Sequence, int uw2Sequence)
+        {
+            if (_RES == GAME_UW2)
+            {
+                UpdateAnimation(critter, uw2Sequence, true);
+            }
+            else
+            {
+                critter.npc_animation = (short)uw1Sequence;
+                critter.AnimationFrame = (byte)((critter.AnimationFrame + 1) % 4);
             }
         }
 
@@ -2800,7 +2820,9 @@ namespace Underworld
 
 
         /// <summary>
-        /// Does something with getting a heading towards the player??
+        /// crit_avoid_player (uw1 AI.C:685-713, uw2 AI.C:652-686): steers a heading (0-255) away from the player
+        /// when the player is within maybedist fine units of the critter (myxpost, myypost). A heading more than
+        /// 90 degrees from the player is kept, the others are bent 45 degrees away.
         /// </summary>
         /// <param name="headingArg0"></param>
         /// <param name="maybedist"></param>
@@ -2809,42 +2831,31 @@ namespace Underworld
         {
             var playerXCoordinate = playerdat.playerObject.xpos + (playerdat.playerObject.npc_xhome << 3);
             var playerYCoordinate = playerdat.playerObject.ypos + (playerdat.playerObject.npc_yhome << 3);
-            var xvector = playerXCoordinate - currentGTargXCoord;
-            var yvector = playerYCoordinate - currentGTargYCoord;
-            if (Math.Pow(xvector, 2) + Math.Pow(yvector, 2) > Math.Pow(maybedist, 2))
+            var xvector = playerXCoordinate - currObjXCoordinate;
+            var yvector = playerYCoordinate - currObjYCoordinate;
+            if (maybedist * maybedist > (xvector * xvector) + (yvector * yvector))
             {
-                var HeadingVarB = ((Pathfind.GetVectorHeading(xvector, yvector) + 4) % 8) << 5;
-                HeadingVarB += 0x100;
-                HeadingVarB -= headingArg0;
-                var varD = HeadingVarB % 0x100;
-                if ((varD >= 0x40) || (varD <= 0xC0))
+                var th = ((Pathfind.GetVectorHeading(xvector, yvector) + 4) % 8) << 5;//heading away from the player
+                var diff = (th + 0x100 - headingArg0) % 0x100;
+                if ((diff < 0x40) || (diff > 0xC0))
                 {
-                    if (varD >= 0x60)
-                    {
-                        if (varD >= 0x80)
-                        {
-                            if (varD <= 0xA0)
-                            {
-                                return (headingArg0 + 0xE0) % 0x100;
-                            }
-                            else
-                            {
-                                return (HeadingVarB + 0x20) % 0x100;
-                            }
-                        }
-                        else
-                        {
-                            return (HeadingVarB + 0x20) % 0x100;
-                        }
-                    }
-                    else
-                    {
-                        return (HeadingVarB + 0xE0) % 0x100;
-                    }
+                    return headingArg0;
+                }
+                else if (diff < 0x60)
+                {
+                    return (th + 0xE0) % 0x100;
+                }
+                else if (diff < 0x80)
+                {
+                    return (headingArg0 + 0x20) % 0x100;
+                }
+                else if (diff > 0xA0)
+                {
+                    return (th + 0x20) % 0x100;
                 }
                 else
                 {
-                    return headingArg0;
+                    return (headingArg0 + 0xE0) % 0x100;
                 }
             }
             else
@@ -2964,7 +2975,8 @@ namespace Underworld
             }
             else
             {
-                critter.AnimationFrame = (byte)((critter.AnimationFrame + 1) % MaxAnimFrame);
+                //seq_len, the frame count, one more than the last frame (uw2 AI.C:423)
+                critter.AnimationFrame = (byte)((critter.AnimationFrame + 1) % (MaxAnimFrame + 1));
             }
 
             if (critterObjectDat.isFlier(critter.item_id))
