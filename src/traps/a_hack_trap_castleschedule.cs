@@ -126,63 +126,61 @@ namespace Underworld
 
         /// <summary>
         /// Determines where the NPC should move to based on time of day.
+        /// where_shall_we_hang_out (uw2 CRITTIME.C:646-731). The day is split into two-hour stages from the hour, 0 to 23:
+        /// stage 0 is 1 to 3 am, up to stage 11, 11 pm to 1 am. A random location 0 to 5 is picked, but at night (stages 0 to 2)
+        /// and otherwise one time in three the stage decides.
         /// </summary>
         /// <param name="critter"></param>
         /// <param name="NewTileX"></param>
         /// <param name="NewTileY"></param>
         static void GetCastleDestination(uwObject critter, out short NewTileX, out short NewTileY)
         {
-            NewTileX = (short)critter.tileX;
-            NewTileY = (short)critter.tileY;
+            var hour = (playerdat.ClockValue / 0xE1000) % 24;//a 24 hour clock (uw2 CRITTIME.C:656)
+            var varC_stage = (((hour + 1) >> 1) + 0xB) % 0xC; // can be 0 to 11 (uw2 CRITTIME.C:657)
 
-            var var2_hour = playerdat.TwelveHourClock;
-            var2_hour++;
-            var2_hour = var2_hour >> 1;
-            var2_hour = var2_hour + 0xB;
+            var di_location = Rng.RandMod(6);//pick a random location.
 
-            var varC_stage = var2_hour % 0xC; // can be 0 to 11
-
-            var di_location = Rng.r.Next(6);//pick a random location.
-
-            var rng_result = Rng.r.Next(3);
-            if ((rng_result == 0) || ((rng_result != 0) && (varC_stage <= 2)))
+            if ((Rng.RandMod(3) == 0) || (varC_stage <= 2))
             {
                 switch (varC_stage)
                 {
-                    case 0: //case0
+                    case 3:
+                    case 5:
+                    case 9:
+                        di_location = 4;//stay where it is (uw2 CRITTIME.C:661-663)
+                        break;
+                    case 0:
                     case 1:
                     case 2:
                     case 11:
                         di_location = 0;//go to default location
                         break;
-                    case 3: //case3
-                    case 5:
-                    case 9:
-                        di_location = 3;   //go to throne room.                 
-                        break;
-                    case 6://case 6
+                    case 6:
                     case 7:
                     case 8:
-                        di_location = 1;    //go to the lobby.
+                        di_location = 1;//go to the lobby.
                         break;
-
                 }
             }
 
-            //special cases for miranda and xclock, Lord British and strike, and Nystrul and xclock after murders.
+            //special cases: Miranda always, and everyone before the castle plot starts (XC_CASTLE 0), Lord British once quest 115 is set, and Nystul after the murders (uw2 CRITTIME.C:671-676)
             if (
-                (critter.npc_whoami == 0x88 && playerdat.GetXClock(1) != 0)
+                (critter.npc_whoami == 0x88 || playerdat.GetXClock(1) == 0)
                 ||
-                (critter.npc_whoami == 0x8E && playerdat.GetQuest(115) == 1)
+                (critter.npc_whoami == 0x8E && playerdat.GetQuest(115) != 0)
                 ||
                 (critter.npc_whoami == 0x82 && playerdat.GetXClock(1) >= 0xC)
                 )
             {
-                di_location = 0;//stay in place
+                di_location = 0;//go to default location
             }
 
-
-            if (di_location == 0)
+            if (di_location == 5)
+            {//stay home (uw2 CRITTIME.C:677-679)
+                NewTileX = critter.quality;
+                NewTileY = critter.owner;
+            }
+            else if (di_location == 0)
             {//when 0 go to the NPC default hangout location.
                 if (critter.npc_whoami == 0xA8)
                 {//special case for Syria
@@ -197,7 +195,7 @@ namespace Underworld
             }
             else
             {
-                int locX1 = 0; int locX2 = 0; int locY1 = 0; int locY2 = 0;
+                int locX1; int locX2; int locY1; int locY2;
                 switch (di_location)
                 {
                     case 1://castle lobby
@@ -219,14 +217,16 @@ namespace Underworld
                         locY2 = 0x33;
                         break;
                     case 4://kitchens
-                           //Although the kitchens have co-ordinates defined NPCs will not actually move here
+                           //Although the kitchens have co-ordinates defined (0x23, 0x2F to 0x2F, 0x34) the case falls into the default in DOS (uw2 CRITTIME.C:718-726)
                     default:
-                        return;//remain at current position as set at start of function.
+                        NewTileX = (short)critter.tileX;//remain at current position
+                        NewTileY = (short)critter.tileY;
+                        return;
                 }
 
-                //Find random spot within the bounds of the locations.
-                NewTileX = (short)(locX1 + Rng.r.Next(locX2 - locX1));
-                NewTileY = (short)(locY1 + Rng.r.Next(locY2 - locY1));
+                //Find random spot within the bounds of the locations, bounds included (uw2 CRITTIME.C:727-728)
+                NewTileX = (short)(locX1 + Rng.RandMod(locX2 - locX1 + 1));
+                NewTileY = (short)(locY1 + Rng.RandMod(locY2 - locY1 + 1));
                 if ((di_location == 2) && (NewTileX == 0x1F) && (NewTileY == 0x29))
                 {//fountain, special case for the fountain pedestal location.
                     NewTileX++;
