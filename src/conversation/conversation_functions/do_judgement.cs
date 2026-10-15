@@ -78,8 +78,8 @@ namespace Underworld
         public static int AppraiseOffer(out int playervalue, out int npcvalue)
         {
             var appraise_accuracy = 50 - ((playerdat.Appraise * 45) / 30); //the variant range +/- that will be used to assess item values.
-            playervalue = TotalOffering(useLikes: false, playerSide: true, accuracy: appraise_accuracy);
-            npcvalue = (short)(TotalOffering(useLikes: false, playerSide: false, accuracy: appraise_accuracy) + BablTradeBonus);
+            playervalue = TotalOffering(useLikes: false, playerSide: true, values: PlayerJudgement, accuracy: appraise_accuracy);
+            npcvalue = (short)(TotalOffering(useLikes: false, playerSide: false, values: NpcJudgement, accuracy: appraise_accuracy) + BablTradeBonus);
             return TradeGain(playervalue, npcvalue);
         }
     }//end class
