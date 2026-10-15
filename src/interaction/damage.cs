@@ -691,15 +691,15 @@ namespace Underworld
                     case 2:
                         break;
                     case 0:
-                        if (obj.majorclass != 0)
-                        {
+                        if (obj.OneF0Class != 0)
+                        {//only a melee weapon. uw1 INVDATA.C:432, uw2 INVDATA.C:413
                             return -2;
 
                         }
                         break;
                     default:
                         {
-                            if (!uwObject.CheckIfObjectInValidSlot(obj, uimanager.CurrentSlot))
+                            if (!uwObject.CheckIfObjectInValidSlot(obj, slot))//ObjWorn(item, slot), uw1 INVDATA.C:434, uw2 INVDATA.C:415
                             {
                                 return -2;
                             }
@@ -714,7 +714,15 @@ namespace Underworld
                     if (arg8 != 0)
                     {
                         //Turn into debris? (could this have already happened inside DamageObject)
-                        var debris = GetObjectTypeDebris(obj, 0);
+                        int debris;
+                        if (_RES == GAME_UW2)
+                        {
+                            debris = GetObjectTypeDebris(obj, damagetype);//uw2 INVDATA.C:421
+                        }
+                        else
+                        {
+                            debris = 0xD5 + Rng.RandScale(2);//0xD5 or 0xD6 at random, rand() * 2 / 0x8000, uw1 INVDATA.C:440
+                        }
                         var tile = UWTileMap.current_tilemap.Tiles[playerdat.playerObject.tileX, playerdat.playerObject.tileY];
                         ObjectCreator.spawnObjectInTile(
                             itemid: debris,
