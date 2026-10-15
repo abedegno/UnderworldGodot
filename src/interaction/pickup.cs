@@ -290,8 +290,8 @@ namespace Underworld
                     }
                     else
                     {
-                        //if <quantity selected, split objects, pickup object of that quantity.
-                        var newObjIndex = ObjectCreator.SpawnObjectInHand(obj.item_id); //spawning in hand is very handy here
+                        //if <quantity selected, split objects: a copy of the stack keeps the rest on the map and the stack itself, cut to the quantity, is picked up (uw1 INVPANEL.C:486-489, uw2 INVPANEL.C:473-476)
+                        var newObjIndex = ObjectCreator.PrepareNewObject(obj.item_id);
                         if (newObjIndex == 0)
                         {//no free object even after garbage collection: nothing is picked up, with no message, as AskHowMany's 0 (uw1 INTERACT.C:457-458, uw2 INTERACT.C:360-361).
                          //DOS does not check Obj_Alloc and cuts the stack to the number asked first, so the rest is lost (uw1 INVPANEL.C:486-489, uw2 INVPANEL.C:473-476); the port keeps the stack whole instead
@@ -302,10 +302,17 @@ namespace Underworld
                         //copy the bytes
                         for (int i =0; i<8; i++)
                         {
-                            newObj.DataBuffer[newObj.PTR+i] = obj.DataBuffer[newObj.PTR+i];
+                            newObj.DataBuffer[newObj.PTR+i] = obj.DataBuffer[obj.PTR+i];
                         }
-                        newObj.link = (short)result;//set the qty of the new object. assumes any isquant flags are set in the copybuffer operations.                  
-                        obj.link = (short)(obj.link - result);//reduce the qty of the other object.
+                        newObj.link = (short)(obj.link - result);//the copy keeps the rest
+                        obj.link = (short)result;//the stack is cut to the quantity picked up
+                        //the copy goes next after the stack in the tile's list (uw1 INTERACT.C:460, uw2 INTERACT.C:363)
+                        newObj.next = obj.next;
+                        obj.next = (short)newObjIndex;
+                        newObj.tileX = obj.tileX; newObj.tileY = obj.tileY;
+                        ObjectCreator.RenderObject(newObj, UWTileMap.current_tilemap);
+                        //then the stack is picked up as any other object, with its triggers and owner checks (uw1 INTERACT.C:476-481, uw2 INTERACT.C:370-387)
+                        DoPickup(index, objList, obj);
                     }
                     yield return true;
                 }
