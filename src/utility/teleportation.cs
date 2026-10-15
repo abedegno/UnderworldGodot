@@ -629,6 +629,28 @@ namespace Underworld
         }
 
         /// <summary>
+        /// gruesome_door_hack (uw2 GAMEWRAP.C:422-438), run on arriving in level 1 (GAMEWRAP.C:474-477) with the
+        /// square asked for. The door on that square has its lock tried (checkLock with key -0x2D, a lock
+        /// picking skill of 0x2D), is opened whether that worked or not, and its motion is finished at once,
+        /// so the player never arrives behind a shut door.
+        /// </summary>
+        static void GruesomeDoorHack(int x, int y)
+        {
+            if (!UWTileMap.ValidTile(x, y)) { return; }
+            var doorObj = objectsearch.FindMatchInTile(tileX: x, tileY: y, majorclass: 5, minorclass: 0, classindex: -1);
+            if (doorObj != null)
+            {
+                door.CharacterDoorLockAndKeyInteraction(null, doorObj, -0x2D);
+                door.OpenDoor(doorObj);
+                var ovl = door.FindDoorOverlay(doorObj.index);
+                if (ovl != null)
+                {
+                    door.EndMovingDoor(doorObj, ovl);
+                }
+            }
+        }
+
+        /// <summary>
         /// Handle events that happen when player leaves and enters dungeon levels in UW2
         /// </summary>
         /// <param name="mode">0 = new game/enter level, 1 = leave level, 2 = unused and 3 = load save game</param>
@@ -654,7 +676,7 @@ namespace Underworld
                     if (dungeon == 1)
                     {
                         playerdat.playerObject.ProjectileSourceID = 0;
-                        Debug.Print($"Reentering britannia. make sure door at {TeleportTileX},{TeleportTileY} is set to closed if moving");
+                        GruesomeDoorHack(TeleportTileX, TeleportTileY);
                     }
                 }
                 else

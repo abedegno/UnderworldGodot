@@ -116,6 +116,10 @@ public partial class ScenarioRunner : Node
         (() => new TombFloatSkulls(), true),
         (() => new PitsArenaCoward(), true),
         (() => new JailCatchUp(), true),
+        // missing routines: doors
+        (() => new DoorTurnsRound(), true),
+        (() => new DoorObstructed(), true),
+        (() => new GruesomeDoorHack(), true),
         (() => new HarnessFails(), false),
     };
 
