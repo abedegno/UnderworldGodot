@@ -7,5 +7,3 @@
 # "precondition:" or name an exception (then the scenario no longer reaches the bug it tests, and
 # the run fails). One that starts passing fails the run until its line is removed, in the piece that
 # fixes it. Original sources: https://github.com/abedegno/underworld-exhumed (uw1/src, uw2/src).
-uw1/sleep-passes-time   ~clock advance over the night expected  # AdvanceTime only prints (src/player/playerdatclock.cs:86), so a night's sleep leaves the clock where it was; uw1/src/game/SKILLS.C:545-546, 580-583 add 7 to 10 hours
-uw2/sleep-passes-time   ~clock advance over the night expected  # AdvanceTime only prints (src/player/playerdatclock.cs:86); uw2/src/game/SKILLS.C:463-466, 507-510 pass 7 to 10 hours through pass_time (uw2/src/event/WORLDEV.C:163-166)

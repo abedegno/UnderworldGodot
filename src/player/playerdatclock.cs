@@ -83,9 +83,27 @@ namespace Underworld
             }
         }
 
+        /// <summary>
+        /// Lets a span of seconds of game time pass (sleeping, repairing, jail).
+        /// The clock is in 1/256 seconds so the span is shifted by 8.
+        /// UW2 is pass_time (uw2/src/event/WORLDEV.C:163-169, the X clock line is 167): the time of day xclock 0 is then
+        /// recalculated from the clock in 20 minute steps (0x4B000), 72 to the day, and the SCD schedules
+        /// are brought up to date (Sched_SetAllClocks(1)). pass_time also sets lastDurCheck to the clock
+        /// so the duration checks do not catch up on the skipped time; the port's duration checks
+        /// run on elapsed real time (PlayerTimedLoop) rather than on the clock so there is nothing to reset.
+        /// UW1 has no pass_time. Its callers add the time to the clock directly (uw1/src/game/SKILLS.C:546, 583,
+        /// uw1/src/event/WORLDEV.C:705).
+        /// </summary>
+        /// <param name="span">seconds</param>
         public static void AdvanceTime(int span)
         {
             Debug.Print ($"Advance time {span}");
+            ClockValue += span << 8;
+            if (_RES == GAME_UW2)
+            {
+                SetXClock(0, (ClockValue / 0x4B000) % 0x48);
+                scd.ProcessSCDArk(1);
+            }
         }
     }  //end class
 }//end namespace
