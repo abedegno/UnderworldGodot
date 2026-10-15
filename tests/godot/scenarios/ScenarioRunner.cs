@@ -106,6 +106,7 @@ public partial class ScenarioRunner : Node
         (() => new TybalTalkTrap(), true),
         (() => new XTrapsValueRange(), true),
         (() => new NumberedVariableRanges(), true),
+        (() => new MenuMusicRepeat(), true),
         // batch D: guards
         (() => new GuardEat(), true),
         (() => new GuardLight(), true),
