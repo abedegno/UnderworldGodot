@@ -88,8 +88,7 @@ namespace Underworld
             //find and close doors while sleeping
             scd.FindAndCloseDoors(arg0_isPlayer: false);
 
-            //TODO Cull objects.
-            Debug.Print("TODO cull objects while sleeping");
+            ObjectRemover.GarbageCollect(1, 0x14);//uw1 SKILLS.C:544, uw2 SKILLS.C:462
 
             var si_hourstosleep = 2 + Rng.r.Next(5);
 
