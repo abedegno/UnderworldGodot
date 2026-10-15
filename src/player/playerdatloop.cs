@@ -460,18 +460,6 @@ namespace Underworld
             }
 
 
-            if ((!AutomapEnabled) && (_RES == GAME_UW2))
-            {
-                //Do a test here to see if the player has entered a previously visible tile. If so renable automap, not sure where in the game the getting lost mechanic occurs but possibly caused by some teleportation effects.             
-                if (UWTileMap.ValidTile(playerdat.playerObject.tileX, playerdat.playerObject.tileY))
-                {
-                    if (automap.automaps[dungeon_level - 1].tiles[playerObject.tileX, playerObject.tileY].visited)
-                    {
-                        Debug.Print("Visiting a previously discovered tile. You remember where you are and automap is reenabled");
-                        AutomapEnabled = true;
-                    }
-                }
-            }
             // if (automap.CanMap(dungeon_level) && (AutomapEnabled))
             // {
             //     UpdateAutomap();//update the visited status of nearby tiles
@@ -482,6 +470,22 @@ namespace Underworld
             motion.UpdateMotionStateAndSwimming(-1);
         }
 
+
+        /// <summary>
+        /// UW2's player_newsq, run when the player enters a square by moving or by a teleport (uw2 PHYSICS.C:631-638,
+        /// 574, UWEDIT.C:503): a lost player finds his way again on a square his map has seen, one whose automap
+        /// byte has a tile type of 1 to 9 in its low nibble (0 is never seen, 0xA and up known but not seen,
+        /// uw2 AUTOMAP.C:6-13). UW1 has no lost player (uw1 PHYSICS.C:389).
+        /// </summary>
+        public static void PlayerNewSquare(int tileX, int tileY)
+        {
+            if (_RES != GAME_UW2) return;
+            var m = automap.automaps[dungeon_level - 1].buffer[(tileY << 6) + tileX] & 0xF;
+            if (!AutomapEnabled && m < 10 && m != 0)
+            {
+                AutomapEnabled = true;
+            }
+        }
 
         public static void PutWeaponAway()
         {
