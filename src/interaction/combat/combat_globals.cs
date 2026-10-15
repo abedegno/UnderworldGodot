@@ -15,7 +15,7 @@ namespace Underworld
             StrikingTarget = 4,
             Resetting = 5
         }
-        public static uwObject currentweapon;  //if null then using fist
+        public static uwObject currentweapon;  //if null then using fist. Taken from the hand at the start of every swing (combat_input.cs)
         public static int CurrentWeaponRadius = 0;
 
         public static int PlayerWeaponSound = 1;

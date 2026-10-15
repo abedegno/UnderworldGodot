@@ -130,6 +130,8 @@ public partial class ScenarioRunner : Node
         (() => new NewPlayerPos(), true),
         (() => new WallHitSound(), true),
         (() => new CanPlace(), true),
+        (() => new WeaponEachSwing(), true),
+        (() => new MissileBodyLocation(), true),
         (() => new TybalTalkTrap(), true),
         (() => new XTrapsValueRange(), true),
         (() => new NumberedVariableRanges(), true),
