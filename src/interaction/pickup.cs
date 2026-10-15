@@ -168,39 +168,36 @@ namespace Underworld
                 if (DoSpecialCases)
                 {
                     //Handle some special cases
-                    DropSpecialCases(obj.item_id);
+                    DropSpecialCases(objectsearch.HasOrIsObj(obj, 294, objList));
                 }
                 return true;
             }
         }
 
-        public static void DropSpecialCases(int item_id)
+        /// <summary>
+        /// Special events when the player drops an object into the world.
+        /// </summary>
+        /// <param name="IsOrHoldsMoonstone">Whether the object dropped was a moonstone or held one, from objectsearch.HasOrIsObj before the drop
+        /// (underworld-exhumed uw1/src/inv/BAGS.C:82; uw2/src/inv/BAGS.C:71)</param>
+        public static void DropSpecialCases(bool IsOrHoldsMoonstone)
         {
+            if (!IsOrHoldsMoonstone)
+            {
+                return;
+            }
             if (_RES != GAME_UW2)
             {
-                switch (item_id)
-                {
-                    case 294://moonstone
-                        playerdat.SetMoonstone(0, playerdat.dungeon_level);
-                        break;
-                }
+                playerdat.SetMoonstone(0, playerdat.dungeon_level);
             }
             else
             {
-                switch (item_id)
-                {
-                    case 294://moonstone
-                        {
-                            for (int m = 0; m < 2; m++)
-                            {//Store the current level in the first free moonstone variable.
-                                if (playerdat.GetMoonstone(m) == 0)
-                                {
-                                    playerdat.SetMoonstone(m, playerdat.dungeon_level);
-                                    break;
-                                }
-                            }
-                            break;
-                        }
+                for (int m = 0; m < 2; m++)
+                {//Store the current level in the first free moonstone variable.
+                    if (playerdat.GetMoonstone(m) == 0)
+                    {
+                        playerdat.SetMoonstone(m, playerdat.dungeon_level);
+                        break;
+                    }
                 }
             }
         }
@@ -360,7 +357,7 @@ namespace Underworld
         {
             var tile = UWTileMap.current_tilemap.Tiles[obj.tileX, obj.tileY];
             //first handle some special cases
-            PickupSpecialCases(obj);
+            PickupSpecialCases(obj, objList);
 
             //check for pickup triggers linked to this object
             trigger.TriggerObjectLink(
@@ -440,15 +437,17 @@ namespace Underworld
         /// Special events when objects are picked up and data needs to be updated.
         /// </summary>
         /// <param name="obj"></param>
-        private static void PickupSpecialCases(uwObject obj)
+        /// <param name="objList"></param>
+        private static void PickupSpecialCases(uwObject obj, uwObject[] objList)
         {
             if (_RES != GAME_UW2)
             {
+                if (objectsearch.HasOrIsObj(obj, 294, objList))
+                {//a moonstone or a container holding one (underworld-exhumed uw1/src/ui/INTERACT.C:476)
+                    playerdat.SetMoonstone(0, 0);
+                }
                 switch (obj.item_id)
                 {
-                    case 294://Moonstone
-                        playerdat.SetMoonstone(0, 0);
-                        break;
                     case 458://silver tree
                         silvertree.PickupTree(obj);
                         break;
@@ -458,18 +457,6 @@ namespace Underworld
             {
                 switch (obj.item_id)
                 {
-                    case 294://Moonstone
-                        {
-                            for (int m = 0; m < 2; m++)
-                            {//Clear the moonstone if it matches the current level.
-                                if (playerdat.GetMoonstone(m) == playerdat.dungeon_level)
-                                {
-                                    playerdat.SetMoonstone(m, 0);
-                                    break;//only do it for the first match.
-                                }
-                            }
-                            break;
-                        }
                     case 312://mors gotha's spellbook
                         {
                             if (obj.doordir == 1)
@@ -480,6 +467,17 @@ namespace Underworld
                             }
                             break;
                         }
+                }
+                if (objectsearch.HasOrIsObj(obj, 294, objList))
+                {//a moonstone or a container holding one (underworld-exhumed uw2/src/ui/INTERACT.C:377)
+                    for (int m = 0; m < 2; m++)
+                    {//Clear the moonstone if it matches the current level.
+                        if (playerdat.GetMoonstone(m) == playerdat.dungeon_level)
+                        {
+                            playerdat.SetMoonstone(m, 0);
+                            break;//only do it for the first match.
+                        }
+                    }
                 }
             }
         }
