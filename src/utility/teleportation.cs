@@ -92,6 +92,16 @@ namespace Underworld
                 //Reset the camera reference as the old reference belonged to a previous map
                 playerdat.CameraReference = playerdat.playerObject;
 
+                //Handle enter level events. ChangeLevel runs them before new_player_pos searches for room
+                //(uw1 UWEDIT.C:459-467, uw2 UWEDIT.C:475-481), so in UW2 the level 1 door on the square asked for is open by then.
+                LevelChangeEvents(EnterLevelMode, playerdat.dungeon_level);
+
+                if (_RES == GAME_UW2)
+                {//SCD.ARK then needs to be processed in UW2
+                    Debug.Print("Processing SCD due to level transition");
+                    scd.ProcessSCDArk(1);
+                }
+
                 int tileX = TeleportTileX, tileY = TeleportTileY;
                 if ((tileX != -1) && (tileY != -1))
                 {
@@ -120,15 +130,6 @@ namespace Underworld
                         //move to new tile on different level
                         InitialisePlayerOnLevelOrPositionChange(tileX: tileX, tileY: tileY, CeilingSpawn: false);
                     }
-                }
-
-                //Handle enter level events
-                LevelChangeEvents(EnterLevelMode, playerdat.dungeon_level);
-
-                if (_RES == GAME_UW2)
-                {//SCD.ARK then needs to be processed in UW2
-                    Debug.Print("Processing SCD due to level transition");
-                    scd.ProcessSCDArk(1);
                 }
             }
             else
