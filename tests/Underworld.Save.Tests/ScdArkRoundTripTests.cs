@@ -26,7 +26,7 @@ public class ScdArkRoundTripTests : IDisposable
         Underworld.scd.scd_data     = _origScdData;
     }
 
-    [Fact]
+    [GameDataFact]
     public void Uw2Scd_LoadAndSerialize_ByteIdentical()
     {
         Underworld.UWClass.BasePath = Path.Combine(TestData.UW2GogRoot, "UW2");

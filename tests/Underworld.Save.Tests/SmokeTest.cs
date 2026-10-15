@@ -11,7 +11,7 @@ public class SmokeTest
     /// <summary>
     /// Verify that BGLOBALS.DAT exists at the expected UW2/SAVE0 path.
     /// </summary>
-    [Fact]
+    [GameDataFact]
     public void Uw2Save0BGlobalsExists()
     {
         var path = TestData.Uw2Save0("BGLOBALS.DAT");
