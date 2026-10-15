@@ -6,7 +6,7 @@ namespace Underworld
     public partial class ConversationVM:UWClass
     {
         /// <summary>
-        /// Selects what items the NPC offers in trade.
+        /// Sets the attitude of every critter of the talker's item type and the given race, not a loner, within range squares of the talker (uw1 BABLHACK.C:63-99).
         /// </summary>
         public static void set_race_attitude(uwObject talker)
         {
