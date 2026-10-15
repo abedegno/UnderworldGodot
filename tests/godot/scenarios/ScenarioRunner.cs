@@ -111,6 +111,8 @@ public partial class ScenarioRunner : Node
         (() => new PickupSplitCopy(), true),
         (() => new PickupWeight(), true),
         (() => new TheftOwnerMask(), true),
+        (() => new MoveHowMany(), true),
+        (() => new ScrollEscapes(), true),
         (() => new JailTerm(), true),
         (() => new AltarasWand(), true),
         (() => new ScdSetQuestBit(), true),
