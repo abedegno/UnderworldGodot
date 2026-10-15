@@ -10,11 +10,7 @@ namespace Underworld
             var index = at(at(stack + stackptr-4));
             var lorecheck = at(at(stack + stackptr-1));
             var obj = UWTileMap.current_tilemap.LevelObjects[index];
-            var value = GetTradeValueOfItem(
-                    ApplyLikeDislike: true, 
-                    appraise_accuracy: NPCAppraisalAccuracy, 
-                    applyAccuracy: true, 
-                    obj: obj);
+            var value = AssessValue(useLikes: true, index: index, accuracy: NPCAppraisalAccuracy);//uw1 CONVERSE.C:749, uw2 CONVERSE.C:745
             
             var idString = look.GetDescriptionString(
                 obj: obj, 
