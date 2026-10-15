@@ -103,6 +103,7 @@ public partial class ScenarioRunner : Node
         (() => new GuardLevelChange(), true),
         (() => new GuardSaveLoad(), true),
         (() => new GuardMelee(), true),
+        (() => new CritterLockedDoor(), true),
         (() => new HarnessFails(), false),
     };
 
