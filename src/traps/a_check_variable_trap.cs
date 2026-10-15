@@ -129,11 +129,11 @@ namespace Underworld
                     Debug.Print($"Getting Questvariable {index - 0x100}");
                     value = playerdat.GetQuest(index - 0x100);
                     break;
-                case >=0x180 and <=0x190:
+                case >=0x180 and <0x190://the 16 quest bytes (uw2 TRIGGER.C:215)
                     Debug.Print($"Getting Questvariable {128 + index-0x180}");
                     value = playerdat.GetQuest(128 + index-0x180);
                     break;
-                case >=0x190 and <0x200:
+                case >=0x190 and <0x1A0://the 16 X clocks; above 0x19F reads 0 (uw2 TRIGGER.C:216-218)
                     Debug.Print($"Getting XClock {index-0x190}");
                     value = playerdat.GetXClock(index-0x190);
                     break;

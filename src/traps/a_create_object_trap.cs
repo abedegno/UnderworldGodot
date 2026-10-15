@@ -14,8 +14,8 @@ namespace Underworld
         /// <param name="objList"></param>
         public static void Activate(uwObject trapObj, int triggerX, int triggerY, uwObject[] objList)
         {
-            //rng test on trap.
-            if (Rng.r.Next(0x3F) < trapObj.quality)
+            //rng test on trap, (rand() * 0x3F) / 0x8000 < quality. uw1 TRIGGER.C:299, uw2 TRIGGER.C:526
+            if (Rng.RandScale(0x3F) < trapObj.quality)
             {
                 Debug.Print($"Cancelling createobject trap {trapObj.a_name} i:{trapObj.index} l:{trapObj.link} due to RNG");
                 return;
@@ -56,13 +56,8 @@ namespace Underworld
 
         static void CreateObjectUW1(uwObject template, uwObject trapObj, int triggerX, int triggerY, uwObject[] objList)
         {
-            if (Rng.r.Next(0, 63) >= trapObj.quality)
-            {
-                //there appears to be a logic check here first that runs in the area around the template. 
-                //not currently implemented as I suspect it is a check that the template is on the map and/or maybe the player 
-                //do spawn
-                DoCreateObject(triggerX, triggerY, template);
-            }
+            //The chance roll is made once, in Activate. uw1 TRIGGER.C:299-300
+            DoCreateObject(triggerX, triggerY, template);
         }
 
         /// <summary>
@@ -137,8 +132,11 @@ namespace Underworld
                 //template.MobileUnk_0xA |=0x80; //set bit
                 template.UnkBit_0XA_Bit7 = 1;
                 var spawned = DoCreateObject(triggerX, triggerY, template);
-                spawned.npc_attitude = 0;
-                spawned.SpawnedCritter_0XD_Bit8 = 1;
+                if (spawned != null)
+                {
+                    spawned.npc_attitude = 0;
+                    spawned.SpawnedCritter_0XD_Bit8 = 1;
+                }
                 //and then revert it back to a the adventurer template.
                 template.item_id = 127;
 
@@ -151,12 +149,18 @@ namespace Underworld
 
 
         /// <summary>
-        /// Standard create object
+        /// Standard create object. The copy is put at the template's fine x, fine y and z in the trap's square
+        /// with put_at(..., range 4, nocull 0) and stay_centered set, so the exact spot is tried first
+        /// (uw1 TRIGGER.C:314-317, uw2 TRIGGER.C:569-572). Returns null if the copy was not placed.
         /// </summary>
         /// <param name="triggerObj"></param>
         /// <param name="template"></param>
         private static uwObject DoCreateObject(int triggerX, int triggerY, uwObject template)
         {
+            if (!UWTileMap.ValidTile(triggerX, triggerY))
+            {
+                return null;
+            }
             int slot;
             if (template.IsStatic)
             {
@@ -167,6 +171,10 @@ namespace Underworld
             {
                 //mobile object spawn
                 slot = ObjectFreeLists.GetAvailableObjectSlot(ObjectFreeLists.ObjectListType.MobileList);
+            }
+            if (slot == 0)
+            {
+                return null;
             }
             var newobj = UWTileMap.current_tilemap.LevelObjects[slot];
             //copy from template to new obj
@@ -185,21 +193,18 @@ namespace Underworld
                 }
             }
 
-            //set new position and spawn
-            newobj.tileX = triggerX;//triggerObj.quality;
-            newobj.tileY = triggerY;//triggerObj.owner;
-            if (UWTileMap.ValidTile(newobj.tileX, newobj.tileY))
+            motion.StayCentered = true;
+            var placed = motion.PutAt(
+                x: (triggerX << 3) + newobj.xpos,
+                y: (triggerY << 3) + newobj.ypos,
+                z: newobj.zpos,
+                obj: newobj, range: 4, nocull: false);
+            motion.StayCentered = false;
+            if (placed)
             {
-                var tile = UWTileMap.current_tilemap.Tiles[newobj.tileX, newobj.tileY];
-                UWTileMap.GetRandomXYZForTile(tile, out int newxpos, out int newypos, out int newzpos);
-                newobj.xpos = (short)newxpos;//obj.xpos;
-                newobj.ypos = (short)newypos;///obj.ypos;
-                newobj.zpos = (short)newzpos; //obj.zpos;
-                newobj.next = tile.indexObjectList;//link to tile
-                tile.indexObjectList = newobj.index;
+                return newobj;
             }
-            ObjectCreator.RenderObject(newobj, UWTileMap.current_tilemap);
-            return newobj;
+            return null;
         }
 
         /// <summary>

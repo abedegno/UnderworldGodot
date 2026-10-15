@@ -46,28 +46,32 @@ namespace Underworld
         private static void VariableOperationUW1(short LeftOperator, short Operation, int RightOperator)
         {
             if (LeftOperator == 0)
-            {// bitwise operations on quest variables. no known instances of this happening?
+            {//set, clear or toggle quest bit RightOperator itself, player->quests op 1L << d (uw1 TRIGGER.C:233-243). No known instance.
+                //Only quests 0 to 31 are bits of that long. The long shift helper (F_LXLSH@) shifts by CL, the low byte of d.
+                //A count of 32 or more gives a mask of 0, so nothing changes; from 48 that holds on an 8086, while later CPUs
+                //mask the shift count to 5 bits and set some bit of 16 to 31 instead.
                 Debug.Print("Quest var bitwise operation");
-                var questToChange = (1 << RightOperator);
-                switch (Operation)
+                var bit = RightOperator & 0xFF;
+                if (bit < 32)
                 {
-                    case 1://Unset
-                        {
-                            playerdat.SetQuest(questToChange, 0);
-                            break;
-                        }
-                    case 5://XOR
-                        {
-                            var tmp = playerdat.GetQuest(questToChange);
-                            tmp ^= 1;
-                            playerdat.SetQuest(questToChange, tmp);
-                            break;
-                        }
-                    default://set bit
-                        {
-                            playerdat.SetQuest(questToChange, 1);
-                            break;
-                        }
+                    switch (Operation)
+                    {
+                        case 1://Unset
+                            {
+                                playerdat.SetQuest(bit, 0);
+                                break;
+                            }
+                        case 5://XOR
+                            {
+                                playerdat.SetQuest(bit, playerdat.GetQuest(bit) ^ 1);
+                                break;
+                            }
+                        default://set bit
+                            {
+                                playerdat.SetQuest(bit, 1);
+                                break;
+                            }
+                    }
                 }
             }
             else
@@ -154,7 +158,7 @@ namespace Underworld
                         var questno = LeftVariable - 0x100;// >> 2;
                         switch (Operation)
                         {   //assuming these cases are the same as UW1. the dissasembly is complex so I could be wrong here
-                            case 1://maybe unset
+                            case 1://unset. DOS op 1 leaves the bit as it is (uw2 TRIGGER.C:184-187), probably a slip in the original, so the port clears it
                                 {
                                     playerdat.SetQuest(questno,0);
                                     break;
@@ -182,16 +186,16 @@ namespace Underworld
                         playerdat.SetQuest(128 + LeftVariable-0x180, newValue);
                         break;
                     }
-                case >=0x190 and <0x200:
+                case >=0x190 and <0x1A0:
                     {
-                        //xclock
+                        //xclock, the 16 of them (uw2 TRIGGER.C:199-203)
                         var xclockvar = playerdat.GetXClock(LeftVariable-0x190);
                         var newValue = VariableTransformUW2(xclockvar, Operation,RightVariable); 
                         playerdat.SetXClock(LeftVariable-0x190, newValue);
                         break;
                     }
                 default:
-                    {
+                    {//above 0x19F nothing is set (uw2 TRIGGER.C:199-203)
                         Debug.Print ("Invalid Operation {LeftOperator} {Operation} {RightOperator}");
                         break;
                     }

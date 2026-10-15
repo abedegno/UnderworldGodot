@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -16,6 +17,12 @@ namespace Underworld.Scenarios;
 /// apples in that square and checks where each landed. The count must be the number of seeds whose
 /// first draw passes the original's single roll.
 ///
+/// Then a second part: a critter template at the same fine position, fired twice with quality 0.
+/// The first copy must stand on the template's spot; the second, made while the first still stands
+/// there, must land elsewhere within 4 eighths of it, possibly in a neighbouring square, at the template's
+/// height. That is put_at's search for a free spot (drop_around_place, uw1/src/motion/COLLIDE.C:645-706,
+/// range 4 from TRIGGER.C:316), which only moves x and y and keeps z.
+///
 /// UW1 only. The port once rolled the chance twice, in Activate (rand() % 0x3F) and again in
 /// CreateObjectUW1 (src/traps/a_create_object_trap.cs:18, 59), so a trap succeeded about
 /// ((63 - q) / 63) squared of the time, and put the copy at a random spot in the square
@@ -32,6 +39,8 @@ public sealed class Uw1CreateObjectTrap : Scenario
     string _problem;
     int _x, _y, _expected, _made, _misplaced, _z;
     readonly List<string> _places = new();
+    uwObject _critterTemplate;
+    readonly List<(int x, int y, int z, int tx, int ty)> _critterCopies = new();
 
     public override Task Setup(ScenarioContext c)
     {
@@ -48,6 +57,15 @@ public sealed class Uw1CreateObjectTrap : Scenario
         trap.quality = (short)Quality;
         _trap = trap;
         if (Count() != 0) _problem = "marked apples are already in the square";
+        for (int id = 0x40; id < 0x80 && _critterTemplate == null; id++)
+        {
+            if (critterObjectDat.avghit(id) == 0) continue;
+            int ci = ObjectCreator.PrepareNewObject(id, ObjectFreeLists.ObjectListType.MobileList);
+            if (ci == 0) break;
+            _critterTemplate = UWTileMap.current_tilemap.LevelObjects[ci];
+            _critterTemplate.xpos = (short)FineX; _critterTemplate.ypos = (short)FineY; _critterTemplate.zpos = (short)_z;
+        }
+        if (_critterTemplate == null) _problem = "no critter template could be made";
         return Task.CompletedTask;
     }
 
@@ -85,8 +103,43 @@ public sealed class Uw1CreateObjectTrap : Scenario
         _misplaced = 0;
         _places.Clear();
         _made = Count();
+        // Part two: a critter template fired twice; the second copy must avoid the first.
+        _trap.link = (short)_critterTemplate.index;
+        _trap.quality = 0;
+        for (uint t = 1; t <= 2; t++)
+        {
+            var before = MobilesNearSquare();
+            BatchB.Seed(t * 7919u);
+            trap.ActivateTrap(0, _trap, null, _x, _y, UWTileMap.current_tilemap.LevelObjects);
+            foreach (int i in MobilesNearSquare())
+                if (!before.Contains(i))
+                {
+                    var o = UWTileMap.current_tilemap.LevelObjects[i];
+                    _critterCopies.Add((o.xpos, o.ypos, o.zpos, o.tileX, o.tileY));
+                }
+        }
+        c.Note($"critter 0x{_critterTemplate.item_id:X} copies: {string.Join(" ", _critterCopies.Select(p => $"({p.x},{p.y},{p.z}) in ({p.tx},{p.ty})"))}");
         c.Note($"trap quality {Quality} over {Trials} seeds: {_made} made (original {_expected}); {_misplaced} not at ({FineX},{FineY},{_z}) {string.Join(" ", _places)}");
         return Task.CompletedTask;
+    }
+
+    HashSet<int> MobilesNearSquare()
+    {
+        var set = new HashSet<int>();
+        var map = UWTileMap.current_tilemap;
+        for (int x = _x - 1; x <= _x + 1; x++)
+        for (int y = _y - 1; y <= _y + 1; y++)
+        {
+            if (!UWTileMap.ValidTile(x, y)) continue;
+            for (int i = map.Tiles[x, y].indexObjectList, guard = 0; i != 0 && guard < 1024; guard++)
+            {
+                var o = map.LevelObjects[i];
+                if (o == null) break;
+                if (!o.IsStatic) set.Add(i);
+                i = o.next;
+            }
+        }
+        return set;
     }
 
     public override string Assert(ScenarioContext c)
@@ -96,6 +149,16 @@ public sealed class Uw1CreateObjectTrap : Scenario
         var k = new Checks();
         k.Equal($"objects made by a quality {Quality} create object trap over {Trials} seeds", _expected, _made, "uw1 TRIGGER.C:299-300, one roll (rand() * 0x3F) / 0x8000 < quality");
         k.Equal("copies not at the template's fine position and height", 0, _misplaced, "uw1 TRIGGER.C:315-316, put_at at the template's finex, finey and z");
+        k.Equal("critter copies made by two firings", 2, _critterCopies.Count, "uw1 TRIGGER.C:299-316");
+        if (_critterCopies.Count == 2)
+        {
+            var (x1, y1, z1, _, _) = _critterCopies[0];
+            var (x2, y2, z2, tx2, ty2) = _critterCopies[1];
+            k.True(x1 == FineX && y1 == FineY && z1 == _z, $"first critter copy expected at ({FineX},{FineY},{_z}), got ({x1},{y1},{z1}) (uw1 TRIGGER.C:315-316)");
+            int dx = (tx2 << 3) + x2 - ((_x << 3) + FineX), dy = (ty2 << 3) + y2 - ((_y << 3) + FineY);
+            k.True(!(dx == 0 && dy == 0), $"second critter copy expected off the occupied spot ({FineX},{FineY}), got ({x2},{y2}) in ({tx2},{ty2}) (put_at, uw1 COLLIDE.C:645-706)");
+            k.True(System.Math.Abs(dx) <= 4 && System.Math.Abs(dy) <= 4 && z2 == _z, $"second critter copy expected within 4 eighths of the spot at z {_z}, got offset ({dx},{dy}) z {z2} (drop_around_place, range 4, keeps z)");
+        }
         return k.Result;
     }
 }
