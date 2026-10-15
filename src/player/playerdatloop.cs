@@ -16,7 +16,11 @@ namespace Underworld
         //static int PreviousClockValue;
         static int secondcounter = 0;
 
-        static byte FootSteps_77A = 0xFF;
+        /// <summary>
+        /// The handle of the looping water sound while the player swims, or NoEffect: the
+        /// original's water_eff (uw1 PLAYMOVE.C:436-452, uw2 PLAYMOVE.C:430-455).
+        /// </summary>
+        static int FootSteps_77A = UWsoundeffects.NoEffect;
         static uint FootStepTimerA_19DF;
         static uint FootStepTimerB_19E5;
         static uint FootstepSoundIndex_dseg_79B = 0;
@@ -937,24 +941,24 @@ namespace Underworld
             {
                 //lava
                 //seg35_74E
-                if (FootSteps_77A != 0xFF)
+                if (FootSteps_77A != UWsoundeffects.NoEffect)
                 {
                     if (FootStepTimerB_19E5 + 0x1800 <= main.GlobalPITTimer) //the globalpittimer is probably a bit slow leading to gaps in the sound.
                     {
-                        //do something in seg016_1FFD(FootStepGlobal77A)
-                        FootSteps_77A = 0xFF;
+                        //restart the water sound: kill_effect(water_eff)
+                        UWsoundeffects.KillEffect(FootSteps_77A);
+                        FootSteps_77A = UWsoundeffects.NoEffect;
                     }
                 }
                 //seg35_784
-                if (FootSteps_77A == 0xFF)
+                if (FootSteps_77A == UWsoundeffects.NoEffect)
                 {
                     FootStepTimerB_19E5 = main.GlobalPITTimer;
                     Debug.Print("playing Watersound");
-                    UWsoundeffects.PlaySoundEffectAtAvatar(
+                    FootSteps_77A = UWsoundeffects.PlaySoundEffectAtAvatar(
                         effectno: 0,
                         pan: 0x40,
                         velocityOffset: 0);//plays the water edge sound
-                    FootSteps_77A = 0;//always appears to be zero/;//unknown value Set from LoadBasicSound or Seg016_1FFD
                 }
 
                 if (_RES == GAME_UW2)
@@ -981,10 +985,11 @@ namespace Underworld
             else
             {
                 //tilestate&1 == 0 (not in water)
-                if (FootSteps_77A != 0xFF)
+                if (FootSteps_77A != UWsoundeffects.NoEffect)
                 {
-                    //do something with seg016_1FFD // If I had to guess there probably needs to be handling to turn off the running sound effect of water?
-                    FootSteps_77A = 0xFF;
+                    //out of the water: kill_effect(water_eff) stops the water sound
+                    UWsoundeffects.KillEffect(FootSteps_77A);
+                    FootSteps_77A = UWsoundeffects.NoEffect;
                 }
                 if ((TileState & 0x8) == 0)
                 {
