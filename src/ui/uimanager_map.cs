@@ -227,6 +227,10 @@ namespace Underworld
                 }
                 CurrentAutomapAction = automapactions.NONE;
                 EnableDisable(AutomapPanel, false);
+                if (UWClass._RES == UWClass.GAME_UW2)
+                {//remember the level shown (uw2 AUTOMAP.C:252)
+                    playerdat.MapScrap = automap.currentworld * 8 + automap.currentautomap + 1;
+                }
                 uimanager.CurrentGameMode = GameModes.GAME;
                 if (UWClass._RES != UWClass.GAME_UW2)
                 {

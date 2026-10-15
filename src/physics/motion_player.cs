@@ -476,7 +476,7 @@ namespace Underworld
                 playerObj.npc_xhome = (short)(playerMotionParams.x_0 >> 8);
                 playerObj.npc_yhome = (short)(playerMotionParams.y_2 >> 8);
 
-                //TODO Check if player is no longer lost
+                playerdat.PlayerNewSquare(newTileX, newTileY);//uw2 PHYSICS.C:574
 
                 playerdat.PlayerStatusUpdate();//to force lighting refreshes when player has changed tile.
             }
