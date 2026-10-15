@@ -16,6 +16,12 @@ namespace Underworld
             //     return;
             // }
             // PlayerInDeathMode = true;
+            if ((_RES != GAME_UW2) && (GetQuest(36) == 0))
+            {//UW1: once the last talisman is destroyed the player cannot die and keeps 4 HP (player_is_dead, uw1 SKILLS.C:825-829).
+                //Quest 36 is the talismans left, player byte 0x6D, which becomes 0xFF once the Slasher of Veils is gone (SKILLS.C:714).
+                play_hp = 4;
+                return;
+            }
             playerdat.play_drawn = 0;
 
             if (_RES == GAME_UW2)

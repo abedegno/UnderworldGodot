@@ -556,7 +556,10 @@ namespace Underworld
                     )
                 {//can be identifed
                     obj.heading = 7;
-                    look.PrintLookDescription(obj, objList, 3);
+                    if (!look.TalismanLook(obj, 3))//UW1: a talisman is described by its own text (LookAt(target, 3), uw1 SPELLS.C:742)
+                    {
+                        look.PrintLookDescription(obj, objList, 3);
+                    }
                 }
             }
         }

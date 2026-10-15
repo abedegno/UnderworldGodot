@@ -40,6 +40,10 @@ public partial class ScenarioRunner : Node
         (() => new SleepPassesTime(), true),
         (() => new GaramonBurial(), true),
         (() => new GaramonDeathClearsTalismans(), true),
+        (() => new BonesLookScenario(), true),
+        (() => new TalismanLookScenario(), true),
+        (() => new BonesBurial(), true),
+        (() => new LastTalismanKeepsHp(), true),
         (() => new HarnessFails(), false),
     };
 
