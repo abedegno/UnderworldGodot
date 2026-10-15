@@ -124,7 +124,11 @@ public sealed class EffectsStopSoundOff : Scenario
         if (handler == null) { _problem = "uimanager._on_game_options_input not found"; _sfx.Remove(); return; }
         uimanager.CurrentGameOptionMenu = uimanager.OptionMenus.SoundMenu;
         var click = new InputEventMouseButton { Pressed = true, ButtonIndex = MouseButton.Left };
-        handler.Invoke(uimanager.instance, new object[] { click, 3L }); // 3: turn off
+        // UW2 buttons act on the mouse's release (better_mouse_release); press the button directly where the
+        // panel has PressOptionButton, else click through the handler.
+        var press = typeof(uimanager).GetMethod("PressOptionButton", BindingFlags.NonPublic | BindingFlags.Instance);
+        if (press != null) press.Invoke(uimanager.instance, new object[] { 3L }); // 3: turn off
+        else handler.Invoke(uimanager.instance, new object[] { click, 3L }); // 3: turn off
         _offAfter = !playerdat.SoundEffectsEnabled;
         await c.Frames(2);
         _stoppedAfter = _sfx.StoppedAll;
