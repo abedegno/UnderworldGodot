@@ -243,8 +243,13 @@ namespace Underworld
 
         public static void SetGameOptionButtons(int[] buttonindices)
         {
+            // A new page has no lit button until its opening code lights one: UW1's
+            // hilite_pic = -1 in each draw_*_page (uw1 OPTIONS.C:171-231), UW2's
+            // install_buttongroup (uw2 WRAPPER.C:425).
+            OptionsHilite = -1;
             for (int i = 0; i <= GameOptionButtons.GetUpperBound(0); i++)
             {
+                OptionButtonImage[i] = buttonindices[i];
                 if (buttonindices[i] != -1)
                 {
                     GameOptionButtons[i].Texture = GetOptionButtonImage(buttonindices[i]);
@@ -283,6 +288,87 @@ namespace Underworld
         }
 
 
+        /// <summary>
+        /// The lit button of the options panel, 0 the top, -1 none. UW1 keeps it as hilite_row
+        /// (uw1 OPTIONS.C:79, counted from the bottom, so row r is button 6 - r here), UW2 as
+        /// current_hilit_button (uw2 ICONS.C:39, 0 the top as here).
+        /// </summary>
+        public static int OptionsHilite = -1;
+
+        /// <summary>
+        /// The unlit picture of each button of the page on show, -1 where there is none. The lit
+        /// picture is always the next one: UW1's hilite draws pic + 1 (uw1 OPTIONS.C:148-156), and
+        /// the port's UW2 crops are laid out the same way (OptionButtonIndices).
+        /// </summary>
+        static readonly int[] OptionButtonImage = { -1, -1, -1, -1, -1, -1, -1 };
+
+        /// <summary>
+        /// UW1's options_quick (uw1 OPTIONS.C:56): the panel was opened by a Ctrl shortcut, so the
+        /// music, sound and detail pages close it after their one choice instead of going back to
+        /// the top page (choose_music, choose_sounds, choose_detail, uw1 OPTIONS.C:235-306).
+        /// </summary>
+        static bool OptionsQuick = false;
+
+        /// <summary>
+        /// UW2's last_sr_file_num (uw2 WRAPPER.C:61): the save slot last used, lit when the save or
+        /// restore page opens (file_group_fun, uw2 WRAPPER.C:353-355). UW1 always lights slot 1
+        /// (draw_save_page, uw1 OPTIONS.C:183).
+        /// </summary>
+        static int LastSaveRestoreSlot = 1;
+
+        /// <summary>
+        /// Whether button b of the page on show does anything. UW1 has a button where page_pics is
+        /// nonzero (uw1 OPTIONS.C:66-74), UW2 where the group has a handler or a sub-group
+        /// (is_really_button, uw2 WRAPPER.C:65-70, the groups at uw2 ICONS.C:42-66). The two give
+        /// the same buttons on every page.
+        /// </summary>
+        static bool IsOptionButton(int b)
+        {
+            if (b < 0 || b > 6) return false;
+            switch (CurrentGameOptionMenu)
+            {
+                case OptionMenus.MainOptionMenu:
+                    return true;
+                case OptionMenus.SaveMenu:
+                case OptionMenus.RestoreMenu:
+                    return b >= 1 && b <= 5;
+                case OptionMenus.MusicMenu:
+                case OptionMenus.SoundMenu:
+                    return b >= 2 && b <= 4;
+                case OptionMenus.DetailMenu:
+                    return b >= 2;
+                case OptionMenus.ConfirmQuit:
+                    return b == 2 || b == 3;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Puts out the lit button and lights button b: UW1's hilite (uw1 OPTIONS.C:148-156), UW2's
+        /// new_hilit_button (uw2 WRAPPER.C:396-404).
+        /// </summary>
+        static void HiliteOption(int b)
+        {
+            if (OptionsHilite == b) return;
+            if (OptionsHilite != -1 && OptionButtonImage[OptionsHilite] != -1)
+            {
+                GameOptionButtons[OptionsHilite].Texture = GetOptionButtonImage(OptionButtonImage[OptionsHilite]);
+            }
+            if (b != -1 && OptionButtonImage[b] != -1)
+            {
+                GameOptionButtons[b].Texture = GetOptionButtonImage(OptionButtonImage[b] + 1);
+            }
+            OptionsHilite = b;
+        }
+
+        /// <summary>
+        /// The option buttons' mouse input. UW1 presses the button under the pointer as the
+        /// button goes down (run_options_panel, uw1 OPTIONS.C:105-112; options_mouse_click,
+        /// :408-415). UW2 lights the button under the held pointer and presses the one it is
+        /// released over (better_mouse_release, uw2 WRAPPER.C:74-89, 111-117); the movement and
+        /// the release are followed in _Input, since the pointer may leave this button.
+        /// </summary>
         private void _on_game_options_input(InputEvent @event, long extra_arg_0)
         {
             // These buttons get gui_input straight from the scene, so the usual input block
@@ -292,361 +378,587 @@ namespace Underworld
 
             if (@event is InputEventMouseButton eventMouseButton && eventMouseButton.Pressed)
             {
-                switch (CurrentGameOptionMenu)
+                if (UWClass._RES == UWClass.GAME_UW2)
                 {
-                    case OptionMenus.MainOptionMenu:
-                        {   //at main menu. will switch to menu specified by arg0
-                            switch (extra_arg_0)
-                            {
-                                case 0://switch to save menu
-                                    {
-                                        CurrentGameOptionMenu = OptionMenus.SaveMenu;
-                                        SetGameOptionsBackground((int)OptionButtonIndices.AllSaveButtons);
-                                        SetGameOptionButtons(
-                                            new int[]{
-                                                (int)OptionButtonIndices.SaveGameOff,
-                                                (int)OptionButtonIndices.Save1Off,
-                                                (int)OptionButtonIndices.Save2Off,
-                                                (int)OptionButtonIndices.Save3Off,
-                                                (int)OptionButtonIndices.Save4Off,
-                                                (int)OptionButtonIndices.CancelOff,
-                                                -1});
-                                        listsaves();
-                                        break;
-                                    }
-                                case 1://switch to restore menu
-                                    {
-                                        CurrentGameOptionMenu = OptionMenus.RestoreMenu;
-                                        SetGameOptionsBackground((int)OptionButtonIndices.AllSaveButtons);
-                                        SetGameOptionButtons(
-                                            new int[]{
-                                                (int)OptionButtonIndices.RestoreGameLabel,
-                                                (int)OptionButtonIndices.Save1Off,
-                                                (int)OptionButtonIndices.Save2Off,
-                                                (int)OptionButtonIndices.Save3Off,
-                                                (int)OptionButtonIndices.Save4Off,
-                                                (int)OptionButtonIndices.CancelOff,
-                                                -1});
-                                        listsaves();
-                                        break;
-                                    }
-                                case 2: // switch to music options
-                                    {
-                                        CurrentGameOptionMenu = OptionMenus.MusicMenu;
-                                        SetGameOptionsBackground((int)OptionButtonIndices.MusicButtons);
-                                        if (playerdat.MusicEnabled)
-                                        {
-                                            SetGameOptionButtons(new int[]{
-                                                (int)OptionButtonIndices.MusicIsOnLabel,
-                                                (int)OptionButtonIndices.TurnMusicLabel,
-                                                (int)OptionButtonIndices.OnButtonOn,
-                                                (int)OptionButtonIndices.OffButtonOff,
-                                                (int)OptionButtonIndices.DoneOff,
-                                                -1,-1 });
-                                        }
-                                        else
-                                        {
-                                            SetGameOptionButtons(new int[]{
-                                                (int)OptionButtonIndices.MusicIsOffLabel,
-                                                (int)OptionButtonIndices.TurnMusicLabel,
-                                                (int)OptionButtonIndices.OnButtonOff,
-                                                (int)OptionButtonIndices.OffButtonOn,
-                                                (int)OptionButtonIndices.DoneOff,
-                                                -1,-1 });
-                                        }
+                    if (!OptionsMouseHeld)
+                    {
+                        OptionsMouseHeld = true;
+                        OptionsHiliteBeforeHold = OptionsHilite;
+                        if (IsOptionButton((int)extra_arg_0))
+                        {
+                            HiliteOption((int)extra_arg_0);
+                        }
+                    }
+                }
+                else
+                {
+                    PressOptionButton((int)extra_arg_0);
+                }
+            }
+        }
 
-                                        break;
-                                    }
-                                case 3: // switch to sound options
-                                    {
-                                        CurrentGameOptionMenu = OptionMenus.SoundMenu;
-                                        SetGameOptionsBackground((int)OptionButtonIndices.MusicButtons);
-                                        if (playerdat.SoundEffectsEnabled)
-                                        {
-                                            SetGameOptionButtons(new int[]{
-                                                (int)OptionButtonIndices.SoundIsOnLabel,
-                                                (int)OptionButtonIndices.TurnSoundLabel,
-                                                (int)OptionButtonIndices.OnButtonOn,
-                                                (int)OptionButtonIndices.OffButtonOff,
-                                                (int)OptionButtonIndices.DoneOff,
-                                                -1,-1 });
-                                        }
-                                        else
-                                        {
-                                            SetGameOptionButtons(new int[]{
-                                                (int)OptionButtonIndices.SoundIsOffLabel,
-                                                (int)OptionButtonIndices.TurnSoundLabel,
-                                                (int)OptionButtonIndices.OnButtonOff,
-                                                (int)OptionButtonIndices.OffButtonOn,
-                                                (int)OptionButtonIndices.DoneOff,
-                                                -1,-1 });
-                                        }
+        static bool OptionsMouseHeld = false;
+        static int OptionsHiliteBeforeHold = -1;
 
-                                        break;
-                                    }
-                                case 4: //detail options.
-                                    {
-                                        SetupDetailMenu();
-                                        break;
-                                    }
-                                case 5: // return to game
-                                    {
-                                        ReturnToGameFromOptions();
-                                        break;
-                                    }
-                                case 6://quit game
-                                    {
-                                        CurrentGameOptionMenu = OptionMenus.ConfirmQuit;
-                                        SetGameOptionsBackground((int)OptionButtonIndices.QuitGame);
-                                        SetGameOptionButtons(
-                                            new int[]{
-                                                -1,
-                                                -1,
-                                                (int)OptionButtonIndices.YesOff,
-                                                (int)OptionButtonIndices.NoOff,
-                                                -1,
-                                                -1,
-                                                -1});
-                                        break;
-                                    }
-                            }
+        /// <summary>
+        /// The option button under the pointer, or -1 (UW2's get_buttonreg_button, uw2
+        /// WRAPPER.C:407-418).
+        /// </summary>
+        static int OptionButtonUnderMouse(InputEventMouse mouse)
+        {
+            for (int b = 0; b <= GameOptionButtons.GetUpperBound(0); b++)
+            {
+                var button = GameOptionButtons[b];
+                if (button == null || !button.Visible) continue;
+                var local = (InputEventMouse)button.MakeInputLocal(mouse);
+                if (new Rect2(Vector2.Zero, button.Size).HasPoint(local.Position))
+                {
+                    return b;
+                }
+            }
+            return -1;
+        }
 
-                            break;
-                        }
-                    case OptionMenus.SaveMenu:
-                        {
-                            switch (extra_arg_0)
-                            {
-                                case 1:
-                                case 2:
-                                case 3:
-                                case 4://save to chosen slot
-                                    {
-                                        if (UWClass._RES == UWClass.GAME_UWDEMO)
-                                        {
-                                            // The demo keeps its level in LEVEL13 files rather than an
-                                            // archive, and the writers only know the two archive
-                                            // formats. It was refused before UW2 saving was enabled
-                                            // and still is. Refused before the prompt opens: asking
-                                            // for a name and then failing would be worse.
-                                            listsaves();
-                                            instance.scroll.Clear();
-                                            AddToMessageScroll(GameStringFormat.StripDisplayCodes(GameStrings.GetString(1, GameStrings.str_save_game_failed_)));
-                                            ReturnToGameFromOptions();
-                                            break;
-                                        }
+        /// <summary>
+        /// One step of UW2's better_mouse_release (uw2 WRAPPER.C:80-87): light the button under the
+        /// held pointer, or the one lit before the press when there is none.
+        /// </summary>
+        static void FollowOptionsMouse(InputEventMouse mouse)
+        {
+            int b = OptionButtonUnderMouse(mouse);
+            if (b != -1 && IsOptionButton(b))
+            {
+                HiliteOption(b);
+            }
+            else if (OptionsHiliteBeforeHold != -1)
+            {
+                HiliteOption(OptionsHiliteBeforeHold);
+            }
+        }
 
-                                        // Ask for the description first. Saving happens on Enter, in
-                                        // OnSaveDescriptionSubmitted; Escape abandons it entirely.
-                                        BeginSaveDescription((int)extra_arg_0);
-                                        break;
-                                    }
-                                case 5://cancel and return to top
-                                    {
-                                        ReturnToTopOptionsMenu();
-                                        break;
-                                    }
-                            }
-                            break;
-                        }
-                    case OptionMenus.RestoreMenu:
+        /// <summary>
+        /// UW2: the pointer moved or was let go while an option button was held. Returns true if
+        /// the event was used.
+        /// </summary>
+        static bool OptionsMouseHoldInput(InputEvent @event)
+        {
+            if (!OptionsMouseHeld) return false;
+            if (CurrentGameMode != GameModes.OPTIONS || SaveDescriptionPromptActive)
+            {
+                OptionsMouseHeld = false;
+                return false;
+            }
+            switch (@event)
+            {
+                case InputEventMouseMotion motion:
+                    FollowOptionsMouse(motion);
+                    return true;
+                case InputEventMouseButton release when !release.Pressed:
+                    {
+                        OptionsMouseHeld = false;
+                        // The button released over is pressed; deal_with_button ignores one that
+                        // does nothing (uw2 WRAPPER.C:115-116, 378-391).
+                        int b = OptionButtonUnderMouse(release);
+                        if (b != -1)
                         {
-                            switch (extra_arg_0)
-                            {
-                                case 1:
-                                case 2:
-                                case 3:
-                                case 4://try and restore game
-                                    {
-                                        var path = System.IO.Path.Combine(SlotTransaction.SlotDirectory(UWClass.BasePath, (int)extra_arg_0), "LEV.ARK");
-                                        if (System.IO.File.Exists(path))
-                                        {
-                                            JourneyOnwards($"SAVE{extra_arg_0}");
-                                            instance.scroll.Clear();
-                                        }
-                                        else
-                                        {
-                                            instance.scroll.Clear();
-                                            AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_no_save_game_there_));
-                                        }
-                                        ReturnToGameFromOptions();
-                                        if (UWClass._RES != UWClass.GAME_UW2)
-                                        {//UW1 will only change theme on in-game save load. Not when loading from main menu. See JourneyOnwards() for change of theme handling in UW2
-                                            //XMIMusic.ChangeTheme(XMIMusic.PickLevelThemeMusic(0));
-                                            XMIMusic.PickLevelThemeMusic(0);
-                                        }
-                                        break;
-                                    }
-                                case 5://cancel and return to top
-                                    {
-                                        ReturnToTopOptionsMenu();
-                                        break;
-                                    }
-                            }
-                            break;
+                            instance.PressOptionButton(b);
                         }
-                    case OptionMenus.MusicMenu:
+                        return true;
+                    }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// The keys of the options panel, while it is up. UW1 (run_options_panel, uw1
+        /// OPTIONS.C:114-128, and options_handle_key, :421-438): Space and Down move the highlight
+        /// down a button, Up moves it up, only onto a button and never round; Enter presses the lit
+        /// button; Escape closes the panel. UW2 (busywaiting_new_options, uw2 WRAPPER.C:119-142,
+        /// and move_hilite, :160-182): Up and Left move up, Space, Right and Down move down, round
+        /// the seven and past the empty places; Enter presses; Escape leaves; Alt+X presses 'yes'
+        /// on the quit page and F6 'return to game' on the top page. Returns true if the key was
+        /// used.
+        /// </summary>
+        static bool OptionsHandleKey(InputEventKey key)
+        {
+            bool uw2 = UWClass._RES == UWClass.GAME_UW2;
+            switch (key.Keycode)
+            {
+                case Key.Up:
+                    MoveOptionsHilite(-1);
+                    return true;
+                case Key.Down:
+                case Key.Space:
+                    MoveOptionsHilite(1);
+                    return true;
+                case Key.Left:
+                    if (!uw2) return false;
+                    MoveOptionsHilite(-1);
+                    return true;
+                case Key.Right:
+                    if (!uw2) return false;
+                    MoveOptionsHilite(1);
+                    return true;
+                case Key.Enter:
+                case Key.KpEnter:
+                    if (key.Echo) return true;
+                    if (OptionsHilite != -1)
+                    {
+                        instance.PressOptionButton(OptionsHilite);
+                    }
+                    return true;
+                case Key.Escape:
+                    if (key.Echo) return true;
+                    ReturnToGameFromOptions();
+                    return true;
+                case Key.X:
+                    if (!uw2 || !key.AltPressed || key.Echo) return false;
+                    if (CurrentGameOptionMenu == OptionMenus.ConfirmQuit)
+                    {
+                        instance.PressOptionButton(2);
+                    }
+                    return true;
+                case Key.F6:
+                    if (!uw2 || key.Echo) return false;
+                    if (CurrentGameOptionMenu == OptionMenus.MainOptionMenu)
+                    {
+                        // DOS button 6 of the game group is resume_play_opt (uw2 ICONS.C:44);
+                        // the port shows 'return to game' as button 5.
+                        instance.PressOptionButton(5);
+                    }
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Moves the highlight dir buttons down (positive) or up: UW1 only onto the next button and
+        /// no further (options_handle_key, uw1 OPTIONS.C:425-436), UW2 round the seven, past the
+        /// places with no button (move_hilite, uw2 WRAPPER.C:160-182). Nothing when none is lit.
+        /// </summary>
+        static void MoveOptionsHilite(int dir)
+        {
+            if (OptionsHilite == -1) return;
+            int b = OptionsHilite + dir;
+            if (UWClass._RES == UWClass.GAME_UW2)
+            {
+                b = (b + 7) % 7;
+                while (!IsOptionButton(b))
+                {
+                    b = (b + dir + 7) % 7;
+                }
+                HiliteOption(b);
+            }
+            else if (IsOptionButton(b))
+            {
+                HiliteOption(b);
+            }
+        }
+
+        /// <summary>
+        /// Something an action in progress holds the pointer for: an object on the cursor, an
+        /// object being used on another, or a spell waiting for its target. The original's
+        /// GameInputMode (uw1 INTERACT.C:14-17, uw2 INTERACT.C:14-17).
+        /// </summary>
+        static bool ActionInProgress =>
+            playerdat.ObjectInHand != -1
+            || useon.CurrentItemBeingUsed != null
+            || SpellCasting.currentSpell != null;
+
+        /// <summary>
+        /// The Ctrl shortcuts to the options pages in play: Ctrl+S save, Ctrl+R restore, Ctrl+M
+        /// music, Ctrl+F sound effects, Ctrl+D detail and Ctrl+Q quit
+        /// (uw1 PLAYER.C:241-246, uw2 PLAYER.C:235-240). UW2's do_option_shortcut also knows
+        /// Ctrl+O (uw2 ICONS.C:195), but no key is bound to it, so it is left out. Refused with "You cannot select options
+        /// partway through an action." while one is in progress (uw1 OPTIONS.C:469-470, string
+        /// 0xA0; uw2 ICONS.C:158-163, 0xAE). UW1 presses that button of the top page with
+        /// options_quick set (do_option_shortcut, uw1 OPTIONS.C:467-478); UW2 runs the page's
+        /// handler and opens its group (do_option_shortcut, uw2 ICONS.C:155-196), which is what
+        /// pressing the top page's button does. Returns true if key is one of them.
+        /// </summary>
+        public static bool OptionShortcut(InputEventKey key)
+        {
+            if (!key.CtrlPressed || key.AltPressed || key.Echo) return false;
+            // As the options icon: not while dead (_on_interactionoptions_button).
+            if (playerdat.play_hp == 0) return false;
+            bool uw2 = UWClass._RES == UWClass.GAME_UW2;
+            int button;
+            switch (key.Keycode)
+            {
+                case Key.S: button = 0; break;
+                case Key.R: button = 1; break;
+                case Key.M: button = 2; break;
+                case Key.F: button = 3; break;
+                case Key.D: button = 4; break;
+                case Key.Q: button = 6; break;  // UW1 row 0; UW2 button 5, which the port shows last
+                default: return false;
+            }
+            if (ActionInProgress)
+            {
+                AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_you_cannot_select_options_partway_through_an_action_));
+                return true;
+            }
+            InteractionModeToggle(InteractionModes.ModeOptions);
+            OptionsQuick = !uw2;
+            instance.PressOptionButton(button);
+            return true;
+        }
+
+        /// <summary>
+        /// Presses button b of the page on show: UW1's press_options_btn and the page's choose_*
+        /// handler (uw1 OPTIONS.C:235-386, 394-406), UW2's deal_with_button and the button's handler
+        /// (uw2 WRAPPER.C:378-391).
+        /// </summary>
+        void PressOptionButton(long b)
+        {
+            // Both light the button pressed first (deal_with_button, uw2 WRAPPER.C:388; UW1's
+            // choose_save and choose_quit, uw1 OPTIONS.C:343, 373).
+            if (IsOptionButton((int)b))
+            {
+                HiliteOption((int)b);
+            }
+            switch (CurrentGameOptionMenu)
+            {
+                case OptionMenus.MainOptionMenu:
+                    {   //at main menu. will switch to menu specified by arg0
+                        switch (b)
                         {
-                            switch (extra_arg_0)
-                            {
-                                case 2://turn on
-                                    {
-                                        playerdat.MusicEnabled = true;
-                                        if (MusicStreamPlayer.Instance != null)
-                                        {//restart music if not already playing.
-                                            //XMIMusic.ChangeTheme(XMIMusic.PickLevelThemeMusic());
-                                            XMIMusic.PickLevelThemeMusic(0);
-                                        }
-                                        SetGameOptionButtons(new int[]{
-                                                (int)OptionButtonIndices.MusicIsOnLabel,
-                                                (int)OptionButtonIndices.TurnMusicLabel,
-                                                (int)OptionButtonIndices.OnButtonOn,
-                                                (int)OptionButtonIndices.OffButtonOff,
-                                                (int)OptionButtonIndices.DoneOff,
-                                                -1,-1 });
-                                        break;
-                                    }
-                                case 3: //turn off
-                                    {
-                                        playerdat.MusicEnabled = false;
-                                        MusicStreamPlayer.Instance?.Stop();
-                                        SetGameOptionButtons(new int[]{
-                                            (int)OptionButtonIndices.MusicIsOffLabel,
-                                            (int)OptionButtonIndices.TurnMusicLabel,
-                                            (int)OptionButtonIndices.OnButtonOff,
-                                            (int)OptionButtonIndices.OffButtonOn,
-                                            (int)OptionButtonIndices.DoneOff,
-                                            -1,-1 });
-                                        break;
-                                    }
-                                case 4: // done
-                                    {
-                                        ReturnToTopOptionsMenu();
-                                        break;
-                                    }
-                            }
-                            break;
-                        }
-                    case OptionMenus.SoundMenu:
-                        {
-                            switch (extra_arg_0)
-                            {
-                                case 2://turn on
-                                    {
-                                        playerdat.SoundEffectsEnabled = true;
-                                        SetGameOptionButtons(new int[]{
-                                                (int)OptionButtonIndices.SoundIsOnLabel,
-                                                (int)OptionButtonIndices.TurnSoundLabel,
-                                                (int)OptionButtonIndices.OnButtonOn,
-                                                (int)OptionButtonIndices.OffButtonOff,
-                                                (int)OptionButtonIndices.DoneOff,
-                                                -1,-1 });
-                                        break;
-                                    }
-                                case 3: //turn off
-                                    {
-                                        playerdat.SoundEffectsEnabled = false;
-                                        SetGameOptionButtons(new int[]{
-                                            (int)OptionButtonIndices.SoundIsOffLabel,
-                                            (int)OptionButtonIndices.TurnSoundLabel,
-                                            (int)OptionButtonIndices.OnButtonOff,
-                                            (int)OptionButtonIndices.OffButtonOn,
-                                            (int)OptionButtonIndices.DoneOff,
-                                            -1,-1 });
-                                        break;
-                                    }
-                                case 4: // done
-                                    {
-                                        ReturnToTopOptionsMenu();
-                                        break;
-                                    }
-                            }
-                            break;
-                        }
-                    case OptionMenus.DetailMenu:
-                        {
-                            switch (extra_arg_0)
-                            {
-                                case 2://low detail.
-                                case 3://med
-                                case 4://high
-                                case 5://vhigh
-                                    if (playerdat.DetailLevel != (byte)(extra_arg_0 - 2))
-                                    {
-                                        playerdat.DetailLevel = (byte)(extra_arg_0 - 2);                                         
-                                        SetupDetailMenu();  
-                                    }     
+                            case 0://switch to save menu
+                                {
+                                    CurrentGameOptionMenu = OptionMenus.SaveMenu;
+                                    SetGameOptionsBackground((int)OptionButtonIndices.AllSaveButtons);
+                                    SetGameOptionButtons(
+                                        new int[]{
+                                            (int)OptionButtonIndices.SaveGameOff,
+                                            (int)OptionButtonIndices.Save1Off,
+                                            (int)OptionButtonIndices.Save2Off,
+                                            (int)OptionButtonIndices.Save3Off,
+                                            (int)OptionButtonIndices.Save4Off,
+                                            (int)OptionButtonIndices.CancelOff,
+                                            -1});
+                                    HiliteOption(UWClass._RES == UWClass.GAME_UW2 ? LastSaveRestoreSlot : 1);
+                                    listsaves();
                                     break;
-                                case 6://done
-                                    ReturnToTopOptionsMenu(); break;                                
-                            }
-                            break;
+                                }
+                            case 1://switch to restore menu
+                                {
+                                    CurrentGameOptionMenu = OptionMenus.RestoreMenu;
+                                    SetGameOptionsBackground((int)OptionButtonIndices.AllSaveButtons);
+                                    SetGameOptionButtons(
+                                        new int[]{
+                                            (int)OptionButtonIndices.RestoreGameLabel,
+                                            (int)OptionButtonIndices.Save1Off,
+                                            (int)OptionButtonIndices.Save2Off,
+                                            (int)OptionButtonIndices.Save3Off,
+                                            (int)OptionButtonIndices.Save4Off,
+                                            (int)OptionButtonIndices.CancelOff,
+                                            -1});
+                                    HiliteOption(UWClass._RES == UWClass.GAME_UW2 ? LastSaveRestoreSlot : 1);
+                                    listsaves();
+                                    break;
+                                }
+                            case 2: // switch to music options
+                                {
+                                    CurrentGameOptionMenu = OptionMenus.MusicMenu;
+                                    ShowMusicSoundPage();
+                                    break;
+                                }
+                            case 3: // switch to sound options
+                                {
+                                    CurrentGameOptionMenu = OptionMenus.SoundMenu;
+                                    ShowMusicSoundPage();
+                                    break;
+                                }
+                            case 4: //detail options.
+                                {
+                                    SetupDetailMenu();
+                                    break;
+                                }
+                            case 5: // return to game
+                                {
+                                    ReturnToGameFromOptions();
+                                    break;
+                                }
+                            case 6://quit game
+                                {
+                                    CurrentGameOptionMenu = OptionMenus.ConfirmQuit;
+                                    SetGameOptionsBackground((int)OptionButtonIndices.QuitGame);
+                                    SetGameOptionButtons(
+                                        new int[]{
+                                            -1,
+                                            -1,
+                                            (int)OptionButtonIndices.YesOff,
+                                            (int)OptionButtonIndices.NoOff,
+                                            -1,
+                                            -1,
+                                            -1});
+                                    // 'no' lit (uw1 OPTIONS.C:197, uw2 WRAPPER.C:349)
+                                    HiliteOption(3);
+                                    break;
+                                }
                         }
 
-                    case OptionMenus.ConfirmQuit:
+                        break;
+                    }
+                case OptionMenus.SaveMenu:
+                    {
+                        switch (b)
                         {
-                            switch (extra_arg_0)
-                            {
-                                case 2://confirm quit yes
-                                    // Through the root so audio is handed back to the
-                                    // AudioServer before the tree goes. Quitting straight
-                                    // from here hangs the process on Godot 4.3. See #78.
-                                    var uwroot = UnderworldRoot.Find(this);
-                                    if (uwroot != null)
+                            case 1:
+                            case 2:
+                            case 3:
+                            case 4://save to chosen slot
+                                {
+                                    LastSaveRestoreSlot = (int)b;
+                                    if (UWClass._RES == UWClass.GAME_UWDEMO)
                                     {
-                                        uwroot.RequestQuit();
+                                        // The demo keeps its level in LEVEL13 files rather than an
+                                        // archive, and the writers only know the two archive
+                                        // formats. It was refused before UW2 saving was enabled
+                                        // and still is. Refused before the prompt opens: asking
+                                        // for a name and then failing would be worse.
+                                        listsaves();
+                                        instance.scroll.Clear();
+                                        AddToMessageScroll(GameStringFormat.StripDisplayCodes(GameStrings.GetString(1, GameStrings.str_save_game_failed_)));
+                                        ReturnToGameFromOptions();
+                                        break;
+                                    }
+
+                                    // Ask for the description first. Saving happens on Enter, in
+                                    // OnSaveDescriptionSubmitted; Escape abandons it entirely.
+                                    BeginSaveDescription((int)b);
+                                    break;
+                                }
+                            case 5://cancel and return to top
+                                {
+                                    ReturnToTopOptionsMenu();
+                                    break;
+                                }
+                        }
+                        break;
+                    }
+                case OptionMenus.RestoreMenu:
+                    {
+                        switch (b)
+                        {
+                            case 1:
+                            case 2:
+                            case 3:
+                            case 4://try and restore game
+                                {
+                                    LastSaveRestoreSlot = (int)b;
+                                    var path = System.IO.Path.Combine(SlotTransaction.SlotDirectory(UWClass.BasePath, (int)b), "LEV.ARK");
+                                    if (System.IO.File.Exists(path))
+                                    {
+                                        JourneyOnwards($"SAVE{b}");
+                                        instance.scroll.Clear();
                                     }
                                     else
                                     {
-                                        // Unreachable while the uiManager sits under the
-                                        // scene root. Saying so is the point: quitting
-                                        // straight from here brings the hang back, so a
-                                        // hierarchy change that breaks Find must be loud.
-                                        GD.PushError(
-                                            "No UnderworldRoot above the options UI, so quitting "
-                                          + "without handing audio back. See issue #78.");
-                                        GetTree().Quit();
+                                        instance.scroll.Clear();
+                                        AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_no_save_game_there_));
+                                    }
+                                    ReturnToGameFromOptions();
+                                    if (UWClass._RES != UWClass.GAME_UW2)
+                                    {//UW1 will only change theme on in-game save load. Not when loading from main menu. See JourneyOnwards() for change of theme handling in UW2
+                                        //XMIMusic.ChangeTheme(XMIMusic.PickLevelThemeMusic(0));
+                                        XMIMusic.PickLevelThemeMusic(0);
                                     }
                                     break;
-                                case 3://cancel quit
+                                }
+                            case 5://cancel and return to top
+                                {
                                     ReturnToTopOptionsMenu();
                                     break;
-                            }
-                            break;
+                                }
                         }
+                        break;
+                    }
+                case OptionMenus.MusicMenu:
+                    {
+                        switch (b)
+                        {
+                            case 2://turn on
+                                {
+                                    playerdat.MusicEnabled = true;
+                                    if (MusicStreamPlayer.Instance != null)
+                                    {//restart music if not already playing.
+                                        //XMIMusic.ChangeTheme(XMIMusic.PickLevelThemeMusic());
+                                        XMIMusic.PickLevelThemeMusic(0);
+                                    }
+                                    ShowMusicSoundPage();
+                                    break;
+                                }
+                            case 3: //turn off
+                                {
+                                    playerdat.MusicEnabled = false;
+                                    MusicStreamPlayer.Instance?.Stop();
+                                    ShowMusicSoundPage();
+                                    break;
+                                }
+                        }
+                        LeaveMusicSoundPage(b);
+                        break;
+                    }
+                case OptionMenus.SoundMenu:
+                    {
+                        switch (b)
+                        {
+                            case 2://turn on
+                                {
+                                    playerdat.SoundEffectsEnabled = true;
+                                    ShowMusicSoundPage();
+                                    break;
+                                }
+                            case 3: //turn off
+                                {
+                                    playerdat.SoundEffectsEnabled = false;
+                                    ShowMusicSoundPage();
+                                    break;
+                                }
+                        }
+                        LeaveMusicSoundPage(b);
+                        break;
+                    }
+                case OptionMenus.DetailMenu:
+                    {
+                        switch (b)
+                        {
+                            case 2://low detail.
+                            case 3://med
+                            case 4://high
+                            case 5://vhigh
+                                if (playerdat.DetailLevel != (byte)(b - 2))
+                                {
+                                    playerdat.DetailLevel = (byte)(b - 2);
+                                    SetupDetailMenu();
+                                }
+                                break;
+                            case 6://done
+                                // Closes the panel when a shortcut opened it (choose_detail,
+                                // uw1 OPTIONS.C:296-303).
+                                if (OptionsQuick)
+                                {
+                                    ReturnToGameFromOptions();
+                                }
+                                else
+                                {
+                                    ReturnToTopOptionsMenu();
+                                }
+                                break;
+                        }
+                        break;
+                    }
 
-                }
+                case OptionMenus.ConfirmQuit:
+                    {
+                        switch (b)
+                        {
+                            case 2://confirm quit yes
+                                QuitTheGame();
+                                break;
+                            case 3://cancel quit
+                                ReturnToTopOptionsMenu();
+                                break;
+                        }
+                        break;
+                    }
+
+            }
+        }
+
+        /// <summary>
+        /// Quits the game. Through the root so audio is handed back to the AudioServer before
+        /// the tree goes. Quitting straight from here hangs the process on Godot 4.3. See #78.
+        /// </summary>
+        void QuitTheGame()
+        {
+            var uwroot = UnderworldRoot.Find(this);
+            if (uwroot != null)
+            {
+                uwroot.RequestQuit();
+            }
+            else
+            {
+                // Unreachable while the uiManager sits under the
+                // scene root. Saying so is the point: quitting
+                // straight from here brings the hang back, so a
+                // hierarchy change that breaks Find must be loud.
+                GD.PushError(
+                    "No UnderworldRoot above the options UI, so quitting "
+                  + "without handing audio back. See issue #78.");
+                GetTree().Quit();
+            }
+        }
+
+        /// <summary>
+        /// The music or the sound effects page (CurrentGameOptionMenu), with the button for the
+        /// present state lit (UW1's draw_music_and_sound_page, uw1 OPTIONS.C:201-220; UW2's
+        /// musicsound_group_fun, uw2 WRAPPER.C:361-370).
+        /// </summary>
+        static void ShowMusicSoundPage()
+        {
+            bool music = CurrentGameOptionMenu == OptionMenus.MusicMenu;
+            bool on = music ? playerdat.MusicEnabled : playerdat.SoundEffectsEnabled;
+            SetGameOptionsBackground((int)OptionButtonIndices.MusicButtons);
+            int state;
+            if (music)
+            {
+                state = on ? (int)OptionButtonIndices.MusicIsOnLabel : (int)OptionButtonIndices.MusicIsOffLabel;
+            }
+            else
+            {
+                state = on ? (int)OptionButtonIndices.SoundIsOnLabel : (int)OptionButtonIndices.SoundIsOffLabel;
+            }
+            SetGameOptionButtons(new int[]{
+                state,
+                music ? (int)OptionButtonIndices.TurnMusicLabel : (int)OptionButtonIndices.TurnSoundLabel,
+                (int)OptionButtonIndices.OnButtonOff,
+                (int)OptionButtonIndices.OffButtonOff,
+                (int)OptionButtonIndices.DoneOff,
+                -1,-1 });
+            HiliteOption(on ? 2 : 3);
+        }
+
+        /// <summary>
+        /// After a press on the music or sound page: 'done' goes back to the top page, and when a
+        /// shortcut opened the panel in UW1 any press closes it (choose_music and choose_sounds,
+        /// uw1 OPTIONS.C:235-277).
+        /// </summary>
+        static void LeaveMusicSoundPage(long b)
+        {
+            if (OptionsQuick)
+            {
+                ReturnToGameFromOptions();
+            }
+            else if (b == 4)
+            {
+                ReturnToTopOptionsMenu();
             }
         }
 
         private static void SetupDetailMenu()
         {
             CurrentGameOptionMenu = OptionMenus.DetailMenu;
-            var lowbutton = (int)OptionButtonIndices.LowDetailOff;
-            var medbutton = (int)OptionButtonIndices.MediumDetailOff;
-            var highbutton = (int)OptionButtonIndices.HighDetailOff;
-            var vhighbutton = (int)OptionButtonIndices.VHighDetailOff;
-            switch (playerdat.DetailLevel)
-            {
-                case 0: lowbutton = (int)OptionButtonIndices.LowDetailOn; break;
-                case 1: medbutton = (int)OptionButtonIndices.MediumDetailOn; break;
-                case 2: highbutton = (int)OptionButtonIndices.HighDetailOn; break;
-                case 3: vhighbutton = (int)OptionButtonIndices.VHighDetailOn; break;
-            }
             SetGameOptionsBackground((int)OptionButtonIndices.DetailButtons);
             SetGameOptionButtons(new int[]{
                                             (int)OptionButtonIndices.DetailLowLabel + playerdat.DetailLevel,
                                             -1,  //no turn detail label unless i crop image 5
-                                            lowbutton,
-                                            medbutton,
-                                            highbutton,
-                                            vhighbutton,
+                                            (int)OptionButtonIndices.LowDetailOff,
+                                            (int)OptionButtonIndices.MediumDetailOff,
+                                            (int)OptionButtonIndices.HighDetailOff,
+                                            (int)OptionButtonIndices.VHighDetailOff,
                                             (int)OptionButtonIndices.DoneOff});
+            // The present level lit (draw_detail_page, uw1 OPTIONS.C:231; detail_group_fun,
+            // uw2 WRAPPER.C:328).
+            HiliteOption(2 + playerdat.DetailLevel);
         }
 
 
         public static void ReturnToGameFromOptions()
         {
+            OptionsQuick = false;
+            OptionsMouseHeld = false;
             uimanager.CurrentGameMode = GameModes.GAME;
             if (UWClass._RES == UWClass.GAME_UW2)
             {
@@ -713,6 +1025,8 @@ namespace Underworld
                     (int)OptionButtonIndices.DetailOff,
                     (int)OptionButtonIndices.ReturnToGameOff,
                     (int)OptionButtonIndices.QuitGameOff});
+            // 'save' lit (draw_top_page, uw1 OPTIONS.C:175; game_group_fun, uw2 WRAPPER.C:322)
+            HiliteOption(0);
         }
 
         // ---- save description prompt ------------------------------------------------
