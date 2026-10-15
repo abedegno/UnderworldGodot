@@ -35,6 +35,7 @@ namespace Underworld
             // new_player_pos searches for room round the queued square, after any level change, and
             // if there is none the player is not moved and dies (uw1 UWEDIT.C:466-471, uw2 UWEDIT.C:480-486).
             bool roomFound = true;
+            bool moving = TeleportLevel != -1 || TeleportTileX != -1;
             if (TeleportLevel != -1)
             {
                 uimanager.WaitingForFade = true;
@@ -175,6 +176,10 @@ namespace Underworld
             if (!roomFound)
             {// after the callback, as the original runs npp_func before its search
                 playerdat.play_hp = 0;
+            }
+            else if (moving)
+            {// the new square is entered as by walking (uw2 UWEDIT.C:503)
+                playerdat.PlayerNewSquare(playerdat.playerObject.tileX, playerdat.playerObject.tileY);
             }
             uimanager.WaitingForFade = false;
         }

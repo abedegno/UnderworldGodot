@@ -43,6 +43,7 @@ namespace Underworld
                                     {
                                         implemented = true;
                                         a_teleport_trap.Activate(
+                                                character: character,
                                                 trapObj: trapObj,
                                                 objList: objList);
                                         break;

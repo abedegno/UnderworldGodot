@@ -534,6 +534,30 @@ namespace Underworld
                }
           }
 
+          /// <summary>
+          /// UW2's player->map_scrap: the level (from 1) the map screen shows when the player is lost,
+          /// set by a teleport trap that loses him and by leaving the map screen (uw2 TRIGGER.C:318-319,
+          /// AUTOMAP.C:128-131, 252). Not in UW1.
+          /// </summary>
+          public static int MapScrap
+          {
+               get
+               {
+                    if (_RES == GAME_UW2)
+                    {
+                         return GetAt(0xF9);
+                    }
+                    return 0;
+               }
+               set
+               {
+                    if (_RES == GAME_UW2)
+                    {
+                         SetAt(0xF9, (byte)value);
+                    }
+               }
+          }
+
           public static int ParalyseTimer
           {
                get

@@ -140,6 +140,7 @@ namespace Underworld
             SkillPoints = 1;
             SkillPointsTotal = 0;
             AutomapEnabled = true;
+            MapScrap = 1;//uw2 CHARGEN.C:84
             play_poison = 0;
             ActiveSpellEffectCount = 0;
             SetSelectedRune(0, 24);
