@@ -28,7 +28,12 @@ namespace Underworld.Scenarios;
 ///
 /// Backfire: when skill_check gives -1 the spell becomes a curse, and when do_spell takes it player_cast plays the class's sound
 /// (UW1 effect 0x10, uw1 RUNES.C:264-265; UW2 by class and the spell's own minor, 0x10 unless that is 0xC or 9, uw2 RUNES.C:253-305).
-/// The scenario casts a circle 1 spell with Casting 0 from successive seeds until the scroll shows "The spell backfires." alone.
+/// The casting roll is skill_check(Casting + 5, circle * 2) in UW1 (uw1 RUNES.C:249) and skill_check(Casting, circle * 3) in UW2
+/// (uw2 RUNES.C:238), and skill_check gives -1 only for a score, value - target + rand() % 31, of 2 or less (uw1/src/game/SKILLCHK.C:48-60,
+/// uw2/src/game/SKILLCHK.C:39). With Casting 0 a circle 1 spell can therefore backfire in UW2 but never in UW1, whose lowest score is 3; UW1 needs
+/// circle 2. The scenario takes, for each game, the lowest circle of a class 0..3 spell that can backfire at Casting 0 and the first seed on which
+/// the original's skill_check gives -1, casts it once, and requires "The spell backfires." alone on the scroll (UW1's backfire prints nothing more,
+/// uw1/src/combat/SPELLS.C:229-246) and the class's sound.
 ///
 /// The port turned a destroyed inventory item into debris in the pack and said "damaged", because DamageObject treated it as a map
 /// object where the original's remove_object returns 1 at once for x &lt; 0 (uw1/src/combat/DAMAGE.C:98-99, uw2/src/combat/DAMAGE.C:89-90).
@@ -214,36 +219,43 @@ public sealed class RepairDebrisAndCastMessages : Scenario
 
     async Task Backfire(ScenarioContext c)
     {
-        var spell = Pick(1);
-        if (spell == null) { _problem = "no circle 1 spell of class 0..3"; return; }
+        // The original's casting roll for circle n at Casting 0 (uw1 RUNES.C:249, uw2 RUNES.C:238), and the lowest circle at which
+        // its best score, value - target with rand() % 31 at 0, is 2 or less, so skill_check can give -1 (SKILLCHK.C).
+        const int Casting = 0;
+        (int value, int target) Roll(int circle) => c.Game == "uw1" ? (Casting + 5, circle * 2) : (Casting, circle * 3);
+        int circle = 1;
+        while (circle <= 8 && Roll(circle).value - Roll(circle).target > 2) circle++;
+        var spell = Pick(circle);
+        if (spell == null) { _problem = $"no circle {circle} spell of class 0..3"; return; }
+        var (value, target) = Roll(circle);
+        uint seed = 0;
+        for (uint s = 1; s < 50000 && seed == 0; s++)
+            if (new BatchB.DosRand(s).SkillCheck(value, target) == -1) seed = s;
+        if (seed == 0) { _problem = $"no seed under 50000 gives skill_check({value}, {target}) -1"; return; }
         int minor = spell.SpellMinorClass;
         byte expected = c.Game == "uw1" ? (byte)0x10 : minor == 0xC ? (byte)0x29 : minor == 9 ? (byte)0x28 : (byte)0x10;
-        string cite = c.Game == "uw1" ? "uw1 RUNES.C:264-265, effect 0x10 once do_spell takes the curse" : "uw2 RUNES.C:253-306, SPELLC_BACKFIRE's sound by the spell's minor";
+        string roll = c.Game == "uw1" ? $"uw1 RUNES.C:249, skill_check(Casting + 5, circle * 2) = skill_check({value}, {target}) gives -1 on seed {seed}, then string 0xD6"
+                                      : $"uw2 RUNES.C:238, skill_check(Casting, circle * 3) = skill_check({value}, {target}) gives -1 on seed {seed}, then string 0xD6";
+        string cite = c.Game == "uw1" ? "uw1 RUNES.C:264-265, effect 0x10 once do_spell takes the curse" : "uw2 RUNES.C:253-306, SPELLC_BACKFIRE's sound by the spell's own minor";
         string backfires = Plain(GameStrings.GetString(1, GameStrings.str_the_spell_backfires_));
         var heard = new List<byte>();
         UWsoundeffects.AvatarRequestObserver = e => heard.Add(e);
         try
         {
-            for (uint seed = 1; seed < 400; seed++)
-            {
-                BatchB.ReadyCaster(0);
-                playerdat.play_hp = playerdat.max_hp;
-                BatchB.SelectSpell(spell.SpellIndex);
-                uimanager.instance.scroll.Clear();
-                heard.Clear();
-                BatchB.Seed(seed);
-                BatchB.CastSelected();
-                await c.Frames(2);
-                SpellCasting.currentSpell = null;
-                RunicMagic.PendingSpellCost = 0;
-                if (ScrollText() == backfires)
-                {
-                    c.Note($"seed {seed}: \"{ScrollText()}\", minor 0x{minor:X}, effects asked for: {Effects(heard)}");
-                    _facts.Add((heard.Count == 1 && heard[0] == expected, $"a backfire the curse took: expected effect 0x{expected:X}, asked for: {Effects(heard)} ({cite})"));
-                    return;
-                }
-            }
-            _problem = "no seed under 400 gave \"The spell backfires.\" alone";
+            BatchB.ReadyCaster(Casting);
+            playerdat.play_hp = playerdat.max_hp;
+            BatchB.SelectSpell(spell.SpellIndex);
+            uimanager.instance.scroll.Clear();
+            heard.Clear();
+            BatchB.Seed(seed);
+            BatchB.CastSelected();
+            await c.Frames(2);
+            SpellCasting.currentSpell = null;
+            RunicMagic.PendingSpellCost = 0;
+            string seen = ScrollText();
+            c.Note($"circle {circle} spell {spell.SpellIndex}, minor 0x{minor:X}, seed {seed}: scroll \"{seen}\", effects asked for: {Effects(heard)}");
+            _facts.Add((seen == backfires, $"a circle {circle} cast at Casting {Casting} on seed {seed}: expected \"{backfires}\" alone, scroll \"{seen}\" ({roll})"));
+            _facts.Add((heard.Count == 1 && heard[0] == expected, $"a backfire the curse took: expected effect 0x{expected:X}, asked for: {Effects(heard)} ({cite})"));
         }
         finally
         {
