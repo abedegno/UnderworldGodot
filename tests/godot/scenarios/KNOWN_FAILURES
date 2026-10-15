@@ -32,7 +32,6 @@ uw2/paths-freed-on-level-change  ~free paths after entering level  # free-path m
 # batch B: player and magic rules
 uw1/smite-undead  ~undead (resist bit 0x80) hit points after Smite Undead  # UW1 sends every target to the SmiteUndeadObject stub (src/magic/spellcasting_class_7.cs:407, 448); uw1 SPELLS.C:347-350 kills the undead
 uw2/smite-undead  ~living critter (no resist bit 0x80) hit points  # tests a value ScaleDamage never changes, so every critter takes 255 (spellcasting_class_7.cs:417-418); skull stub (:448); uw2 SPELLS.C:331-347, WORLDEV.C:1649
-uw2/quest-flag-set-zero  ~after operation 2 with right 0 from 1 expected 0  # sets the bit for every op but 1 and 5 whatever the right value (src/traps/a_set_variable_trap.cs:171); uw2 TRIGGER.C:188-191 sets it to right > 0
 uw1/player-armour  ~player's defence (Defence + weapon skill / 2)  # armour ignores quality and +1, no shield, bare Defence (src/player/playerdatloop.cs:653, src/objectdata/critterObjectDat.cs:358); uw1 PLAYDATA.C:364-425
 uw2/player-armour  ~player's defence (Defence + weapon skill / 2)  # same (playerdatloop.cs:653, critterObjectDat.cs:358); uw2 PLAYDATA.C:322-385
 uw1/item-protection  ~slot 2 protection minor 0x3  # class 12 only for slots 0 and 1, no +1, toughness to protection (src/magic/spellcasting_objects.cs:61-77); uw1 PLAYDATA.C:271-286
