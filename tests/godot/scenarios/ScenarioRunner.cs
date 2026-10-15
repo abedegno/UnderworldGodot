@@ -103,6 +103,9 @@ public partial class ScenarioRunner : Node
         (() => new GuardLevelChange(), true),
         (() => new GuardSaveLoad(), true),
         (() => new GuardMelee(), true),
+        // visual effects
+        (() => new WeaponSway(), true),
+        (() => new MenuPaletteCycle(), true),
         (() => new HarnessFails(), false),
     };
 
