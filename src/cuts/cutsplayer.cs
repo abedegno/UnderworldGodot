@@ -245,6 +245,8 @@ namespace Underworld
         // replay the file (repeat41) and the frame that sends it back to the start (repeat43).
         static int loopRepeats;
         static int loopFrame;
+        /// <summary>How many times a loop has sent the file back to its start since the last PlayCutscene.</summary>
+        internal static int LoopRestarts;
 
         /// <summary>
         /// Fade the picture, and the subtitle drawn over it, in or out as DOS
@@ -304,6 +306,7 @@ namespace Underworld
                 CutOffSpeech();
             }
             cancelRequested = false;
+            LoopRestarts = 0;
             crngRanges = null;
             crngLastRotation = null;
             crngPalette = null;
@@ -1261,6 +1264,7 @@ namespace Underworld
                         if (loopRepeats > 0 && frame == loopFrame)
                         {
                             loopRepeats--;
+                            LoopRestarts++;
                             frame = -1;
                             FrameNo = 0;
                             continue;

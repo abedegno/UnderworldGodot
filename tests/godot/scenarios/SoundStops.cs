@@ -279,17 +279,17 @@ public sealed class CutsceneLoop : Scenario
         // The cutscene paces its frames by the real clock (cutsplayer.WaitForNextFrame), so the
         // limit is real time: the cutscene takes about 15 seconds with the loop.
         var clock = System.Diagnostics.Stopwatch.StartNew();
-        int prev = -1, lastExt = -1;
+        int lastExt = -1;
         while (clock.Elapsed.TotalSeconds < 90 && cutsplayer.IsPlaying)
         {
             await c.Frames(1);
             lastExt = (int)fileExt.GetValue(null);
-            if (lastExt != 2) { prev = -1; continue; }
+            if (lastExt != 2) continue;
             _reachedSecondFile = true;
-            int f = (int)frameNo.GetValue(null);
-            if (prev >= 0 && f < prev) _restarts++;
-            prev = f;
         }
+        // Counted by the player itself: sampling the frame once per Godot frame can miss a restart
+        // when frames are slow (software rendering on CI), the loop being only a few frames long.
+        _restarts = cutsplayer.LoopRestarts;
         _ended = !cutsplayer.IsPlaying;
         if (!_ended) cutsplayer.StopCutscene();
         c.Note($"loop({_loopArg}) on frame {loop.frame}; the second file went back to its start {_restarts} times; {clock.Elapsed.TotalSeconds:F1} s, last file {lastExt}");
