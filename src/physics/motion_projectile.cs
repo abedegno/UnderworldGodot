@@ -346,7 +346,7 @@ namespace Underworld
                     }
                     else
                     {
-                        UWMotionParamArray.dseg_67d6_2586 = 1 << MotionCalcArray.UnkC_terrain;
+                        UWMotionParamArray.dseg_67d6_2586 = 1 << (MotionCalcArray.UnkC_terrain & 3);//the terrain class
                     }
 
                     //seg028_2941_113B:

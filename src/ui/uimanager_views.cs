@@ -183,6 +183,45 @@ namespace Underworld
         }
 
 
+        /// <summary>
+        /// The three step arrows below the 3D view (game/PLAYER.C: uw1 183-185, uw2 177-179): the
+        /// step move for the one under a screen position, -1 turn left, 0 step forward, 1 turn right,
+        /// or null. The original's screen is 320 by 200 with y counted up from the bottom row
+        /// (ui/INPUT.C); this one is four times that, y counted down. In UW2 the clickable areas
+        /// the game screen adds later win where they overlap (ui/INPUT.C input_dispatch searches the
+        /// newest first): the information area and the spell area (uw2 ui/GAMESCR.C:140, 142).
+        /// </summary>
+        public static int? StepArrowAt(Vector2 position)
+        {
+            if (Fullscreen)
+            {
+                return null;
+            }
+            var x = (int)(position.X / 4);
+            var y = 199 - (int)(position.Y / 4);
+            if (UWClass._RES == UWClass.GAME_UW2)
+            {
+                if (((x >= 0x5B) && (x <= 0x94) && (y >= 0x22) && (y <= 0x34))
+                    || ((x >= 0xA9) && (x <= 0xDF) && (y >= 0x22) && (y <= 0x34)))
+                {
+                    return null;
+                }
+            }
+            if ((x >= 0x6B) && (x <= 0x7B) && (y >= 0x21) && (y <= 0x2F))
+            {
+                return -1;
+            }
+            if ((x >= 0x82) && (x <= 0x92) && (y >= 0x1F) && (y <= 0x2C))
+            {
+                return 0;
+            }
+            if ((x >= 0x9B) && (x <= 0xAA) && (y >= 0x21) && (y <= 0x2F))
+            {
+                return 1;
+            }
+            return null;
+        }
+
         public static void ClickOnViewPort(InputEventMouseButton eventMouseButton)
         {
             if (!InGame) { return; }
