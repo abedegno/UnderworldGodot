@@ -1550,7 +1550,7 @@ namespace Underworld
                     if (var14_axismodifier != 1)
                     {
                         //seg006_1413_247B
-                        var15 = ((-di_xdiff << 7) / si_ydiff) & 0xFF;
+                        var15 = ((-di_xdiff << 7) / -si_ydiff) & 0xFF;//uw1 PATHFIND.C:840, uw2 PATHFIND.C:982
                         var16 = (srcXpos << 4) + ((var15 * srcYpos) / 8);
                     }
                     else
@@ -1620,7 +1620,7 @@ namespace Underworld
                     }
                     else
                     {
-                        var15 = ((si_ydiff << 7) / di_xdiff) & 0xFF;
+                        var15 = ((si_ydiff << 7) / -di_xdiff) & 0xFF;//uw1 PATHFIND.C:865, uw2 PATHFIND.C:1007
                         var16 = ((7 - srcYpos) << 4) + ((var15 * srcXpos) / 8);
                     }
                 }
@@ -1815,7 +1815,7 @@ namespace Underworld
                 }
             }
             else
-            {//otherside
+            {//otherside. same wall tests as the first branch, uw1 PATHFIND.C:590-601, uw2 PATHFIND.C:730-741
                 if (Tile2_X_arg8 == 0)
                 {
                     return true;
@@ -1830,13 +1830,13 @@ namespace Underworld
                             {
                                 if ((Tile2_Y_argA >= Tile1_Y_arg6) || ((tilewallflags[tile2.tileType] & 0x10) == 0))
                                 {
-                                    if ((Tile2_X_arg8 <= Tile1_X_arg4) || ((tilewallflags[tile1.tileType] & 2) == 0))
+                                    if ((Tile2_X_arg8 <= Tile1_X_arg4) || ((tilewallflags[tile1.tileType] & 4) == 0))
                                     {
-                                        if ((Tile2_X_arg8 >= Tile1_X_arg4) || ((tilewallflags[tile1.tileType] & 4) == 0))
+                                        if ((Tile2_X_arg8 >= Tile1_X_arg4) || ((tilewallflags[tile1.tileType] & 2) == 0))
                                         {
-                                            if ((Tile2_Y_argA <= Tile1_Y_arg6) || ((tilewallflags[tile1.tileType] & 8) == 0))
+                                            if ((Tile2_Y_argA <= Tile1_Y_arg6) || ((tilewallflags[tile1.tileType] & 0x10) == 0))
                                             {
-                                                if ((Tile2_Y_argA >= Tile1_Y_arg6) || ((tilewallflags[tile1.tileType] & 0x10) == 0))
+                                                if ((Tile2_Y_argA >= Tile1_Y_arg6) || ((tilewallflags[tile1.tileType] & 8) == 0))
                                                 {
                                                     return (Height_argC >> 3) >= tile2.floorHeight;
                                                 }
