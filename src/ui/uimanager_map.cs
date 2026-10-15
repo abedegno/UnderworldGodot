@@ -81,6 +81,27 @@ namespace Underworld
             }
         }
 
+        /// <summary>
+        /// The map screen's theme as it opens, started at once: UW1 theme 13 (uw1 AUTOMAP.C:113-114);
+        /// UW2 the world's first walking theme unless a walking theme plays (uw2 AUTOMAP.C:101-104).
+        /// </summary>
+        public static void AutomapOpenMusic()
+        {
+            if (UWClass._RES == UWClass.GAME_UW2)
+            {
+                if ((XMIMusic.CurrentlyPlayingThemeNo < 8) || (XMIMusic.CurrentlyPlayingThemeNo > 0xF))
+                {
+                    XMIMusic.PickLevelThemeMusic(0);
+                    XMIMusic.RefreshMusic();
+                }
+            }
+            else
+            {
+                XMIMusic.ChangeThemeMusic(XMIMusic.MapsAndLegends);
+                XMIMusic.RefreshMusic();
+            }
+        }
+
         public static void DrawAutoMap(int level, int worldno)
         {
             uimanager.CurrentGameMode = GameModes.AUTOMAP;
@@ -204,20 +225,14 @@ namespace Underworld
                 uimanager.CurrentGameMode = GameModes.GAME;
                 if (UWClass._RES != UWClass.GAME_UW2)
                 {
-                    if (playerdat.play_drawn == 1)
-                    {
-                        XMIMusic.ChangeThemeMusic(XMIMusic.Armed);
-                    }
-                    else
-                    {
-                        XMIMusic.PickLevelThemeMusic(-1);
-                    }
+                    XMIMusic.PickLevelThemeMusic(-1);//a walking theme, drawn weapon or not (uw1 AUTOMAP.C:173)
                 }
                 else
                 {
                     if (playerdat.play_drawn == 1)
-                    {
+                    {//the armed theme, started at once (uw2 AUTOMAP.C:232-235)
                         XMIMusic.ChangeThemeMusic(XMIMusic.Armed);
+                        XMIMusic.RefreshMusic();
                     }
                 }
                 uimanager.instance.mousecursor.SetCursorToCursor();
