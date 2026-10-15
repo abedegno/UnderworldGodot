@@ -101,6 +101,8 @@ public partial class ScenarioRunner : Node
         (() => new EndBarter(), true),
         (() => new TrapChainFlow(), true),
         (() => new TeleportOccupied(), true),
+        (() => new TeleportCritter(), true),
+        (() => new SleepAmbush(), true),
         (() => new TybalTalkTrap(), true),
         (() => new XTrapsValueRange(), true),
         (() => new NumberedVariableRanges(), true),

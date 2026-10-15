@@ -184,7 +184,7 @@ namespace Underworld
             }
         }
 
-        public static MotionHandler SpecialMotionHandler;
+        public static MotionHandler SpecialMotionHandler = MotionHandler.TpActAtStartUp;//as tp_act before any AI has set it
 
         public static int MaxAnimFrame;
         public static bool RelatedToMotionCollision_dseg_67d6_224E;//needs to be set in 1413:ABF, likely flags the npc has collided during motion.
