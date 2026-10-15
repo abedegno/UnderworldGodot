@@ -200,6 +200,17 @@ public sealed class MusicThemeChoice : Scenario
     }
 
     /// <summary>
+    /// Presses an options button. Where the panel has PressOptionButton (UW2 buttons act on the mouse's release,
+    /// as better_mouse_release), that is called directly; otherwise the click goes through the panel's handler.
+    /// </summary>
+    static void PressOption(MethodInfo handler, InputEventMouseButton click, long button)
+    {
+        var press = typeof(uimanager).GetMethod("PressOptionButton", BindingFlags.NonPublic | BindingFlags.Instance);
+        if (press != null) press.Invoke(uimanager.instance, new object[] { button });
+        else handler.Invoke(uimanager.instance, new object[] { click, button });
+    }
+
+    /// <summary>
     /// The options panel's music on and off, through the panel's own handler: turn_music restarts
     /// the current theme, or with none loaded picks a random walking theme (uw1 SOUND.C:458-473,
     /// uw2 SOUND.C:1010-1026).
@@ -215,17 +226,17 @@ public sealed class MusicThemeChoice : Scenario
         {
             uimanager.CurrentGameOptionMenu = uimanager.OptionMenus.MusicMenu;
             SetState(Walk(1), 0);
-            handler.Invoke(uimanager.instance, new object[] { click, 3L });   // off
+            PressOption(handler, click, 3L);   // off
             Record("music on after turning it off (1 = on)", 0, playerdat.MusicEnabled ? 1 : 0, cite);
             Rng.Source = new BorlandRandSource(0x1234);
-            handler.Invoke(uimanager.instance, new object[] { click, 2L });   // on
+            PressOption(handler, click, 2L);   // on
             Record("theme after turning the music back on", Walk(1), XMIMusic.CurrentlyPlayingThemeNo, cite);
             Record("request after turning the music back on", 0, XMIMusic.NewThemeToPlay, cite);
 
             SetState(0, 0);
             playerdat.MusicEnabled = false;
             Rng.Source = new BorlandRandSource(0x1234);
-            handler.Invoke(uimanager.instance, new object[] { click, 2L });   // on, nothing loaded
+            PressOption(handler, click, 2L);   // on, nothing loaded
             Record("theme after turning the music on with none loaded", Walk(SeededPick), XMIMusic.CurrentlyPlayingThemeNo, cite);
         }
         finally
