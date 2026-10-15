@@ -123,7 +123,7 @@ namespace Underworld
                 if (CheckIfMatchingRaceUW2(critter, 0xB))//a_trilkhun&trilkhai
                 {
                     //set attitude to 0 on all members of race 0xB
-                    SetRaceAttitude(0, 0xB);
+                    SetRaceAttitude(targetrace: 0xB, newAttitute: 0);//uw2 WORLDEV.C:707-708
                 }
                 if ((playerdat.dungeon_level == 4) && (critter.item_id == 0x4E))
                 {//killing worms in the sewers
@@ -184,7 +184,7 @@ namespace Underworld
                         {
                             if (mode != 0)
                             {
-                                playerdat.SetQuest(100, 1);
+                                playerdat.SetQuest(4, 1);//uw2 WORLDEV.C:789
                             }
                             break;
                         }
@@ -346,7 +346,7 @@ namespace Underworld
                                 playerdat.SetQuest(121, 1);
                                 if (playerdat.GetQuest(23) == 0)
                                 {//player did not use blog to defeat dorstag
-                                    playerdat.SetQuest(137, playerdat.GetQuest(137) + 6);//increment pits "score" by six
+                                    playerdat.SetQuest(129, playerdat.GetQuest(129) + 6);//increment pits "score" by six, uw2 WORLDEV.C:772-773
                                 }
                             }
                             break;
@@ -505,9 +505,9 @@ namespace Underworld
                 }
 
                 //update winloss record.
-                if (playerdat.GetQuest(129) < playerdat.GetXClock(14))
-                {
-                    playerdat.SetQuest(129, playerdat.GetXClock(14));
+                if (playerdat.GetQuest(129) > playerdat.GetXClock(14))
+                {//uw2 WORLDEV.C:905-906, the best tally rises to the record
+                    playerdat.SetXClock(14, playerdat.GetQuest(129));
                 }
                 return true;
             }
