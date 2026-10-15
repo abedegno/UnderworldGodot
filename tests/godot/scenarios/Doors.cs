@@ -102,6 +102,7 @@ public sealed class DoorTurnsRound : Scenario
         if (!_reachedTwo) return;
         _angleAtUse = _door.flags_full & 7;
         _runAtUse = DoorTools.Overlay(_door.index)?.Duration ?? -1;
+        c.Note($"before the second use: 0x{_door.item_id:X} owner {_door.owner} model {(_door.instance == null ? "none" : "present")}");
         use.Use(_door, playerdat.playerObject, objects, WorldObject: true);
         _itemAfterUse = _door.item_id;
         _dirAfter = (_door.flags_full >> 3) & 1;
@@ -217,6 +218,9 @@ public sealed class DoorObstructed : Scenario
 ///
 /// The port only printed a debug line (src/utility/teleportation.cs LevelChangeEventsUW2).
 ///
+/// ChangeLevel runs this before new_player_pos searches for room (uw2 UWEDIT.C:475-481), so the player
+/// arrives in the open doorway.
+///
 /// The scenario takes the nearest closed plain door with nothing linked on level 1, teleports the player to
 /// level 2 and then back to level 1 onto the door's square, as a teleport trap does.
 /// </summary>
@@ -226,10 +230,10 @@ public sealed class GruesomeDoorHack : Scenario
 
     public override string Name => "gruesome-door-hack";
     public override string[] Games => new[] { "uw2" };
-    public override string Cites => "underworld-exhumed uw2/src/game/GAMEWRAP.C:422-438, 474-477; uw2/src/obj/USEITEMS.C:738-768; uw2/src/obj/EFFECT.C:84-136";
+    public override string Cites => "underworld-exhumed uw2/src/game/GAMEWRAP.C:413-414, 422-438, 474-477; uw2/src/game/UWEDIT.C:475-486; uw2/src/obj/USEITEMS.C:738-768; uw2/src/obj/EFFECT.C:84-136";
 
     string _problem;
-    int _x, _y, _item0, _z0, _level2, _itemEnd = -1, _zEnd, _flagsEnd, _levelEnd;
+    int _x, _y, _item0, _z0, _level2, _itemEnd = -1, _zEnd, _flagsEnd, _levelEnd, _px, _py;
     bool _arrived;
 
     public override Task Setup(ScenarioContext c)
@@ -247,18 +251,35 @@ public sealed class GruesomeDoorHack : Scenario
     {
         if (_problem != null) return;
         var p = playerdat.playerObject;
-        Teleportation.Teleport(character: 0, tileX: 32, tileY: 32, newLevel: 2, HeadingHeightFlag: 0);
+        // The middle of level 2 is solid rock, and a teleport there finds no room and kills the player
+        // (new_player_pos, uw2 UWEDIT.C:480-486), so the square is chosen once level 2 is loaded, as a
+        // teleport callback that sets the square does (moveto, uw2 SKILLS.C:647-661).
+        Teleportation.CodeToRunOnTeleport = ArriveOnOpenSquare;
+        Teleportation.Teleport(character: 0, tileX: 0x3F, tileY: 0x3F, newLevel: 2, HeadingHeightFlag: 0);
         await WaitLevel(c, 2);
         _level2 = playerdat.dungeon_level;
         if (_level2 != 2) return;
         Teleportation.Teleport(character: 0, tileX: _x, tileY: _y, newLevel: 1, HeadingHeightFlag: 0);
         _arrived = await WaitLevel(c, 1);
         _levelEnd = playerdat.dungeon_level;
+        _px = playerdat.playerObject.tileX; _py = playerdat.playerObject.tileY;
         var d = objectsearch.FindMatchInTile(tileX: _x, tileY: _y, majorclass: 5, minorclass: 0, classindex: -1);
         var moving = objectsearch.FindMatchInTile(tileX: _x, tileY: _y, majorclass: 7, minorclass: 0, classindex: 0xF);
         if (d == null && moving != null) d = moving;
         if (d != null) { _itemEnd = d.item_id; _zEnd = d.zpos; _flagsEnd = d.flags_full; }
         c.Note($"after arriving at ({playerdat.playerObject.tileX}, {playerdat.playerObject.tileY}) on level {_levelEnd}: door 0x{_itemEnd:X} z {_zEnd} flags {_flagsEnd}");
+    }
+
+    /// <summary>Puts the player near the open square nearest the middle of the map.</summary>
+    static void ArriveOnOpenSquare()
+    {
+        var map = UWTileMap.current_tilemap;
+        for (int r = 0; r < 32; r++)
+            for (int y = 32 - r; y <= 32 + r; y++)
+                for (int x = 32 - r; x <= 32 + r; x++)
+                    if (UWTileMap.ValidTile(x, y) && map.Tiles[x, y].tileType != UWTileMap.TILE_SOLID
+                        && Teleportation.PlacePlayerNear(x, y))
+                        return;
     }
 
     static async Task<bool> WaitLevel(ScenarioContext c, int level)
@@ -282,6 +303,8 @@ public sealed class GruesomeDoorHack : Scenario
         k.Equal("door item on the arrival square", _item0 + 8, _itemEnd, "gruesome_door_hack opens it and ends its motion: uw2 GAMEWRAP.C:426-438, EFFECT.C:126-136");
         k.Equal("door height on the arrival square", _z0 + 0x18, _zEnd, "OpenDoor raises a door 0x18: uw2 USEITEMS.C:755-756");
         k.Equal("door flags on the arrival square", 5 + 8, _flagsEnd, "the five steps left taken at once (finish flag 0x80), then the direction bit: uw2 EFFECT.C:97-99, 133-136");
+        k.Equal("arrival square x", _x, _px, "the door is opened on arrival, before new_player_pos searches for room, so the player stands in the open doorway: uw2 UWEDIT.C:475-481, GAMEWRAP.C:413-414, 474-477");
+        k.Equal("arrival square y", _y, _py, "as above");
         return k.Result;
     }
 }
