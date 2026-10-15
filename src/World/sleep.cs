@@ -264,6 +264,7 @@ namespace Underworld
 
             playerdat.DreamingInVoid = false;
             playerdat.DreamPlantCounter = 0;
+            playerdat.PuntMouseObject();//nothing held on the cursor leaves the dream (punt_void, uw2 SKILLS.C:751)
 
             Teleportation.Teleport(
                 character: 0, tileX:

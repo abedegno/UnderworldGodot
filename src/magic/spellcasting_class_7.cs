@@ -404,48 +404,50 @@ namespace Underworld
         {
             var obj = objList[index];
 
-            if ((obj.item_id != 0x13) && (_RES==GAME_UW2))//skull check is uw2 only
-            {
-                if (obj.majorclass == 1)
-                {
-                    var damageToApply = 0xFF;
-                    if (critterObjectDat.faction(obj.item_id) == 0x17)
-                    {//a liche
-                        damageToApply = obj.npc_hp / 2;
-                    }
-                    var test = 1;
-                    damage.ScaleDamage(obj.item_id, ref test, 0x80);
-                    if (test > 0)
-                    {
-                        damage.DamageObject(
-                            objToDamage: obj,
-                            basedamage: damageToApply,
-                            damagetype: 3,
-                            objList: objList,
-                            WorldObject: true,                            
-                            damagesource: caster.index);
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                //a skull?
+            if ((obj.item_id == 0x13) && (_RES == GAME_UW2))//skull check is uw2 only
+            {//a floating skull: uw2 SPELLS.C:336-337
                 return SmiteUndeadObject(obj);
             }
+            if ((obj.majorclass != 1) && (_RES == GAME_UW2))
+            {//uw2 only damages critters: uw2 SPELLS.C:338-339. uw1 tests any target: uw1 SPELLS.C:347
+                return false;
+            }
+            var damageToApply = 0xFF;
+            if ((_RES == GAME_UW2) && (critterObjectDat.faction(obj.item_id) == 0x17))
+            {//a liche: uw2 SPELLS.C:340-341
+                damageToApply = obj.npc_hp / 2;
+            }
+            //check_res(target, 1, 0x80) == 0: the target has the undead resistance bit. uw2 SPELLS.C:342, uw1 SPELLS.C:347
+            var test = 1;
+            if (damage.ScaleDamage(obj.item_id, ref test, 0x80) == 0)
+            {
+                damage.DamageObject(
+                    objToDamage: obj,
+                    basedamage: damageToApply,
+                    damagetype: 3,
+                    objList: objList,
+                    WorldObject: true,
+                    damagesource: caster.index);
+                return true;
+            }
+            return false;
         }
 
+        /// <summary>
+        /// Destroys a floating skull, turning it into a plain skull and dropping what it carried. uw2 WORLDEV.C:1649-1660 (destroy_floatskull)
+        /// </summary>
         public static bool SmiteUndeadObject(uwObject obj)
         {
-            Debug.Print("Smite undead object. unimplemented!");
+            obj.item_id = 0xC3;
+            if (!motion.TestIfObjectFitsInTile(0xC3, obj.index, (obj.tileX << 3) + obj.xpos, (obj.tileY << 3) + obj.ypos, obj.zpos, 1, 0))
+            {//no room for the plain skull: WORLDEV.C:1652-1656
+                obj.quality = 0;
+            }
+            if ((obj.is_quant == 0) && (obj.link > 0))
+            {//free its contents: WORLDEV.C:1657-1658
+                ObjectRemover.FreeChain(UWTileMap.current_tilemap.LevelObjects, obj.DataBuffer, obj.PTR + 6);
+            }
+            objectInstance.RedrawFull(obj);
             return true;
         }
 

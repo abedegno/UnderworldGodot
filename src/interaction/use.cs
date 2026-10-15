@@ -625,6 +625,16 @@ namespace Underworld
             {
                 case 9://fountain animo.
                     return fountain.FountainAnimoUse(ObjectUsed);
+                case 0xF://a moving door turns round, with no lock test (uw1 USEITEMS.C:145-151, uw2 OBJUSE.C:125-131)
+                    if ((ObjectUsed.owner & 0xF) < 8)
+                    {
+                        door.CloseDoor(ObjectUsed);
+                    }
+                    else
+                    {
+                        door.OpenDoor(ObjectUsed);
+                    }
+                    return true;
             }
             return false;
         }
