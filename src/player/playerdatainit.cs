@@ -149,7 +149,8 @@ namespace Underworld
             armageddon = false;
             intoxication = 0;
             shrooms = 0;
-            play_fatigue = 0x30;
+            // init_char: fatigue is 0x40 in UW1 and 0x30 in UW2.
+            play_fatigue = (byte)(_RES == GAME_UW2 ? 0x30 : 0x40);
             for (int r = 0; r < 24; r++)
             {
                 SetRune(r, false);
@@ -163,7 +164,8 @@ namespace Underworld
             dungeon_level = 1;
 
             Unknown0x3DValue = 0;//unknown purpose. 
-            foodhealthbonus = 0;
+            // init_char starts food_heal at 0x40 in UW1 and 0x30 in UW2.
+            foodhealthbonus = (byte)(_RES == GAME_UW2 ? 0x30 : 0x40);
             //Unimplemented common items
             //Tilestate CLEAR GROUNDED, SWIMING and ON LAVA FLAGS
             //SWIMDAMAGECOUNTER = 0
@@ -209,7 +211,7 @@ namespace Underworld
                 ClockValue = 0x465000;
                 SetXClock(0, 0xF);//this gets overwritten later?
                 //initialise the two moonstones
-                SetMoonstone(1, 3);
+                SetMoonstone(0, 3);
                 SetMoonstone(1, 45);
                 DreamPlantCounter = 0;
                 DreamingInVoid = false;
