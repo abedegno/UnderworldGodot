@@ -103,6 +103,10 @@ public partial class ScenarioRunner : Node
         (() => new GuardLevelChange(), true),
         (() => new GuardSaveLoad(), true),
         (() => new GuardMelee(), true),
+        // missing routines: reach
+        (() => new ReachBlockingTerrain(), true),
+        (() => new MoonstoneInContainer(), true),
+        (() => new LightSphereInContainer(), true),
         (() => new HarnessFails(), false),
     };
 
