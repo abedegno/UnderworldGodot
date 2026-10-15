@@ -69,6 +69,11 @@ namespace Underworld
                     }
                 }
             }
+            if (_RES == GAME_UW2)
+            {
+                // A potion with no spell also clears the object cast wait, as UseFood does for anything drunk (uw2 USEITEMS.C:349-351).
+                SpellCasting.ClearObjectSpellWait();
+            }
             ObjectCreator.Consume(potion, UsedFromInventory);
         }
 
