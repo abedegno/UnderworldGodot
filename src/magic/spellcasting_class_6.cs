@@ -62,8 +62,10 @@ namespace Underworld
             }
             else
             {
+                //nail_area: the handler acts 3d4 times within 2 squares of the square 4 ahead. uw1 SPELLS.C:549-550
+                rngProbablity = Rng.DiceRoll(3, 4);
                 distanceFromCaster = 4;
-                rngProbablity = 2;//these values are always the same in uw1.
+                tileRadius = 2;
                 switch (minorclass & 0x3F) //the other bits in minorclass define the target type for the area effect spell
                 {
                     case 1: //reveal
