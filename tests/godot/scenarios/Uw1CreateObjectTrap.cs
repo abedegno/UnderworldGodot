@@ -19,9 +19,9 @@ namespace Underworld.Scenarios;
 ///
 /// Then a second part: a critter template at the same fine position, fired twice with quality 0.
 /// The first copy must stand on the template's spot; the second, made while the first still stands
-/// there, must land elsewhere in the same square at the template's height. That is the port's
-/// approximation of put_at's search for a free spot (drop_around_place, uw1/src/motion/COLLIDE.C:645-700),
-/// which in the original only moves x and y and keeps z.
+/// there, must land elsewhere within 4 eighths of it, possibly in a neighbouring square, at the template's
+/// height. That is put_at's search for a free spot (drop_around_place, uw1/src/motion/COLLIDE.C:645-706,
+/// range 4 from TRIGGER.C:316), which only moves x and y and keeps z.
 ///
 /// UW1 only. The port once rolled the chance twice, in Activate (rand() % 0x3F) and again in
 /// CreateObjectUW1 (src/traps/a_create_object_trap.cs:18, 59), so a trap succeeded about
@@ -108,10 +108,10 @@ public sealed class Uw1CreateObjectTrap : Scenario
         _trap.quality = 0;
         for (uint t = 1; t <= 2; t++)
         {
-            var before = MobilesInSquare();
+            var before = MobilesNearSquare();
             BatchB.Seed(t * 7919u);
             trap.ActivateTrap(0, _trap, null, _x, _y, UWTileMap.current_tilemap.LevelObjects);
-            foreach (int i in MobilesInSquare())
+            foreach (int i in MobilesNearSquare())
                 if (!before.Contains(i))
                 {
                     var o = UWTileMap.current_tilemap.LevelObjects[i];
@@ -123,16 +123,21 @@ public sealed class Uw1CreateObjectTrap : Scenario
         return Task.CompletedTask;
     }
 
-    HashSet<int> MobilesInSquare()
+    HashSet<int> MobilesNearSquare()
     {
         var set = new HashSet<int>();
         var map = UWTileMap.current_tilemap;
-        for (int i = map.Tiles[_x, _y].indexObjectList, guard = 0; i != 0 && guard < 1024; guard++)
+        for (int x = _x - 1; x <= _x + 1; x++)
+        for (int y = _y - 1; y <= _y + 1; y++)
         {
-            var o = map.LevelObjects[i];
-            if (o == null) break;
-            if (!o.IsStatic) set.Add(i);
-            i = o.next;
+            if (!UWTileMap.ValidTile(x, y)) continue;
+            for (int i = map.Tiles[x, y].indexObjectList, guard = 0; i != 0 && guard < 1024; guard++)
+            {
+                var o = map.LevelObjects[i];
+                if (o == null) break;
+                if (!o.IsStatic) set.Add(i);
+                i = o.next;
+            }
         }
         return set;
     }
@@ -150,8 +155,9 @@ public sealed class Uw1CreateObjectTrap : Scenario
             var (x1, y1, z1, _, _) = _critterCopies[0];
             var (x2, y2, z2, tx2, ty2) = _critterCopies[1];
             k.True(x1 == FineX && y1 == FineY && z1 == _z, $"first critter copy expected at ({FineX},{FineY},{_z}), got ({x1},{y1},{z1}) (uw1 TRIGGER.C:315-316)");
-            k.True(!(x2 == FineX && y2 == FineY), $"second critter copy expected off the occupied spot ({FineX},{FineY}), got ({x2},{y2}) (put_at, uw1 COLLIDE.C:645-700)");
-            k.True(tx2 == _x && ty2 == _y && z2 == _z, $"second critter copy expected in square ({_x},{_y}) at z {_z}, got ({tx2},{ty2}) z {z2} (drop_around_place keeps z)");
+            int dx = (tx2 << 3) + x2 - ((_x << 3) + FineX), dy = (ty2 << 3) + y2 - ((_y << 3) + FineY);
+            k.True(!(dx == 0 && dy == 0), $"second critter copy expected off the occupied spot ({FineX},{FineY}), got ({x2},{y2}) in ({tx2},{ty2}) (put_at, uw1 COLLIDE.C:645-706)");
+            k.True(System.Math.Abs(dx) <= 4 && System.Math.Abs(dy) <= 4 && z2 == _z, $"second critter copy expected within 4 eighths of the spot at z {_z}, got offset ({dx},{dy}) z {z2} (drop_around_place, range 4, keeps z)");
         }
         return k.Result;
     }
