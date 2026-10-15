@@ -18,7 +18,7 @@ namespace Underworld
 
         public static SkillCheckResult SkillCheck(int skillValue, int targetValue, bool debug = false)
         {
-            int score = (skillValue - targetValue) + Rng.r.Next(0, 31); //0 to 30;
+            int score = (skillValue - targetValue) + Rng.RandMod(31); //0 to 30;
 
             if (score <= 0x1c)
             {
