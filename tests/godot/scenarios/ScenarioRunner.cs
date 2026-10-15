@@ -109,6 +109,13 @@ public partial class ScenarioRunner : Node
         (() => new GuardLevelChange(), true),
         (() => new GuardSaveLoad(), true),
         (() => new GuardMelee(), true),
+        // death, remains and the Pits arena
+        (() => new DeathDropsCursorObject(), true),
+        (() => new CritterRemainsPutAt(), true),
+        (() => new BoulderBreaks(), true),
+        (() => new TombFloatSkulls(), true),
+        (() => new PitsArenaCoward(), true),
+        (() => new JailCatchUp(), true),
         (() => new HarnessFails(), false),
     };
 

@@ -23,29 +23,49 @@ namespace Underworld
         {
             if (!WorldObject){return false;}
             if ((itemTargeted.item_id>=0x153) && (itemTargeted.item_id<=0x156))
-            {//breaks a large boulder into spawner pieces
+            {//breaks a boulder into rand() * 2 / 0x8000 + (0x155 - id) + 1 pieces, each one or two sizes smaller, below a small boulder 3 to 8 sling stones,
+             //put round where it lay with put_at (UseRockHammerOn, uw1 USEITEMS.C:724-763, uw2 USEITEMS.C:1002-1049)
                 uimanager.AddToMessageScroll(GameStrings.GetString(1,GameStrings.str_the_rock_breaks_into_smaller_pieces_));
-                var newItemID = itemTargeted.item_id + Rng.r.Next(1,2);
-                if (newItemID>0x156)
+                var id = itemTargeted.item_id;
+                var x = (itemTargeted.tileX << 3) + itemTargeted.xpos;
+                var y = (itemTargeted.tileY << 3) + itemTargeted.ypos;
+                var z = itemTargeted.zpos;
+                if (_RES == GAME_UW2)
+                {//UW2 takes the boulder away first, UW1 after the pieces are placed
+                    ObjectRemover_OLD.DeleteObjectFromTile_DEPRECIATED(itemTargeted.tileX, itemTargeted.tileY, itemTargeted.index);
+                }
+                for (var count = Rng.RandScale(2) + (0x155 - id) + 1; count > 0; count--)
                 {
-                    newItemID = 0x10;
+                    var slot = ObjectCreator.PrepareNewObject(1);
+                    if (slot == 0)
+                    {
+                        break;
+                    }
+                    var rock = UWTileMap.current_tilemap.LevelObjects[slot];
+                    if (_RES != GAME_UW2)
+                    {//UW1 copies the boulder's object record into each piece
+                        for (int i = 0; i < 8; i++)
+                        {
+                            rock.DataBuffer[rock.PTR + i] = itemTargeted.DataBuffer[itemTargeted.PTR + i];
+                        }
+                    }
+                    var newItemID = id + Rng.RandScale(2) + 1;
+                    if (newItemID > 0x156)
+                    {
+                        newItemID = 0x10;
+                    }
+                    rock.item_id = newItemID;
+                    if (newItemID == 0x10)
+                    {//when a sling stone. 
+                        rock.is_quant = 1;
+                        rock.link = (short)(Rng.RandMod(6) + 3);
+                    }
+                    motion.PutAt(x, y, z, rock, 6, false);
                 }
-
-                var newobj = ObjectCreator.spawnObjectInTile(
-                    itemid: newItemID, 
-                    tileX: itemTargeted.tileX, 
-                    tileY: itemTargeted.tileY, 
-                    xpos: itemTargeted.xpos, 
-                    ypos: itemTargeted.ypos, 
-                    zpos: itemTargeted.zpos);
-
-                if (newobj.item_id==0x10)
-                {//when a sling stone. 
-                    newobj.is_quant = 1;
-                    newobj.link = (short)(3 + Rng.r.Next(0,6));
+                if (_RES != GAME_UW2)
+                {
+                    ObjectRemover_OLD.DeleteObjectFromTile_DEPRECIATED(itemTargeted.tileX, itemTargeted.tileY, itemTargeted.index);
                 }
-
-                ObjectRemover_OLD.DeleteObjectFromTile_DEPRECIATED(itemTargeted.tileX, itemTargeted.tileY, itemTargeted.index);
                 return true;
             }
             else

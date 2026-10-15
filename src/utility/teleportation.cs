@@ -414,24 +414,15 @@ namespace Underworld
                     }
                 }
 
-                bool coward = false;
                 if (playerdat.IsFightingInPit)
-                {
-
-                    if (newLevel != playerdat.dungeon_level)
+                {// a pit fighter who moves to another level, out of the arena ring, or into another quarter of it has run away (uw2 WORLDEV.C:196-218)
+                    var dest = ((newLevel == 0 || newLevel == playerdat.dungeon_level) && tileX != 0x3F && tileY != 0x3F) ? playerdat.dungeon_level : newLevel;
+                    int oldX = playerdat.playerObject.tileX, oldY = playerdat.playerObject.tileY;
+                    if (dest != playerdat.dungeon_level || !pitsofcarnage.InArena(tileX, tileY)
+                        || (pitsofcarnage.Mpos(tileX - 0x1F, tileY - 0x1F) >> 1) != (pitsofcarnage.Mpos(oldX - 0x1F, oldY - 0x1F) >> 1))
                     {
-                        //avatar is a coward
-                        coward = true;
+                        pitsofcarnage.AvatarIsACoward(skipConversation: dest != playerdat.dungeon_level);
                     }
-                    else
-                    {
-                        //Check if avatar is a coward by checking if they are still in an arena, when teleporting outside the arenas but still within the level. (eg using a moonstone)
-                        Debug.Print("todo check if avatar is a coward and has left the arena!");
-                    }
-                }
-                if (coward)
-                {
-                    pitsofcarnage.AvatarIsACoward(skipConversation: true);
                 }
 
                 return 0x10;

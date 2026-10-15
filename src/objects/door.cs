@@ -434,7 +434,7 @@ namespace Underworld
                                     {
                                         //seg040_34E7_935:
                                         //unlock trigger
-                                        trigger.TriggerObjectLink(character.index, doorobj, 0xB, doorobj.tileX, doorobj.tileY, UWTileMap.current_tilemap.LevelObjects);
+                                        trigger.TriggerObjectLink(character?.index ?? 0, doorobj, 0xB, doorobj.tileX, doorobj.tileY, UWTileMap.current_tilemap.LevelObjects);
                                         if (LockObject.flags1 == 0)
                                         {
                                             //seg040_34E7_963:
@@ -494,7 +494,7 @@ namespace Underworld
                                 {
                                     //seg040_34E7_935: (again)
                                     //unlock trigger
-                                    trigger.TriggerObjectLink(character.index, doorobj, 0xB, doorobj.tileX, doorobj.tileY, UWTileMap.current_tilemap.LevelObjects);
+                                    trigger.TriggerObjectLink(character?.index ?? 0, doorobj, 0xB, doorobj.tileX, doorobj.tileY, UWTileMap.current_tilemap.LevelObjects);
                                     if (LockObject.flags1 == 0)
                                     {
                                         //seg040_34E7_963:

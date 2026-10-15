@@ -37,6 +37,8 @@ namespace Underworld
         /// </summary>
         private static void PlayerDeathUW1()
         {
+            PuntMouseObject();
+            LeaveBones();
             if (SilverTreeDungeon != 0)
             {
                 //resurrect at silver tree
@@ -46,6 +48,57 @@ namespace Underworld
             else
             {
                 RealDeath();
+            }
+        }
+
+        /// <summary>
+        /// An object held on the cursor is dropped near the player, within 6 eighths of a tile of where he stands,
+        /// as punt_mouse_obj does on death and on waking from the Ethereal Void (uw2 SKILLS.C:731-743, 751, 848;
+        /// UW1 has the same code inline in player_is_dead, uw1 SKILLS.C:836-850). An object that is only being
+        /// used on something stays where it is and the cursor is emptied.
+        /// </summary>
+        public static void PuntMouseObject()
+        {
+            if (ObjectInHand != -1)
+            {
+                var held = UWTileMap.current_tilemap.LevelObjects[ObjectInHand];
+                ObjectInHand = -1;
+                uimanager.instance.mousecursor.SetCursorToCursor();
+                motion.NearMobPutAt(playerObject, held, 6, false);
+            }
+            else if (useon.CurrentItemBeingUsed != null)
+            {
+                useon.CurrentItemBeingUsed = null;
+                uimanager.instance.mousecursor.SetCursorToCursor();
+            }
+        }
+
+        /// <summary>
+        /// UW1 leaves a skull or bones (0xC2 + rand() % 5) where the player died: put_at at his position with a range of
+        /// 0 and no culling, then the height and fine position are the player's, owner 0x3F, and it is settled
+        /// (uw1 SKILLS.C:852-860).
+        /// </summary>
+        static void LeaveBones()
+        {
+            var slot = ObjectCreator.PrepareNewObject(0xC2 + Rng.RandMod(5));
+            if (slot == 0)
+            {
+                return;
+            }
+            var bones = UWTileMap.current_tilemap.LevelObjects[slot];
+            int x = playerObject.tileX, y = playerObject.tileY;
+            if (motion.PutAt((x << 3) + playerObject.xpos, (y << 3) + playerObject.ypos, playerObject.zpos, bones, 0, true))
+            {
+                bones.zpos = playerObject.zpos;
+                bones.owner = 0x3F;
+                bones.xpos = playerObject.xpos;
+                bones.ypos = playerObject.ypos;
+                objectInstance.RedrawFull(bones);
+                var settled = motion.PlacedObjectCollision_seg030_2BB7_10BC(bones, x, y, 1);
+                if (settled != null && settled != bones)
+                {
+                    objectInstance.RedrawFull(settled);
+                }
             }
         }
 
@@ -142,6 +195,7 @@ namespace Underworld
                 return false;
             }
 
+            PuntMouseObject();//before the move to the gem, or the end of the game in Britannia (uw2 SKILLS.C:848)
             if (CurrentWorld != 0)
             {
                 //respawn in the gem chamber                        
@@ -243,9 +297,7 @@ namespace Underworld
             playerdat.playerObject.npc_animation = 1;
             XMIMusic.ChangeThemeMusic(0xA);//play depressed theme
             
-            //make humans friendly, set quests, run a trap, advance the clock and move LB to the prison to release you.
-            uwObject.ResetMobileObjects();
-            
+            //advance the clock, make humans friendly, set quests, catch the critters up, move LB to the prison to release you and run a trap.
             var newtime = (ClockValue / 0x3C00) % 20;
             newtime = Math.Abs(0x28 - newtime);
             newtime = newtime * 0x3C;
@@ -256,6 +308,9 @@ namespace Underworld
             CallBacks.RunCodeOnRace(npc.set_goal_and_target_by_array, 0x1C, new int[] { 0, 1 }, true); // goal=1, gtarg=0
             
             SetQuest(112, 1);//avatar has been fighting.
+
+            //the critters catch up once the guards are calm, so their friendliness counts (update_all_critters_whilst_player_snoozes, uw2 WORLDEV.C:2302)
+            uwObject.ResetMobileObjects();
             
             //uimanager.AddToMessageScroll(GameStrings.GetString(9, 4));//you awaken in jail message is printed by a text_string trap
 
@@ -271,10 +326,10 @@ namespace Underworld
                 LBritish = null;
             }
             if (LBritish != null)
-            {
-                npc.moveNPCToTile(critter: LBritish, destTileX: 40, destTileY: 35); //vanilla is 42,34
-                LBritish.quality = 40; //0x28;
-                LBritish.owner = 38; //0x27;
+            {//the original uses 0x2A, 0x22 with home 0x28, 0x27 (uw2 WORLDEV.C:2306-2309); kept at 40,35 and 40,38 so he is less likely to get stuck on a doorway
+                npc.moveNPCToTile(critter: LBritish, destTileX: 40, destTileY: 35);
+                LBritish.quality = 40;
+                LBritish.owner = 38;
                 LBritish.npc_goal = 1;
             }
 
@@ -283,15 +338,27 @@ namespace Underworld
             //put weapons away.
             playerdat.PutWeaponAway();
 
-            //Close doors in tile 0x2A, 0x26
-            var tile = UWTileMap.current_tilemap.Tiles[0x2A, 0x26];
-            var doorObj = objectsearch.FindMatchInTile(tileX: 0x2A, tileY: 0x26, majorclass: 5, minorclass: 0, classindex: -1);
+            //the door on the cell's square is opened (gruesome_door_hack(0x2A, 0x26), uw2 WORLDEV.C:2313)
+            OpenJailDoor(0x2A, 0x26);
+        }
+
+        /// <summary>
+        /// gruesome_door_hack (uw2 GAMEWRAP.C:426-438) for the jail: the door on the square has its lock tried with a
+        /// lock picking skill of 0x2D (checkLock with -0x2D), is opened whether that worked or not, and its motion is
+        /// finished at once.
+        /// </summary>
+        static void OpenJailDoor(int x, int y)
+        {
+            var doorObj = objectsearch.FindMatchInTile(tileX: x, tileY: y, majorclass: 5, minorclass: 0, classindex: -1);
             if (doorObj != null)
             {
-                if (doorObj.classindex > 0x8)
-                {
-                    door.CloseDoor(doorObj);    
-                }                
+                door.CharacterDoorLockAndKeyInteraction(null, doorObj, -0x2D);
+                door.OpenDoor(doorObj);
+                if (door.isMoving(doorObj) && AnimationOverlay.FindOverlay(doorObj.index) != null)
+                {//toast_animobj: the door ends its swing now
+                    door.MoveDoor(doorObj, door.NoOfFrames(doorObj));
+                    AnimationOverlay.RemoveAnimationOverlay(doorObj.index);
+                }
             }
         }
 
