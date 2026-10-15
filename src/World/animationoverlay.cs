@@ -199,9 +199,16 @@ namespace Underworld
                                         }
                                     }
                                     else
-                                    {//a moving door
-                                        ovl.Duration--;
-                                        door.MoveDoor(obj, 1);
+                                    {//a moving door: a step, counted down unless check_door set the run itself (update_animobj, uw1 EFFECT.C:265-273, uw2 EFFECT.C:257-265)
+                                        var left = ovl.Duration - 1;
+                                        if (!door.MoveDoor(obj, 1, ovl))
+                                        {
+                                            ovl.Duration = left;
+                                        }
+                                        if (ovl.Duration == 0)
+                                        {//the original ends it on the next frame, when the run would go below 0; here a duration of 0 is a free slot
+                                            door.EndMovingDoor(obj, ovl);
+                                        }
                                     }
                                 }
                             }
