@@ -1010,54 +1010,52 @@ namespace Underworld
 
                     if ((motion.playerMotionParams.tilestate25 & 0x10) == 0)
                     {
-                        if (EasyMove == false)
+                        //a step move (EasyMove) takes a footstep at once, the next walking one no sooner than 100 ticks on
+                        //(make_noise, uw1 PLAYMOVE.C:458-466, uw2 PLAYMOVE.C:469-475)
+                        if ((EasyMove) || ((motion.playerMotionParams.momentum_14 > 0x2F) && (main.GlobalPITTimer > FootStepTimerA_19DF)))
                         {
-                            if (motion.playerMotionParams.momentum_14 > 0x2F)
+                            //seg035_8F0
+                            if (_RES == GAME_UW2)
                             {
-                                if (main.GlobalPITTimer > FootStepTimerA_19DF)
-                                {
-                                    //seg035_8F0
-                                    if (_RES == GAME_UW2)
-                                    {
-                                        UWsoundeffects.PlaySoundEffectAtAvatar(
-                                            effectno: FootStepSoundEffectsUW2[FootstepSoundIndex_dseg_79B + (OnSnowOrIce << 1)],
-                                            pan: FootstepSoundPanning[FootstepSoundIndex_dseg_79B],
-                                            velocityOffset: (byte)(0xF + (motion.playerMotionParams.momentum_14 >> 5)));
-                                    }
-                                    else
-                                    {
-                                        //UW1 uses a toggle
-                                        if (FootstepSoundIndex_dseg_79B == 0)
-                                        {
-                                            UWsoundeffects.PlaySoundEffectAtAvatar(
-                                                effectno: 2,
-                                                pan: 0x38,
-                                                velocityOffset: (byte)(0xF + (motion.playerMotionParams.momentum_14 >> 5)));
-                                        }
-                                        else
-                                        {
-                                            UWsoundeffects.PlaySoundEffectAtAvatar(
-                                                effectno: 1,
-                                                pan: 0x48,
-                                                velocityOffset: (byte)(0xF + (motion.playerMotionParams.momentum_14 >> 5)));
-                                        }
-                                    }
-                                    //toggle to other foot
-                                    FootstepSoundIndex_dseg_79B = (uint)motion.SBB((int)FootstepSoundIndex_dseg_79B);
-                                    //set the time for the next footsteps.
-                                    var nextinterval = 0x40 + (0x1770 / (1 + (motion.playerMotionParams.momentum_14 >> 2)));
-                                    if (nextinterval > 0xC8)
-                                    {
-                                        nextinterval = 0xC8;
-                                    }
-                                    FootStepTimerA_19DF = (uint)(main.GlobalPITTimer + nextinterval);
-                                }
-
+                                UWsoundeffects.PlaySoundEffectAtAvatar(
+                                    effectno: FootStepSoundEffectsUW2[FootstepSoundIndex_dseg_79B + (OnSnowOrIce << 1)],
+                                    pan: FootstepSoundPanning[FootstepSoundIndex_dseg_79B],
+                                    velocityOffset: (byte)(0xF + (motion.playerMotionParams.momentum_14 >> 5)));
                             }
-                        }
-                        else
-                        {
-                            Debug.Print("unimplemented easymove footstep sounds.");
+                            else
+                            {
+                                //UW1 uses a toggle
+                                if (FootstepSoundIndex_dseg_79B == 0)
+                                {
+                                    UWsoundeffects.PlaySoundEffectAtAvatar(
+                                        effectno: 2,
+                                        pan: 0x38,
+                                        velocityOffset: (byte)(0xF + (motion.playerMotionParams.momentum_14 >> 5)));
+                                }
+                                else
+                                {
+                                    UWsoundeffects.PlaySoundEffectAtAvatar(
+                                        effectno: 1,
+                                        pan: 0x48,
+                                        velocityOffset: (byte)(0xF + (motion.playerMotionParams.momentum_14 >> 5)));
+                                }
+                            }
+                            //toggle to other foot
+                            FootstepSoundIndex_dseg_79B = (uint)motion.SBB((int)FootstepSoundIndex_dseg_79B);
+                            if (EasyMove)
+                            {
+                                FootStepTimerA_19DF = main.GlobalPITTimer + 100;
+                            }
+                            else
+                            {
+                                //set the time for the next footsteps.
+                                var nextinterval = 0x40 + (0x1770 / (1 + (motion.playerMotionParams.momentum_14 >> 2)));
+                                if (nextinterval > 0xC8)
+                                {
+                                    nextinterval = 0xC8;
+                                }
+                                FootStepTimerA_19DF = (uint)(main.GlobalPITTimer + nextinterval);
+                            }
                         }
                     }
                 }
