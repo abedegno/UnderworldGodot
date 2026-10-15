@@ -833,13 +833,7 @@ namespace Underworld
         {
             MessageScrollLine[] linesToRestore = BackupLines(instance.scroll.Lines, 5);
             //var obj = playerdat.InventoryObjects[objAtSlot];
-            MessageDisplay.WaitingForTypedInput = true;
-
-            instance.TypedInput.Text = objAtSlot.ObjectQuantity.ToString();
-            uimanager.instance.TypedInput.CaretColumn = uimanager.instance.TypedInput.Text.Length;
-            instance.scroll.Clear();
-            AddToMessageScroll("Move how many? {TYPEDINPUT}|", mode: MessageDisplay.MessageDisplayMode.TypedInput);
-
+            OpenHowMany();
             while (MessageDisplay.WaitingForTypedInput)
             {
                 yield return new WaitOneFrame();
@@ -847,33 +841,30 @@ namespace Underworld
             //restore currentslot as this gets wiped once the calling function has ended
             CurrentSlot = currslot;
 
-            var response = instance.TypedInput.Text;
-            if (int.TryParse(response, out int NoOfItemsPickedUp))
+            int NoOfItemsPickedUp = HowManyAnswer(objAtSlot.ObjectQuantity);
+            if (NoOfItemsPickedUp > 0)
             {
-                if (NoOfItemsPickedUp > 0)
+                if (objAtSlot.ObjectQuantity <= NoOfItemsPickedUp)
+                {//at least all of the stack is selected                        
+                    DoPickup(objAtSlot);
+                }
+                else
                 {
-                    if (objAtSlot.ObjectQuantity <= NoOfItemsPickedUp)
-                    {//at least all of the stack is selected                        
-                        DoPickup(objAtSlot);
+                    //if <quantity selected, split objects, pickup object of that quantity.
+                    var newObjIndex = ObjectCreator.SpawnObjectInHand(itemid: objAtSlot.item_id, weightmultiplier: NoOfItemsPickedUp); //spawning in hand is very handy here
+                    if (newObjIndex == 0)
+                    {//no free object even after garbage collection: nothing is picked up, with no message, as AskHowMany's 0 (uw1 INVPANEL.C:229-230, uw2 INVPANEL.C:206-207).
+                     //DOS does not check Obj_Alloc and cuts the stack to the number asked first, so the rest is lost (uw1 INVPANEL.C:486-489, uw2 INVPANEL.C:473-476); the port keeps the stack whole instead
                     }
                     else
                     {
-                        //if <quantity selected, split objects, pickup object of that quantity.
-                        var newObjIndex = ObjectCreator.SpawnObjectInHand(itemid: objAtSlot.item_id, weightmultiplier: NoOfItemsPickedUp); //spawning in hand is very handy here
-                        if (newObjIndex == 0)
-                        {//no free object even after garbage collection: nothing is picked up, with no message, as AskHowMany's 0 (uw1 INVPANEL.C:229-230, uw2 INVPANEL.C:206-207).
-                         //DOS does not check Obj_Alloc and cuts the stack to the number asked first, so the rest is lost (uw1 INVPANEL.C:486-489, uw2 INVPANEL.C:473-476); the port keeps the stack whole instead
-                        }
-                        else
+                        var newObj = UWTileMap.current_tilemap.LevelObjects[newObjIndex];
+                        for (int i = 0; i < 8; i++)
                         {
-                            var newObj = UWTileMap.current_tilemap.LevelObjects[newObjIndex];
-                            for (int i = 0; i < 8; i++)
-                            {
-                                newObj.DataBuffer[newObj.PTR + i] = objAtSlot.DataBuffer[objAtSlot.PTR + i];
-                            }
-                            newObj.link = (short)NoOfItemsPickedUp;
-                            objAtSlot.link = (short)(objAtSlot.link - NoOfItemsPickedUp);//reduce the other object.
+                            newObj.DataBuffer[newObj.PTR + i] = objAtSlot.DataBuffer[objAtSlot.PTR + i];
                         }
+                        newObj.link = (short)NoOfItemsPickedUp;
+                        objAtSlot.link = (short)(objAtSlot.link - NoOfItemsPickedUp);//reduce the other object.
                     }
                 }
             }
