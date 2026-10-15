@@ -30,8 +30,6 @@ uw2/critter-line-of-sight  ~line of sight differs from DOS  # same as UW1: src/n
 uw1/paths-freed-on-level-change  ~free paths after entering level  # free-path mask never reset on entering a level: src/npc/npcai.cs:185, src/utility/teleportation.cs:567; uw1 PATHFIND.C:945-954, CRITTIME.C:406
 uw2/paths-freed-on-level-change  ~free paths after entering level  # free-path mask never reset on entering a level: src/npc/npcai.cs:185; uw2 CRITTIME.C:445-463
 # batch B: player and magic rules
-uw1/smite-undead  ~undead (resist bit 0x80) hit points after Smite Undead  # UW1 sends every target to the SmiteUndeadObject stub (src/magic/spellcasting_class_7.cs:407, 448); uw1 SPELLS.C:347-350 kills the undead
-uw2/smite-undead  ~living critter (no resist bit 0x80) hit points  # tests a value ScaleDamage never changes, so every critter takes 255 (spellcasting_class_7.cs:417-418); skull stub (:448); uw2 SPELLS.C:331-347, WORLDEV.C:1649
 uw1/kill-experience  ~experience for a kill (exp * 4  # exp + 2d(exp), paid whoever kills, every gain halved, no 0x17700 stop (src/player/playerdat.cs:657, 687, 767; src/interaction/damage.cs:170); uw1 COMBAT.C:838, AI.C:1494, SKILLCHK.C:85-89
 uw2/kill-experience  ~experience for a kill (exp * 4  # exp + 2d(exp), powerful bonus added, paid whoever kills (src/player/playerdat.cs:767, 770; src/interaction/damage.cs:170); uw2 COMBAT.C:942-944, AI.C:1505
 uw1/skill-point-gain  ~skill 10 (attribute 24) raised from 4  # IncreaseSkill compares the skill with the attribute's index, nests the third point (src/player/playerdatskills.cs:531-541); uw1 SKILLS.C:200-212
