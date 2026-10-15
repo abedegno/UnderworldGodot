@@ -292,6 +292,12 @@ namespace Underworld
                     {
                         //if <quantity selected, split objects, pickup object of that quantity.
                         var newObjIndex = ObjectCreator.SpawnObjectInHand(obj.item_id); //spawning in hand is very handy here
+                        if (newObjIndex == 0)
+                        {//no free object even after garbage collection: nothing is picked up, with no message, as AskHowMany's 0 (uw1 INTERACT.C:457-458, uw2 INTERACT.C:360-361).
+                         //DOS does not check Obj_Alloc and cuts the stack to the number asked first, so the rest is lost (uw1 INVPANEL.C:486-489, uw2 INVPANEL.C:473-476); the port keeps the stack whole instead
+                            yield return false;
+                            yield break;
+                        }
                         var newObj = UWTileMap.current_tilemap.LevelObjects[newObjIndex];
                         //copy the bytes
                         for (int i =0; i<8; i++)
