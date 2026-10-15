@@ -2809,57 +2809,45 @@ namespace Underworld
 
 
         /// <summary>
-        /// Does something with getting a heading towards the player??
+        /// Steers a heading away from the player when the player is within maybedist fine units of the critter: a heading more than 90 degrees from the player is kept, others are bent 45 degrees away.
         /// </summary>
         /// <param name="headingArg0"></param>
         /// <param name="maybedist"></param>
         /// <returns></returns>
         static int VectorsToPlayer(int headingArg0, int maybedist)
-        {
+        {//crit_avoid_player, uw1 AI.C:685-713, uw2 AI.C:652-686
             var playerXCoordinate = playerdat.playerObject.xpos + (playerdat.playerObject.npc_xhome << 3);
             var playerYCoordinate = playerdat.playerObject.ypos + (playerdat.playerObject.npc_yhome << 3);
-            var xvector = playerXCoordinate - currentGTargXCoord;
-            var yvector = playerYCoordinate - currentGTargYCoord;
-            if (Math.Pow(xvector, 2) + Math.Pow(yvector, 2) > Math.Pow(maybedist, 2))
-            {
-                var HeadingVarB = ((Pathfind.GetVectorHeading(xvector, yvector) + 4) % 8) << 5;
-                HeadingVarB += 0x100;
-                HeadingVarB -= headingArg0;
-                var varD = HeadingVarB % 0x100;
-                if ((varD >= 0x40) || (varD <= 0xC0))
+            //measured from the critter itself (myxpost, myypost), not its target
+            var xvector = playerXCoordinate - currObjXCoordinate;
+            var yvector = playerYCoordinate - currObjYCoordinate;
+            var dist = (ushort)(xvector * xvector + yvector * yvector);//16-bit unsigned in the original
+            if (maybedist * maybedist > dist)
+            {//steer only when the player is near
+                var th = (((Pathfind.GetVectorHeading(xvector, yvector) + 4) % 8) << 5) & 0xFF;//the heading away from the player
+                var diff = (th + 0x100 - headingArg0) % 0x100;
+                if ((diff < 0x40) || (diff > 0xC0))
+                {//already heading away
+                    return headingArg0;
+                }
+                else if (diff < 0x60)
                 {
-                    if (varD >= 0x60)
-                    {
-                        if (varD >= 0x80)
-                        {
-                            if (varD <= 0xA0)
-                            {
-                                return (headingArg0 + 0xE0) % 0x100;
-                            }
-                            else
-                            {
-                                return (HeadingVarB + 0x20) % 0x100;
-                            }
-                        }
-                        else
-                        {
-                            return (HeadingVarB + 0x20) % 0x100;
-                        }
-                    }
-                    else
-                    {
-                        return (HeadingVarB + 0xE0) % 0x100;
-                    }
+                    return (th + 0xE0) % 0x100;
+                }
+                else if (diff < 0x80)
+                {
+                    return (headingArg0 + 0x20) % 0x100;
+                }
+                else if (diff > 0xA0)
+                {
+                    return (th + 0x20) % 0x100;
                 }
                 else
                 {
-                    return headingArg0;
+                    return (headingArg0 + 0xE0) % 0x100;
                 }
             }
-            else
-            {
-                return headingArg0;
-            }
+            return headingArg0;
         }
 
 
