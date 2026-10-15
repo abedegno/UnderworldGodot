@@ -53,7 +53,13 @@ namespace Underworld
             if (index <= objList.GetUpperBound(0))
             {
                 var obj = objList[index];
-                switch (obj.majorclass)
+                //UW1: an identified talisman in the inventory is described by its own text and nothing else (talisman_desc,
+                //uw1 LOOK.C:74). A look in the world never has lore 3 in the original (uw1 INTERACT.C:520-524).
+                if (!WorldObject && TalismanLook(obj))
+                {
+                    result = true;
+                }
+                else switch (obj.majorclass)
                 {
                     case 1:
                         {
@@ -121,10 +127,88 @@ namespace Underworld
                         obj: obj,
                         objList: objList,
                         lorecheckresult: LoreCheck(obj));
+                    BonesLook(obj);
                 }
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Whose bones these are (BonesLook, uw1 LOOK.C:323-345, uw2 LOOK.C:338-361, from SpecialLook): for skulls and bones
+        /// 0xC2..0xC6, "It looks to be that of " (or "They look to be those of " for a pile or more than one) and the creature
+        /// whose item is the owner + 0x40, with its article, or "an adventurer." for owner 0x3F (the player's own remains).
+        /// Owners 0, 0x28 and 0x3C..0x3E say nothing. UW2's "Relk." case for owner 0x3D is never reached for that reason.
+        /// </summary>
+        /// <param name="obj"></param>
+        public static void BonesLook(uwObject obj)
+        {
+            if (obj.item_id < 0xC2 || obj.item_id > 0xC6)
+            {
+                return;
+            }
+            var owner = obj.owner;
+            if (owner == 0 || owner == 0x28 || (owner >= 0x3C && owner != 0x3F))
+            {
+                return;
+            }
+            var text = GameStrings.GetString(1, GameStrings.str_it_looks_to_be_that_of_);
+            if (obj.item_id == 0xC6 || obj.link > 1)
+            {
+                text = GameStrings.GetString(1, GameStrings.str_they_look_to_be_those_of_);
+            }
+            if (owner == 0x3F)
+            {
+                text += "an adventurer.";
+            }
+            else
+            {
+                //the item name with its article, "a_goblin&goblins" giving "a goblin" (get_name with article set)
+                var name = GameStrings.GetString(4, owner + 0x40).Split('&')[0];
+                var under = name.IndexOf('_');
+                if (under >= 0)
+                {
+                    name = name.Remove(under, 1).Insert(under, " ");
+                }
+                text += $"{name}.";
+            }
+            uimanager.AddToMessageScroll(text);
+        }
+
+        /// <summary>
+        /// UW1 only (talisman_desc, uw1 LOOK.C:443-464). At lore 3 a talisman, an object whose COMOBJ fate is 10, is described
+        /// as "You see " (string 0x104) and its own text, 0x105 + which (the Book of Honesty, the Taper of Sacrifice, ...), and
+        /// nothing else is printed. The shipped COMOBJ.DAT gives fate 10 to exactly the nine items listed.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="lore">The lore result, or null to take it from LoreCheck as an inventory look does (uw1 INTERACT.C:640-659)</param>
+        /// <returns>True when the talisman was described</returns>
+        public static bool TalismanLook(uwObject obj, int? lore = null)
+        {
+            if (_RES == GAME_UW2 || !commonObjDat.PrintableLook(obj.item_id) || commonObjDat.projectilecullingpriority(obj.item_id) != 10)
+            {//the port's projectilecullingpriority is COMOBJ's fate, bits 1-4 of byte 7
+                return false;
+            }
+            int which;
+            switch (obj.item_id)
+            {
+                case 0x136: which = 0; break;//the Book of Honesty
+                case 0x93: which = 1; break;//the Taper of Sacrifice
+                case 0x97: which = 2; break;//the Taper of Sacrifice, lit
+                case 0xBF: which = 3; break;//the Wine of Compassion
+                case 0x11F: which = 4; break;//the Standard of Honor
+                case 0x37: which = 5; break;//the Shield of Valor
+                case 0xAE: which = 6; break;//the Cup of Wonder
+                case 0xA: which = 7; break;//the Sword of Justice
+                case 0x36: which = 8; break;//the Ring of Humility
+                default: return false;
+            }
+            if ((lore ?? LoreCheck(obj)) != 3)
+            {
+                return false;
+            }
+            uimanager.AddToMessageScroll($"{GameStrings.GetString(1, 0x104)}{GameStrings.GetString(1, 0x105 + which)}");
+            return true;
         }
 
         public static bool LookMajorClass2(uwObject obj, uwObject[] objList, bool WorldObject)
