@@ -7,9 +7,8 @@ namespace Underworld
     {
 
         /// <summary>
-        /// The trade evaluation that has to be met to allow the NPC to trade. 
-        /// Calculated using random offset and CritterDat[0xEh] bits 0-3
-        /// RNG is seeded by critter item_id
+        /// The trade evaluation that has to be met to allow the NPC to trade (greed). 
+        /// Calculated by BarterInit from CritterDat[0xEh] bits 0-3
         /// </summary>
         public static int TradeThreshold = 0;
 
@@ -50,6 +49,35 @@ namespace Underworld
         /// However it is bugged in vanilla since it makes the npc items more valuable and only applies on do_judgement and does not actually help the player make better trades!
         /// </summary>
         public static int BablTradeBonus = 0;
+
+        /// <summary>
+        /// The NPC's trading temper when a conversation starts (barter_init, uw1 BARTER.C:195-203, uw2 BARTER.C:156-164).
+        /// rand() is seeded with the NPC's object index, so the same NPC always gets the same temper:
+        /// greed = range(haggle * 6, -25, 25), patience = range(patience, -20, 100), npc_assess = range((15 - shrewd) * 6, -25, 50),
+        /// then greed less twice the player's charisma and patience plus half of it.
+        /// The original also works out npc_wit, which nothing reads. UW1 then reseeds from the clock; here the port's own
+        /// generator is put back.
+        /// </summary>
+        public static void BarterInit(uwObject talker)
+        {
+            TradeResult = 0;
+            var source = Rng.Source;
+            Rng.Source = new BorlandRandSource((uint)talker.index);
+            try
+            {
+                TradeThreshold = Range(critterObjectDat.TradeThreshold(talker.item_id) * 6, -25, 25);
+                TradePatience = Range(critterObjectDat.TradePatience(talker.item_id), -20, 100);
+                NPCAppraisalAccuracy = Range((15 - critterObjectDat.TradeAppraisal(talker.item_id)) * 6, -25, 50);
+            }
+            finally
+            {
+                Rng.Source = source;
+            }
+            PreviousEvaluation = 0;
+            var charm = playerdat.Charm;
+            TradeThreshold = TradeThreshold - charm * 2;
+            TradePatience += charm >> 1;
+        }
 
         /// <summary>
         /// The total value of one side's selected items, each valued by AssessValue, summed in 16 bits as DOS's int is
