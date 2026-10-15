@@ -68,19 +68,27 @@ namespace Underworld
                     {//Map area
                         if (automap.CanMap(playerdat.dungeon_level))
                         {
-                            var castscore = Math.Max(playerdat.Casting - 13, 0);
-                            var range = 2 + (castscore / 5);
-
-                            automap.MarkRangeOfTilesVisited(
-                                range: range,
+                            //uw2 SPELLS.C:996-1003
+                            var r = playerdat.Casting;
+                            r += r > 15 ? r - 13 : 0;
+                            r = r / 5 + 2;
+                            automap.MapAreaCircle(
                                 cX: playerdat.playerObject.tileX,
                                 cY: playerdat.playerObject.tileY,
-                                dungeon_level: playerdat.dungeon_level
-                                );
+                                r: r,
+                                dungeon_level: playerdat.dungeon_level);
+                            uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x113));//uw2 SPELLS.C:1003
                         }
                         else
                         {
-                            uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_the_spell_has_no_discernable_effect_));
+                            if (_RES == GAME_UW2)
+                            {
+                                uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x142));//uw2 SPELLS.C:997-998
+                            }
+                            else
+                            {
+                                uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_the_spell_has_no_discernable_effect_));
+                            }
                         }
                         break;
                     }
