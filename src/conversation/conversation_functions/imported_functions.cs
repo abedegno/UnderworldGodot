@@ -60,14 +60,12 @@ namespace Underworld
                     }
                 case "do_offer":
                     {
-                        yield return do_offer();
-                        TradeResult = result_register;
+                        yield return do_offer(talker);
                         break;
                     }
                 case "do_demand":
                     {
                         yield return do_demand(talker);
-                        TradeResult = result_register;
                         break;
                     }
                 case "do_decline":
@@ -257,7 +255,7 @@ namespace Underworld
                     }
                 case "give_all_stuff":
                     {
-                        give_all_stuff();
+                        give_all_stuff(talker);
                         break;
                     }
                 case "do_input_wait":
@@ -284,12 +282,6 @@ namespace Underworld
             Debug.Print($"Set result {result_register} at {stack + stackptr}");
             Set(stack + stackptr, result_register);
 
-            if (TradeResult == 1)
-            {
-                SwapTradedObjects(talker);
-                TradeResult = 0;
-            }
-            
             yield return null;
         }
 

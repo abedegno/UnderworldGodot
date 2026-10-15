@@ -3,26 +3,27 @@ namespace Underworld
     public partial class ConversationVM : UWClass
     {
         /// <summary>
-        /// Transfers all items in the NPC trade area to the player.
+        /// The NPC gives the player everything in its trade slots: every filled slot is selected and left there for the
+        /// player to take, as after an accepted offer. Returns 0 when its slots are empty.
+        /// (give_all_stuff, uw2 BARTER.C:1076-1088)
         /// </summary>
-        public static void give_all_stuff()
+        public static void give_all_stuff(uwObject talker)
         {
             result_register = 0;//default case if nothing gets moved.
-            for (int s =0; s<uimanager.NoOfTradeSlots; s++)
+            for (int s = 0; s < uimanager.NoOfTradeSlots; s++)
             {
-                var itemAtIndex = uimanager.GetNPCTradeSlot(slotno: s, OnlySelected: false);
-                if (itemAtIndex !=-1)
-                {//mark the slot as selecte
+                if (uimanager.GetNPCTradeSlot(slotno: s, OnlySelected: false) != -1)
+                {//mark the slot as selected
                     uimanager.NPCTradeOn(s);
-                    TradeResult = 1; 
-                    result_register = 1;//at least one item to transfer                    
+                    result_register = 1;//at least one item to give
                 }
-                else
-                {//mark the slot as off
-                    uimanager.NpcTradeOff(s);
-                }
-                uimanager.PlayerTradeOff(s);//hack. Turn off player selected slot because at completion of conversation the item will get inadvertantly traded                
             }
+            if (result_register == 0)
+            {
+                return;
+            }
+            ReturnTradeObjectsToNPC(talker, OnlyUnselected: true);
+            TradeResult = 1;
         }
     }//end class
 }//end namespace
