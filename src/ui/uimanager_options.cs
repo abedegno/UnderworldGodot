@@ -431,7 +431,7 @@ namespace Underworld
                                             // for a name and then failing would be worse.
                                             listsaves();
                                             instance.scroll.Clear();
-                                            AddToMessageScroll(GameStringFormat.StripDisplayCodes(GameStrings.GetString(1, GameStrings.str_save_game_failed_)));
+                                            AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_save_game_failed_));
                                             ReturnToGameFromOptions();
                                             break;
                                         }
@@ -836,12 +836,12 @@ namespace Underworld
             EnableDisable(field, true);
 
             instance.scroll.Clear();
-            AddToMessageScroll(
-                GameStringFormat.StripDisplayCodes(
-                    GameStrings.GetString(1, GameStrings.str_please_enter_a_save_file_description_)));
+            AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_please_enter_a_save_file_description_));
             // Only the slot being named. The whole list is what the menu showed a moment
-            // ago; repeating it here just buries the line being edited.
-            AddToMessageScroll(">{TYPEDINPUT}", colour: 2,
+            // ago; repeating it here just buries the line being edited. The prompt begins
+            // \6 and never sets the colour back, and wdialog draws the ">" and the answer in
+            // the colour left set (uw1 SCROLLIO.C:520, uw2 SCROLLIO.C:160), so they are \6 too.
+            AddToMessageScroll(">{TYPEDINPUT}", colour: SaveDescriptionEscape,
                                mode: MessageDisplay.MessageDisplayMode.TypedInput);
 
             // Focus and selection are deferred together and carry the generation they were
@@ -1019,7 +1019,7 @@ namespace Underworld
 
             listsaves();
             instance.scroll.Clear();
-            AddToMessageScroll(GameStringFormat.StripDisplayCodes(GameStrings.GetString(1, stringId)));
+            AddToMessageScroll(GameStrings.GetString(1, stringId));
             ReturnToGameFromOptions();
         }
 
@@ -1036,7 +1036,7 @@ namespace Underworld
 
             listsaves();
             instance.scroll.Clear();
-            AddToMessageScroll(GameStringFormat.StripDisplayCodes(GameStrings.GetString(1, GameStrings.str_save_game_failed_)));
+            AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_save_game_failed_));
             ReturnToGameFromOptions();
         }
 
@@ -1054,6 +1054,8 @@ namespace Underworld
             // DOS lists these under a \6 heading and leaves the colour set, so every
             // description inherits it: 0xD4 in UW1, 0x48 in UW2. The port passed 2, which is
             // \2, a flat black in both games. See issue #82.
+            // The descriptions are printed with escapes off, so a backslash in one is shown
+            // as typed (uw1 GAMEWRAP.C:189-194, uw2 GAMEWRAP.C:177-182).
             string[] romannumerals = new string[] { "I", "II", "III", "IV" };
             instance.scroll.Clear();
             for (int i = 1; i <= 4; i++)
@@ -1063,7 +1065,7 @@ namespace Underworld
                 {
                     AddToMessageScroll(
                         $"{romannumerals[i - 1]}- {GameStringFormat.EscapeBbcode(savename)}",
-                        colour: SaveDescriptionEscape);
+                        colour: SaveDescriptionEscape, escapes: false);
                 }
                 else
                 {
