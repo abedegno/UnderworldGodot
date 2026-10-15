@@ -371,6 +371,10 @@ namespace Underworld
                                 {
                                     CastingNotSuccessful();
                                 }
+                                else
+                                {//the curse's sound, by the spell's own minor (uw1 RUNES.C:264-265, uw2 RUNES.C:253-306)
+                                    UWsoundeffects.PlaySoundEffectAtAvatar(effectno: GetSpellSFX(9, spell.SpellMinorClass), pan: 0x40, velocityOffset: 0);
+                                }
                                 break;
                             }
                         case playerdat.SkillCheckResult.Fail:
@@ -505,16 +509,15 @@ namespace Underworld
                 if (worlds.GetWorldNo(playerdat.dungeon_level) == 0)
                 {//check if spell is allowed in britannia
                     if (SpellLevel > 3)
-                    {//uw2 RUNES.C:232, fail_spell(3)
-                        Sfx.SoundEffects.Play(UWsoundeffects.SoundEffectSpellFailure, 0x40,0);
-                        uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_casting_was_not_successful_));//casting was not successful
+                    {//fail_spell(3). uw2 RUNES.C:232-233
+                        CastingNotSuccessful();
                         return false;
                     }
                 }
             }
             if (((playerdat.play_level + 1) / 2) < SpellLevel)
             {
-                Sfx.SoundEffects.Play(UWsoundeffects.SoundEffectSpellFailure, 0x40,0);
+                UWsoundeffects.PlaySoundEffectAtAvatar(effectno: UWsoundeffects.SoundEffectSpellFailure, pan: 0x40, velocityOffset: 0);//fail_spell(0)
                 if (_RES == GAME_UW2)
                 {
                     uimanager.AddToMessageScroll(GameStrings.GetString(1, 225)); //you are not experienced enough
@@ -529,7 +532,7 @@ namespace Underworld
             {
                 if (playerdat.play_mana < ManaCost)
                 {
-                    Sfx.SoundEffects.Play(UWsoundeffects.SoundEffectSpellFailure, 0x40,0);
+                    UWsoundeffects.PlaySoundEffectAtAvatar(effectno: UWsoundeffects.SoundEffectSpellFailure, pan: 0x40, velocityOffset: 0);//fail_spell(1)
                     uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_you_do_not_have_enough_mana_to_cast_the_spell_));
                     return false;
                 }
