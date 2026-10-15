@@ -67,11 +67,13 @@ public sealed class SwingChargeResets : Scenario
         _meleeSeqAfter = _critter.npc_animation;
         _chargeAfter = _critter.SwingChargeIndex;
 
-        // A cast: the last frame of the cast sequence, cast slot 1.
+        // A cast: the last frame of the cast sequence, cast slot 1. UW1 casts and ends on frame 4
+        // whatever the art holds (uw1 AI.C:1163-1170); UW2 ends on the art's last frame, past the
+        // cast frame 3 (uw2 AI.C:1137, 1146).
         int cast = npc.ANIMATION_MAGICATTACK;
         _critter.npc_animation = (short)cast;
         npc.GetCritterAnimationGlobalsForCurrObj(_critter);
-        _critter.AnimationFrame = (byte)System.Math.Max(npc.MaxAnimFrame, c.Game == "uw1" ? 5 : 4);   // past the cast frame (4 in UW1, 3 in UW2)
+        _critter.AnimationFrame = (byte)(c.Game == "uw1" ? 4 : System.Math.Max(npc.MaxAnimFrame, 4));
         _critter.npc_spellindex = 1;
         _castSet = _critter.npc_spellindex;
         _castSteps = RunOut(_critter, cast);
