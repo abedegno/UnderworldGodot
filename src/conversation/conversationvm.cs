@@ -593,17 +593,8 @@ namespace Underworld
 		private static void ExitConversation(uwObject talker, Conversation conv)
 		{
 
-			if (_RES != GAME_UW2)
-			{
-				XMIMusic.PickLevelThemeMusic(0);
-			}
-			else
-			{
-				if (playerdat.play_drawn == 1)
-				{
-					XMIMusic.ChangeThemeMusic(XMIMusic.Armed);
-				}
-			}
+			//free_converse: a walking theme, drawn weapon or not (uw1 CONVERSE.C:265, uw2 CONVERSE.C:235)
+			XMIMusic.PickLevelThemeMusic(-1);
 
 			ExportVariables(talker);
 			uimanager.EnableDisable(uimanager.instance.ConversationPanelUW1, false);

@@ -56,17 +56,16 @@ namespace Underworld
 
                     SetupConversationUI(talker);
 
+                    //strt_converse: the conversation theme, started at once (change_music_maybe)
                     if (_RES != GAME_UW2)
-                        {
-                            XMIMusic.ChangeThemeMusic(XMIMusic.MapsAndLegends);
-                        }
+                    {
+                        XMIMusic.ChangeThemeMusic(XMIMusic.MapsAndLegends);//uw1 CONVERSE.C:183-184
+                    }
                     else
                     {
-                        if (playerdat.play_drawn == 1)
-                        {
-                            XMIMusic.PickLevelThemeMusic(0);
-                        }
+                        XMIMusic.PickLevelThemeMusic(0);//uw2 CONVERSE.C:172-173
                     }
+                    XMIMusic.RefreshMusic();
 
                     InitialiseConversationMemory();
                     stack = currentConversation.NoOfMemorySlots;
