@@ -8,4 +8,3 @@ uw1/compute_hitangle  # returns 0 when the defender is not a creature (majorclas
 uw2/compute_hitangle  # returns 0 when the defender is not a creature (majorclass != 1); the original computes the angle for any object: combat.cs:1033
 uw2/check_res         # fire/cold doubling capped at 127 (Math.Min(127, d << 1)); the original doubles below 0x7F and gives 0xFF otherwise: damage.cs:615
 uw2/debris_type       # weapon test is majorclass == 0 (items 0..63), the original's is item class 0 (items 0..15): damage.cs:450
-uw2/is_sharp          # sling (0x18) not excluded: tests item_id == 0x19 (the bow) where the original excludes 0x18 only: combat.cs:1016
