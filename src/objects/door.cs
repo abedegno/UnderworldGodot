@@ -193,9 +193,20 @@ namespace Underworld
         public static void OpenDoor(uwObject doorObj)
         {
             var doorInstance = (door)doorObj.instance;
+            if (isMoving(doorObj))
+            {//a closing door turns round, an opening one is left alone (uw1 USEITEMS.C:1139-1145, uw2 USEITEMS.C:744-751)
+                var state = doorObj.owner & 0xF;
+                if (state < 8) { return; }
+                doorObj.owner = (short)(state - 8);
+                ChangeDoor(doorObj);
+                PlayDoorTurnSound(doorObj, closing: false);
+                return;
+            }
             if (isOpen(doorObj)) { return; }//don't reopen an open door
-            if (isMoving(doorObj)) { return; } // do not allow door changes when already moving
-            doorObj.zpos += 24;
+            if (!isPortcullis(doorObj))
+            {//a portcullis rises as it moves instead (uw1 USEITEMS.C:1147-1148, uw2 USEITEMS.C:755-756)
+                doorObj.zpos += 24;
+            }
             if (TurnIntoMovingDoor(doorObj))
             {
 
@@ -238,15 +249,23 @@ namespace Underworld
         {
             if (doorObj.instance == null) { return; }//no door found.
             var doorInstance = (door)doorObj.instance;
+            if (isMoving(doorObj))
+            {//an opening door turns round, a closing one is left alone (uw1 USEITEMS.C:1168-1174, uw2 USEITEMS.C:778-784)
+                var state = doorObj.owner & 0xF;
+                if (state >= 8) { return; }
+                doorObj.owner = (short)(state + 8);
+                ChangeDoor(doorObj);
+                PlayDoorTurnSound(doorObj, closing: true);
+                return;
+            }
             if (!isOpen(doorObj)) { return; }//don't reclose a closed door
-            if (isMoving(doorObj)) { return; } // do not allow door changes when already moving
-            doorObj.zpos -= 24;
             if (TurnIntoMovingDoor(doorObj))
             {
-                // do something here?
+                //lowered when it shuts, in EndMovingDoor
             }
             else
             {
+                doorObj.zpos -= 24;
                 //set to closed state without animation
                 if (isPortcullis(doorObj))
                 {
@@ -287,7 +306,7 @@ namespace Underworld
         /// <param name="obj"></param>
         public static void ToggleDoor(uwObject obj)
         {
-            if (isMoving(obj)) { return; } // do not allow door changes when already moving
+            //a moving door (class index 0xF) goes to CloseDoor, as in the original (uw1 USEITEMS.C:1188-1194, uw2 USEITEMS.C:805-811)
             if (isOpen(obj))
             {
                 CloseDoor(obj);
@@ -316,47 +335,197 @@ namespace Underworld
             return false;
         }
 
-        public static void MoveDoor(uwObject obj, int delta)
+        /// <summary>
+        /// One step of a moving door, do_animobj's door case (uw1 EFFECT.C:234-241, uw2 EFFECT.C:225-232).
+        /// The open angle is the low three bits of the flags and bit 3 (flags_full & 8) is the direction,
+        /// set while the door closes. A portcullis rises or falls 6 a step. A closing door then checks its
+        /// doorway (CheckDoor).
+        /// </summary>
+        /// <returns>true when CheckDoor has set the overlay's duration itself, so it is not counted down this step</returns>
+        public static bool MoveDoor(uwObject obj, int frames, AnimationOverlay ovl)
         {
-            var flags = (int)obj.flags;
-            var doorInstance = (door)obj.instance;
-            if (obj.owner <= 7)
+            var lengthSet = false;
+            if ((obj.flags_full & 8) != 0)
             {
-                //door was open and is moving towards closed. Flags increase until NoOfFrames
-                flags += delta;
-                if (flags > NoOfFrames(obj))
-                {
-                    flags = NoOfFrames(obj);
+                frames = -frames;
+            }
+            if ((obj.owner & 7) == 6)
+            {
+                obj.zpos = (short)(obj.zpos + frames * 6);
+            }
+            obj.flags_full = (short)((obj.flags_full & 7) + frames + (obj.flags_full & 8));
+            if ((obj.flags_full & 8) != 0)
+            {
+                lengthSet = !CheckDoor(obj, frames, ovl);
+            }
+            RefreshDoorModel(obj);
+            return lengthSet;
+        }
+
+        /// <summary>
+        /// check_door (uw1 EFFECT.C:441-474, uw2 EFFECT.C:445-479). A closing door tests whether it still fits
+        /// in its doorway (can_place, flier, range 8) at the height it will have when shut. If something is
+        /// in the way it turns round to opening, goes back the step less one, and its run becomes
+        /// limit - duration + 1 (limit 5, 4 for a portcullis). UW2 also fires the door's open triggers
+        /// (checkTrap with how 8); UW1 does not.
+        /// </summary>
+        /// <returns>true when the way is clear</returns>
+        static bool CheckDoor(uwObject obj, int frames, AnimationOverlay ovl)
+        {
+            var limit = 5;
+            var minor = obj.owner & 0xF;
+            var item = (obj.owner >> 4 << 4) + minor + 0x140;
+            int z = obj.zpos;
+            if ((minor & 7) != 6)
+            {
+                z -= 0x18;
+            }
+            if (!motion.TestIfObjectFitsInTile(item, obj.index, (ovl.tileX << 3) + obj.xpos, (ovl.tileY << 3) + obj.ypos, z, 1, 8))
+            {
+                if ((obj.owner & 7) == 6)
+                {//the original also tests a door that is not moving, which cannot happen here
+                    limit = 4;
                 }
-                if (flags == NoOfFrames(obj))
+                obj.flags_full = (short)(obj.flags_full & 7);
+                if (_RES == GAME_UW2)
                 {
-                    //reset object now it has arrived at the end
-                    obj.item_id = 320 + obj.owner + 8;
-                    //Debug.Print($"Open->Closed item id is now {obj.item_id}");
-                    obj.owner = 0;
+                    trigger.TriggerObjectLink(
+                        character: 0,
+                        ObjectUsed: obj,
+                        triggerType: (int)triggerObjectDat.triggertypes.OPEN_UW2,
+                        triggerX: ovl.tileX,
+                        triggerY: ovl.tileY,
+                        objList: UWTileMap.current_tilemap.LevelObjects);
+                }
+                obj.flags_full = (short)((obj.flags_full & 8) + ((obj.flags_full & 7) - frames - 1));
+                ovl.Duration = limit - ovl.Duration + 1;
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// The end of a moving door's run, toast_animobj's door case (uw1 EFFECT.C:97-143, uw2 EFFECT.C:84-136).
+        /// Any steps left are taken first (the class has the finish flag 0x80 in OBJECTS.DAT). An opening door
+        /// becomes the open door. A closing door is lowered 0x18 (not a portcullis) and becomes the closed
+        /// door, unless something now stands in its doorway (can_place), when it turns round (changeDoor)
+        /// and keeps moving. Closing plays the shutting sound, 0xC (UW2: 0x26 for a portcullis, and none
+        /// while SkipDoorSound, the original's quick_time). The direction bit then points the other way.
+        /// </summary>
+        public static void EndMovingDoor(uwObject obj, AnimationOverlay ovl)
+        {
+            if (ovl.Duration != 0)
+            {
+                MoveDoor(obj, ovl.Duration, ovl);
+            }
+            var minor = obj.owner >> 4;
+            var state = obj.owner & 0xF;
+            int z = obj.zpos;
+            if ((obj.flags_full & 8) != 0)
+            {
+                if (state >= 8)
+                {
+                    state -= 8;
+                }
+                if ((state & 7) != 6)
+                {
+                    z -= 0x18;
+                }
+                if (!motion.TestIfObjectFitsInTile(0x140 + (minor << 4) + state, obj.index, (ovl.tileX << 3) + obj.xpos, (ovl.tileY << 3) + obj.ypos, z, 1, 8))
+                {
+                    obj.owner = (short)state;
+                    ovl.Duration = 0;
+                    ChangeDoor(obj, ovl);
+                    return;
+                }
+                var x = (ovl.tileX << 3) + obj.xpos;
+                var y = (ovl.tileY << 3) + obj.ypos;
+                if (_RES != GAME_UW2)
+                {
+                    UWsoundeffects.PlaySoundEffectAtCoordinate(0xC, x, y, 0);
+                }
+                else if (!SkipDoorSound)
+                {//the original takes the type from the last door opened or closed (door_type), not this one
+                    UWsoundeffects.PlaySoundEffectAtCoordinate((byte)((state & 7) != 6 ? 0xC : 0x26), x, y, 0);
                 }
             }
             else
-            {//door was closed and moving towards open. flags decrease until 0
-                flags -= delta;
-                if (flags < 0)
+            {
+                state |= 8;
+            }
+            obj.zpos = (short)z;
+            obj.item_id = 0x140 + (minor << 4) + state;
+            obj.owner = 0;
+            obj.flags_full = (short)(obj.flags_full ^ 8);
+            ovl.Duration = 0;
+            RefreshDoorModel(obj);
+        }
+
+        /// <summary>
+        /// changeDoor (uw1 USEITEMS.C:1114-1128, uw2 USEITEMS.C:716-732). Turns a moving door round: flips the
+        /// direction bit and makes the steps left into the steps done (5, 4 for a portcullis, less the
+        /// duration left). UW2 also fires the door's traps with how 9 when it now closes, 8 when it now opens.
+        /// The callers set the owner's open bit first.
+        /// </summary>
+        public static void ChangeDoor(uwObject doorObj, AnimationOverlay ovl = null)
+        {
+            var len = NoOfFrames(doorObj);
+            doorObj.flags_full = (short)(doorObj.flags_full ^ 8);
+            if (_RES == GAME_UW2)
+            {
+                trigger.TriggerObjectLink(
+                    character: 0,
+                    ObjectUsed: doorObj,
+                    triggerType: (int)((doorObj.flags_full & 8) != 0 ? triggerObjectDat.triggertypes.CLOSE : triggerObjectDat.triggertypes.OPEN_UW2),
+                    triggerX: doorObj.tileX,
+                    triggerY: doorObj.tileY,
+                    objList: UWTileMap.current_tilemap.LevelObjects);
+            }
+            ovl ??= FindDoorOverlay(doorObj.index);
+            if (ovl != null)
+            {
+                ovl.Duration = len - ovl.Duration;
+            }
+        }
+
+        /// <summary>
+        /// The running overlay of a moving door (find_anim). A finished one keeps its link with duration 0,
+        /// the port's free slot, so only a live one counts.
+        /// </summary>
+        public static AnimationOverlay FindDoorOverlay(int index)
+        {
+            foreach (var ovl in UWTileMap.current_tilemap.Overlays)
+            {
+                if (ovl != null && ovl.link == index && ovl.Duration != 0)
                 {
-                    flags = 0;
-                }
-                if (flags == 0)
-                {
-                    //reset object now it has arrived at the end
-                    obj.item_id = 320 + obj.owner - 8;
-                    //Debug.Print($"Closed->Open item id is now {obj.item_id}");
-                    obj.owner = 0;
+                    return ovl;
                 }
             }
-            obj.flags = (short)flags;
-            //Debug.Print($"Flags is now {obj.flags}");
+            return null;
+        }
+
+        /// <summary>
+        /// The sound when a moving door is turned round. The original reads the type from the moving door,
+        /// whose class index is 0xF, so even a portcullis plays the door sound (uw1 USEITEMS.C:1153-1158, 1179-1184;
+        /// uw2 USEITEMS.C:743, 762-767, 776, 793-802). UW2's CloseDoor plays none while quick_time (SkipDoorSound).
+        /// </summary>
+        static void PlayDoorTurnSound(uwObject doorObj, bool closing)
+        {
+            if (closing && _RES == GAME_UW2 && SkipDoorSound) { return; }
+            UWsoundeffects.PlaySoundEffectAtCoordinate(UWsoundeffects.SoundEffectDoor, (doorObj.tileX << 3) + doorObj.xpos, (doorObj.tileY << 3) + doorObj.ypos, 0);
+        }
+
+        /// <summary>
+        /// Turns or raises the door's model to its open angle, the low three bits of its flags.
+        /// </summary>
+        static void RefreshDoorModel(uwObject obj)
+        {
+            var doorInstance = (door)obj.instance;
+            if (doorInstance == null) { return; }
             if (isPortcullis(obj))
             {
-                //Set z based on flags          
-                doorInstance.doorNode.Position = new Vector3(0f, GetHeightForIndex(obj, obj.flags), 0f); //? (Vector3.Up, obj.GetRadiansForIndex(obj.uwobject.flags)); 
+                //Set z based on flags
+                doorInstance.doorNode.Position = new Vector3(0f, GetHeightForIndex(obj, obj.flags), 0f);
             }
             else
             {
@@ -434,7 +603,7 @@ namespace Underworld
                                     {
                                         //seg040_34E7_935:
                                         //unlock trigger
-                                        trigger.TriggerObjectLink(character.index, doorobj, 0xB, doorobj.tileX, doorobj.tileY, UWTileMap.current_tilemap.LevelObjects);
+                                        trigger.TriggerObjectLink(character?.index ?? 0, doorobj, 0xB, doorobj.tileX, doorobj.tileY, UWTileMap.current_tilemap.LevelObjects);
                                         if (LockObject.flags1 == 0)
                                         {
                                             //seg040_34E7_963:
@@ -494,7 +663,7 @@ namespace Underworld
                                 {
                                     //seg040_34E7_935: (again)
                                     //unlock trigger
-                                    trigger.TriggerObjectLink(character.index, doorobj, 0xB, doorobj.tileX, doorobj.tileY, UWTileMap.current_tilemap.LevelObjects);
+                                    trigger.TriggerObjectLink(character?.index ?? 0, doorobj, 0xB, doorobj.tileX, doorobj.tileY, UWTileMap.current_tilemap.LevelObjects);
                                     if (LockObject.flags1 == 0)
                                     {
                                         //seg040_34E7_963:

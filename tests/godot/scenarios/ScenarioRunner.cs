@@ -103,6 +103,10 @@ public partial class ScenarioRunner : Node
         (() => new GuardLevelChange(), true),
         (() => new GuardSaveLoad(), true),
         (() => new GuardMelee(), true),
+        // missing routines: doors
+        (() => new DoorTurnsRound(), true),
+        (() => new DoorObstructed(), true),
+        (() => new GruesomeDoorHack(), true),
         (() => new HarnessFails(), false),
     };
 
