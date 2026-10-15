@@ -339,27 +339,7 @@ namespace Underworld
             playerdat.PutWeaponAway();
 
             //the door on the cell's square is opened (gruesome_door_hack(0x2A, 0x26), uw2 WORLDEV.C:2313)
-            OpenJailDoor(0x2A, 0x26);
-        }
-
-        /// <summary>
-        /// gruesome_door_hack (uw2 GAMEWRAP.C:426-438) for the jail: the door on the square has its lock tried with a
-        /// lock picking skill of 0x2D (checkLock with -0x2D), is opened whether that worked or not, and its motion is
-        /// finished at once.
-        /// </summary>
-        static void OpenJailDoor(int x, int y)
-        {
-            var doorObj = objectsearch.FindMatchInTile(tileX: x, tileY: y, majorclass: 5, minorclass: 0, classindex: -1);
-            if (doorObj != null)
-            {
-                door.CharacterDoorLockAndKeyInteraction(null, doorObj, -0x2D);
-                door.OpenDoor(doorObj);
-                if (door.isMoving(doorObj) && AnimationOverlay.FindOverlay(doorObj.index) != null)
-                {//toast_animobj: the door ends its swing now
-                    door.MoveDoor(doorObj, door.NoOfFrames(doorObj));
-                    AnimationOverlay.RemoveAnimationOverlay(doorObj.index);
-                }
-            }
+            Teleportation.GruesomeDoorHack(0x2A, 0x26);
         }
 
 

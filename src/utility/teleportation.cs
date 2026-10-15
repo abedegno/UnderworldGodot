@@ -634,7 +634,7 @@ namespace Underworld
         /// picking skill of 0x2D), is opened whether that worked or not, and its motion is finished at once,
         /// so the player never arrives behind a shut door.
         /// </summary>
-        static void GruesomeDoorHack(int x, int y)
+        internal static void GruesomeDoorHack(int x, int y)
         {
             if (!UWTileMap.ValidTile(x, y)) { return; }
             var doorObj = objectsearch.FindMatchInTile(tileX: x, tileY: y, majorclass: 5, minorclass: 0, classindex: -1);
