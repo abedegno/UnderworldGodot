@@ -184,7 +184,7 @@ public partial class main : Node3D
 			uimanager.EnableDisable(uimanager.instance.PanelInventory, false);
 			uimanager.EnableDisable(uimanager.instance.ManaFlaskPanel, false);
 			uimanager.EnableDisable(uimanager.instance.HealthFlaskPanel, false);
-			cutsplayer.PlayCutscene(9, uimanager.ReturnToMainMenu);
+			cutsplayer.PlayCutscene(9, uimanager.TitleFinished);
 			//Play intro theme after cutscene coroutine is queued, so music and graphics start together
 			XMIMusic.LoadXMI(XMIMusic.IntroTheme);
 			uimanager.AddToMessageScroll(GameStrings.GetString(1, 13));//welcome message
@@ -781,7 +781,11 @@ public partial class main : Node3D
 		{
 			if (@event is InputEventKey keyinput)
 			{
-				if (keyinput.Pressed)
+				if (keyinput.Pressed && uimanager.OptionShortcut(keyinput))
+				{
+					GetViewport().SetInputAsHandled();
+				}
+				else if (keyinput.Pressed)
 				{
 					switch (keyinput.Keycode)
 					{

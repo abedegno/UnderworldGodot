@@ -119,6 +119,9 @@ namespace Underworld
 
         public static bool IsPlaying { get; private set; }
 
+        /// <summary>The number of the cutscene playing, or the last one played.</summary>
+        public static int CurrentCutsceneNo => currentCutsceneNo;
+
         public static List<CutSceneCommand> commands;
 
 
