@@ -103,6 +103,12 @@ public partial class ScenarioRunner : Node
         (() => new GuardLevelChange(), true),
         (() => new GuardSaveLoad(), true),
         (() => new GuardMelee(), true),
+        // missing routines: stopping sounds and cutscene speech
+        (() => new WaterSoundStops(), true),
+        (() => new EffectsStopSoundOff(), true),
+        (() => new MapStopsEffects(), true),
+        (() => new CutsceneSpeechStops(), true),
+        (() => new CutsceneLoop(), true),
         (() => new HarnessFails(), false),
     };
 

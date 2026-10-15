@@ -226,9 +226,27 @@ namespace Underworld
         public static void StopCutscene()
         {
             cancelRequested = true;
+            // Escape cuts the speech off (uw2 CUTS.C:960-963; uw1 CUTS.C:648-651, 762).
+            CutOffSpeech();
             //MusicStreamPlayer.Instance?.Stop();
             //XMIMusic.CurrentlyPlayingThemeNo = 0;
         }
+
+        /// <summary>
+        /// Stop the cutscene speech: UW1's stop_speech (uw1 SOUND.C:1146-1151) and UW2's
+        /// cutoff_cutscene_speech (uw2 CUTS.C:328-332), both a stop of the digital playback.
+        /// </summary>
+        static void CutOffSpeech()
+        {
+            main.instance?.DigitalAudioPlayer?.Stop();
+        }
+
+        // cutsop_loop's state (uw2 CUTS.C:698-706, uw1 CUTS.C:398-405): how many more times to
+        // replay the file (repeat41) and the frame that sends it back to the start (repeat43).
+        static int loopRepeats;
+        static int loopFrame;
+        /// <summary>How many times a loop has sent the file back to its start since the last PlayCutscene.</summary>
+        internal static int LoopRestarts;
 
         /// <summary>
         /// Fade the picture, and the subtitle drawn over it, in or out as DOS
@@ -281,7 +299,14 @@ namespace Underworld
         /// <param name="callBackMethod">Function to call after the cutscene has played</param>
         public static void PlayCutscene(int CutsceneNo, CallBacks.CutsceneCallBack callBackMethod, bool useSingleRedChannel = false)
         {
+            if (_RES == GAME_UW2)
+            {
+                // show_cutscene first stops the digital effect and any speech (uw2 CUTS.C:1467-1468).
+                UWsoundeffects.StopDigitalEffect();
+                CutOffSpeech();
+            }
             cancelRequested = false;
+            LoopRestarts = 0;
             crngRanges = null;
             crngLastRotation = null;
             crngPalette = null;
@@ -724,6 +749,12 @@ namespace Underworld
                         break;
                     }
 
+                case 7: // loop(n): when this frame is reached, replay the file from its start n times
+                    // (uw2 CUTS.C:698-706, uw1 CUTS.C:398-405). The frame loop does the replay.
+                    loopRepeats = cmd.functionParams[0];
+                    loopFrame = cmd.frame;
+                    break;
+
                 case 15: // klang — play klang sound (UW1 only)
                     Debug.Print("  Klang sound");
                     UWsoundeffects.PlaySoundEffectAtAvatar(UWsoundeffects.SoundEffectKlang, 0x40, 0);
@@ -899,6 +930,11 @@ namespace Underworld
 
                             yield return new WaitForSeconds(0.05f);
                             elapsed += 0.05f;
+                        }
+                        if (audioPlayer != null && audioPlayer.Playing && elapsed >= timeoutSec)
+                        {
+                            // Out of time: the speech is cut off (uw2 CUTS.C:483-485).
+                            CutOffSpeech();
                         }
 
                         break;
@@ -1124,6 +1160,8 @@ namespace Underworld
 
                 // Reset palette interpolation per segment (func 19 re-enables it).
                 palInterpActive = false;
+                loopRepeats = 0;
+                int loopCmdIndex = -1;
 
                 // Collect this segment's commands
                 var scheduledCmds = new List<CutSceneCommand>();
@@ -1199,10 +1237,14 @@ namespace Underworld
                         }
                         RefreshCutsceneMusic();
 
-                        // Fire commands scheduled for this frame
-                        foreach (var cmd in scheduledCmds)
+                        // Fire commands scheduled for this frame. While a loop is replaying the
+                        // file DOS reads no script records (repeat41 != 0), and afterwards it goes
+                        // on after the loop record, so nothing up to it runs twice
+                        // (uw2 CUTS.C:1031, uw1 CUTS.C:667).
+                        for (int c = 0; c < scheduledCmds.Count; c++)
                         {
-                            if (cmd.frame == frame && cmd.functionNo != 5)
+                            var cmd = scheduledCmds[c];
+                            if (cmd.frame == frame && cmd.functionNo != 5 && loopRepeats == 0 && c > loopCmdIndex)
                             {
                                 if (cancelRequested)
                                 {
@@ -1211,9 +1253,22 @@ namespace Underworld
                                 yield return ExecuteCommand(cmd, cutscontrol, CutsceneNo);
                                 if (cmd.functionNo == 8) // open-file
                                     fileChanged = true;
+                                if (cmd.functionNo == 7) // loop
+                                    loopCmdIndex = c;
                             }
                         }
                         commandFrames++;
+
+                        // The loop's frame: back to the file's first frame without showing this one
+                        // (uw2 CUTS.C:1317-1322, uw1 CUTS.C:718-722).
+                        if (loopRepeats > 0 && frame == loopFrame)
+                        {
+                            loopRepeats--;
+                            LoopRestarts++;
+                            frame = -1;
+                            FrameNo = 0;
+                            continue;
+                        }
 
                         // Display animation frame.
                         // When panorama mode is active ([si+4Fh]!=0, set by func 20
@@ -1487,6 +1542,8 @@ namespace Underworld
             }
 
         cleanup:
+            // Speech still going when the cutscene ends is cut off (uw1 CUTS.C:762, uw2 CUTS.C:1439).
+            CutOffSpeech();
             IsPlaying = false;
             uimanager.CurrentGameMode = OrigGameMode;//restore gamemode before any new cutscenes start.
             uimanager.EnableDisable(uimanager.instance.CutsSubtitle, false);

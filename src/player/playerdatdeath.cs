@@ -37,6 +37,7 @@ namespace Underworld
         /// </summary>
         private static void PlayerDeathUW1()
         {
+            UWsoundeffects.KillAllEffects(); // uw1 SKILLS.C:830, seg014_1DC5_C7C
             if (SilverTreeDungeon != 0)
             {
                 //resurrect at silver tree
@@ -130,6 +131,8 @@ namespace Underworld
                 sleep.AwakenFromTheVoid();
                 return false;
             }
+
+            UWsoundeffects.KillAllEffects(); // uw2 SKILLS.C:842, once jail and the Void are ruled out
 
             if (CurrentWorld != 0)
             {

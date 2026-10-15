@@ -102,16 +102,45 @@ public static class SoundEffects
     /// with a one-line warning. Pan is a standard MIDI 0..0x7F (OPL backend
     /// ignores it; future MT-32 backend honours it).
     /// </summary>
-    public static void Play(int soundId, byte pan = 0x40, byte velocityOffset = 0)
+    /// <returns>A handle for <see cref="Stop"/>, or <see cref="NoEffect"/> when nothing was started.</returns>
+    public static int Play(int soundId, byte pan = 0x40, byte velocityOffset = 0)
     {
-        if (_backend == null) return;
+        if (_backend == null) return NoEffect;
         if ((uint)soundId >= (uint)SoundDat.Length)
         {
             GD.PushWarning($"SoundEffects.Play: id {soundId} out of range (have {SoundDat.Length} entries)");
-            return;
+            return NoEffect;
         }
-        _backend.Play(SoundDat[soundId], pan, velocityOffset);
+        int handle = _nextHandle;
+        _nextHandle = _nextHandle == int.MaxValue ? FirstHandle : _nextHandle + 1;
+        _backend.Play(SoundDat[soundId], pan, velocityOffset, handle);
+        return handle;
     }
+
+    /// <summary>
+    /// Stop one effect by the handle <see cref="Play"/> returned, as the original's
+    /// kill_effect does for its effect slots (uw1 SOUND.C:627-637, uw2 SOUND.C:1204-1220).
+    /// </summary>
+    public static void Stop(int handle)
+    {
+        if (handle == NoEffect) return;
+        _backend?.Stop(handle);
+    }
+
+    /// <summary>
+    /// Stop every effect playing, as the original's kill_all_effects does
+    /// (uw1 seg014_1DC5_C7C, SOUND.C:640-654; uw2 SOUND.C:1222-1239).
+    /// </summary>
+    public static void StopAll() => _backend?.Stop(SfxCommand.AllHandles);
+
+    /// <summary>What play_effect returns when no effect was started (uw1 SOUND.C:605-606).</summary>
+    public const int NoEffect = 0xFF;
+
+    // The original's handle is the effect slot, 0 to 3 (UW1) or 0 to 2 (UW2), or 100 for UW2's
+    // digital channel (uw2 SOUND.C:543). The voices here are allocated on the audio thread, so
+    // each effect gets its own number instead, counted from above 100 and 0xFF.
+    private const int FirstHandle = 0x100;
+    private static int _nextHandle = FirstHandle;
 
     /// <summary>Tear-down for orderly shutdown. Does not destroy the
     /// <see cref="SfxStreamPlayer"/> node — that is managed by the scene tree.</summary>

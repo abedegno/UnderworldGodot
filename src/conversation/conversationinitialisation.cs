@@ -47,6 +47,11 @@ namespace Underworld
                 else
                 { 
                     //a conversation can be had
+                    if (_RES == GAME_UW2)
+                    {
+                        // TalkTo silences the effects before the conversation screen (uw2 CONVERSE.C:140). UW1's does not.
+                        UWsoundeffects.KillAllEffects();
+                    }
                     currentConversation = conversations[conversationNo];
                     uimanager.CurrentGameMode = uimanager.GameModes.CONVERSATION;
                     DoTeleport = false;

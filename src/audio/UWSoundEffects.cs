@@ -38,18 +38,19 @@ namespace Underworld
         /// Source: UW1 seg014_B1B (UW1_asm.asm:64927-65021) for UW1 path,
         ///         UW2 PlaySoundEffect_1DB2 (uw2_asm.asm:82585-82751) for UW2 path.
         /// </summary>
-        public static void PlaySoundEffectAtAvatar(byte effectno, byte pan, byte velocityOffset)
+        /// <returns>A handle for <see cref="KillEffect"/>, or <see cref="NoEffect"/> when nothing was started.</returns>
+        public static int PlaySoundEffectAtAvatar(byte effectno, byte pan, byte velocityOffset)
         {
             if ((effectno == 90) || (effectno == 91))
             {
                 // TODO footstep sounds from NPCs, needs special handling
-                return;
+                return NoEffect;
             }
-            if (!playerdat.SoundEffectsEnabled) return;
+            if (!playerdat.SoundEffectsEnabled) return NoEffect;
 
             if (_RES == GAME_UW2)
             {
-                PlayUw2(effectno, pan, velocityOffset);
+                return PlayUw2(effectno, pan, velocityOffset);
             }
             else
             {
@@ -57,8 +58,65 @@ namespace Underworld
                 // the TVFX backend (authentic AdLib behaviour). Volume
                 // attenuation flows through the backend's velocityOffset
                 // hook. See src/audio/sfx/godot/SoundEffects.cs.
-                Sfx.SoundEffects.Play(effectno, pan: pan, velocityOffset: velocityOffset);
+                return Sfx.SoundEffects.Play(effectno, pan: pan, velocityOffset: velocityOffset);
             }
+        }
+
+        /// <summary>What playing an effect returns when nothing was started (uw1 SOUND.C:605-606).</summary>
+        public const int NoEffect = Sfx.SoundEffects.NoEffect;
+
+        /// <summary>
+        /// The handle of an effect playing on UW2's digital channel: the channel, 0, plus 100
+        /// (uw2 SOUND.C:543).
+        /// </summary>
+        const int DigitalEffect = 100;
+
+        // The VOC effect last put on DigitalAudioPlayer, so that stopping it leaves the cutscene
+        // speech, which plays through the same player, alone.
+        static AudioStream digitalEffectStream;
+
+        /// <summary>
+        /// kill_effect: stops one effect by the handle playing it returned (uw1 SOUND.C:627-637).
+        /// UW2 sends a handle of 100 or more to its digital channel (uw2 SOUND.C:1204-1208).
+        /// </summary>
+        public static void KillEffect(int handle)
+        {
+            if (handle == NoEffect) return;
+            if (_RES == GAME_UW2 && handle == DigitalEffect)
+            {
+                StopDigitalEffect();
+            }
+            else
+            {
+                Sfx.SoundEffects.Stop(handle);
+            }
+        }
+
+        /// <summary>
+        /// Stops every effect playing: UW1's seg014_1DC5_C7C (uw1 SOUND.C:640-654) and UW2's
+        /// kill_all_effects, which also stops the digital channel (uw2 SOUND.C:1222-1247).
+        /// </summary>
+        public static void KillAllEffects()
+        {
+            Sfx.SoundEffects.StopAll();
+            if (_RES == GAME_UW2)
+            {
+                StopDigitalEffect();
+            }
+        }
+
+        /// <summary>
+        /// stop_digi_file(0): stops the VOC effect on UW2's one digital channel, if one is
+        /// playing (uw2 SOUND.C:673-688).
+        /// </summary>
+        public static void StopDigitalEffect()
+        {
+            var player = main.instance?.DigitalAudioPlayer;
+            if (player != null && digitalEffectStream != null && player.Stream == digitalEffectStream)
+            {
+                player.Stop();
+            }
+            digitalEffectStream = null;
         }
 
         /// <summary>
@@ -166,9 +224,9 @@ namespace Underworld
         /// DigitalAudioPlayer. Falls back to the MIDI sink on missing VOC
         /// (uw2_asm.asm:82573 analogue).
         /// </summary>
-        private static void PlayUw2(byte effectno, byte pan, byte velocityOffset)
+        private static int PlayUw2(byte effectno, byte pan, byte velocityOffset)
         {
-            if (effectno == 0xFF) return;
+            if (effectno == 0xFF) return NoEffect;
 
             // Effective vol = clamp(baseVel + signed velocityOffset, 0..0x7F).
             // Matches UW1_asm.asm:64836-64849 / uw2_asm.asm:82447-82638.
@@ -207,12 +265,15 @@ namespace Underworld
 
                     main.instance.DigitalAudioPlayer.Stream = wav;
                     main.instance.DigitalAudioPlayer.Play();
+                    digitalEffectStream = wav;
+                    return DigitalEffect;
                 }
+                return NoEffect;
             }
             else
             {
                 // Missing VOC — fall back to MIDI sink.
-                Sfx.SoundEffects.Play(effectno, pan: pan, velocityOffset: velocityOffset);
+                return Sfx.SoundEffects.Play(effectno, pan: pan, velocityOffset: velocityOffset);
             }
         }
 
