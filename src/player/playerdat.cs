@@ -725,8 +725,8 @@ namespace Underworld
             }
             else
             {
-                //negative exp
-                Exp = Math.Max(0, Exp - newEXP);
+                //negative exp: newEXP is already negative, so add it, with a floor of 0 and nothing else (player_get_exp, uw1 SKILLCHK.C:76-82, uw2 SKILLCHK.C:71-77)
+                Exp = Math.Max(0, Exp + newEXP);
             }
         }
 
