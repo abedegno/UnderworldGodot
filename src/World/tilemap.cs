@@ -325,6 +325,9 @@ namespace Underworld
                 objects: current_tilemap.LevelObjects,
                 a_tilemap: current_tilemap);
 
+            //free the stored paths, as GetLevel does for a new game, a restore and a level change (uw1 GAMEWRAP.C:116, uw2 GAMEWRAP.C:102)
+            npc.ClearPaths();
+
             the_tiles.Position = new Vector3(0f, 0f, 0f);
 
             tileMapRender.GenerateLevelFromTileMap(
