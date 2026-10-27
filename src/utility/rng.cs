@@ -4,6 +4,41 @@ using System;
 namespace Underworld
 {
     /// <summary>
+    /// Where Rng's random numbers come from. Rand() is a raw value 0 to 32767, as Turbo C++'s
+    /// rand() returns; Next(max) is 0 to max - 1, and 0 when max is 0 (a negative max is the source's own business:
+    /// .NET's throws, Turbo C++'s returns 0).
+    /// </summary>
+    public interface IRandSource
+    {
+        int Rand();
+        int Next(int max);
+    }
+
+    /// <summary>The default: .NET's generator. Next(max) is Random.Next(max), as Rng used before.</summary>
+    public sealed class DotNetRandSource : IRandSource
+    {
+        readonly Random random = new();
+        public int Rand() => random.Next(0x8000);
+        public int Next(int max) => random.Next(max);
+    }
+
+    /// <summary>
+    /// Turbo C++ 1.01's rand(), which the original games use: seed = seed * 0x015A4E35 + 1, and the
+    /// value is bits 16 to 30 of the new seed. Seed is the whole 32-bit state.
+    /// </summary>
+    public sealed class BorlandRandSource : IRandSource
+    {
+        public uint Seed { get; private set; }
+        public BorlandRandSource(uint seed) { Seed = seed; }
+        public int Rand()
+        {
+            Seed = Seed * 0x015A4E35u + 1;
+            return (int)((Seed >> 16) & 0x7FFF);
+        }
+        public int Next(int max) => max <= 0 ? 0 : Rand() % max;
+    }
+
+    /// <summary>
     /// Handles RNG calls for the game. Eventually this may replicate the original rng that is based on system time rather than .NET rng.
     /// </summary>
     public class Rng : UWClass
@@ -12,7 +47,15 @@ namespace Underworld
         const int Multiplier = 0x15A4E35;
         public static Rng r = new();
         //public static Random r_unseeded = new(); //for rng calls where the seed never gets reset
-        static Random DotNetRng = new();
+
+        /// <summary>The source of every draw. Tests set a BorlandRandSource; play uses .NET's.</summary>
+        public static IRandSource Source { get; set; } = new DotNetRandSource();
+
+        /// <summary>rand() % n, the form most of the original's call sites use.</summary>
+        public static int RandMod(int n) => Source.Rand() % n;
+
+        /// <summary>rand() * n / 0x8000, a value 0 to n - 1, the form rollem uses.</summary>
+        public static int RandScale(int n) => (int)((long)Source.Rand() * n / 0x8000);
 
         public Rng()
         {
@@ -58,7 +101,7 @@ namespace Underworld
                 {
                     while (NoOfLoops != 0)
                     {
-                        si += r.Next(0, diceRange);
+                        si += RandScale(diceRange);
                         NoOfLoops--;
                     }
                     return si;
@@ -77,19 +120,14 @@ namespace Underworld
         }
 
         /// <summary>
-        /// An RNG result is obtained by multipying Seed * Constant Multipler. 
-        /// The multiplication result is stored as the next seed.
-        /// The max value is mod divided into the (result & 0x7FFF) to get the RNG number
+        /// Returns a value 0 to max - 1 from Rng.Source. By default that is .NET's generator, as before;
+        /// a test can set a BorlandRandSource to get Turbo C++'s rand() instead.
         /// </summary>
         /// <param name="max"></param>
         /// <returns></returns>
         public int Next(int max)
         {
-            return DotNetRng.Next(max);
-            // var newSeed = (uint)((Seed * Multiplier) + 1);
-            // Seed = newSeed;
-            // //Debug.Print($"Rng={((newSeed) & 0x7FFF) % max} out of {max}. Next Seed is {Seed}");
-            // return (int)(((newSeed) & 0x7FFF) % max);
+            return Source.Next(max);
         }
 
         public int Next(int min, int max)
