@@ -126,7 +126,7 @@ namespace Underworld
         {
             var npcdemandscore = 1;
             //get value of items selected on npc area, without likes (uw1 BARTER.C:712-713, uw2 BARTER.C:687-688)
-            var npcvalue = TotalOffering(useLikes: false, playerSide: false, accuracy: NPCAppraisalAccuracy);
+            var npcvalue = TotalOffering(useLikes: false, playerSide: false, values: NpcAppraisals, accuracy: NPCAppraisalAccuracy);
             var avghit = critterObjectDat.avghit(talker.item_id);
             if (avghit > 0)
             {

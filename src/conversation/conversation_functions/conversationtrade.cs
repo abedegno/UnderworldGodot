@@ -45,6 +45,18 @@ namespace Underworld
         public static int TradeResult = 0;
 
         /// <summary>
+        /// The valuations of the items in each trade slot, kept so that an item is valued once: -1 when not yet valued.
+        /// The NPC's appraisals use its likes and npc_assess (do_offer, do_demand), the judgements are the player's own (do_judgement).
+        /// All are cleared when a conversation starts; after that only some slot changes clear them, so a slot whose item changes
+        /// another way keeps the old item's value, as in DOS.
+        /// (npc_judgement, npc_appraisals, play_judgement, play_appraisals, uw1 BARTER.C:102-106; barter_vals, uw2 BARTER.C:72)
+        /// </summary>
+        public static int[] NpcAppraisals = new int[6];
+        public static int[] PlayerAppraisals = new int[6];
+        public static int[] NpcJudgement = new int[6];
+        public static int[] PlayerJudgement = new int[6];
+
+        /// <summary>
         /// This is a bonus applied by a bablhack in uw2. 
         /// However it is bugged in vanilla since it makes the npc items more valuable and only applies on do_judgement and does not actually help the player make better trades!
         /// </summary>
@@ -60,6 +72,13 @@ namespace Underworld
         /// </summary>
         public static void BarterInit(uwObject talker)
         {
+            for (int i = 0; i < 6; i++)
+            {//uw1 BARTER.C:185-188, uw2 BARTER.C:150-151
+                NpcAppraisals[i] = -1;
+                PlayerAppraisals[i] = -1;
+                NpcJudgement[i] = -1;
+                PlayerJudgement[i] = -1;
+            }
             TradeResult = 0;
             var source = Rng.Source;
             Rng.Source = new BorlandRandSource((uint)talker.index);
@@ -80,11 +99,12 @@ namespace Underworld
         }
 
         /// <summary>
-        /// The total value of one side's selected items, each valued by AssessValue, summed in 16 bits as DOS's int is
+        /// The total value of one side's selected items, summed in 16 bits as DOS's int is
         /// (total_offering, uw1 BARTER.C:788-803, uw2 BARTER.C:767-782).
+        /// Each slot is valued by AssessValue only when its entry in values is -1, and the value is kept there.
         /// With useLikes the NPC's likes and dislikes count.
         /// </summary>
-        public static int TotalOffering(bool useLikes, bool playerSide, int accuracy)
+        public static int TotalOffering(bool useLikes, bool playerSide, int[] values, int accuracy)
         {
             short total = 0;
             for (int i = 0; i < uimanager.NoOfTradeSlots; i++)
@@ -92,7 +112,11 @@ namespace Underworld
                 var index = playerSide ? uimanager.GetPlayerTradeSlot(i) : uimanager.GetNPCTradeSlot(i);
                 if (index > 0)
                 {
-                    total = (short)(total + AssessValue(useLikes, index, accuracy));
+                    if (values[i] == -1)
+                    {
+                        values[i] = AssessValue(useLikes, index, accuracy);
+                    }
+                    total = (short)(total + values[i]);
                 }
             }
             return total;

@@ -1,4 +1,6 @@
+using System.Collections;
 using Godot;
+using Peaky.Coroutines;
 
 namespace Underworld
 {
@@ -89,7 +91,8 @@ namespace Underworld
 
         /// <summary>
         /// Picks up the item in a trade slot into the hand. The NPC's items can be taken only after an accepted offer
-        /// or demand (UseTradeSlot, uw1 BARTER.C:355-356, uw2 BARTER.C:316-317).
+        /// or demand (UseTradeSlot, uw1 BARTER.C:355-376, uw2 BARTER.C:316-336).
+        /// A stack first asks how many to take (TakeFromTradeSlotStack).
         /// Returns true when the item is now in the hand.
         /// </summary>
         public static bool PickUpFromTradeSlot(int slotNo, bool isPlayerSide)
@@ -103,18 +106,98 @@ namespace Underworld
             {
                 return false;
             }
+            var obj = UWTileMap.current_tilemap.LevelObjects[itemIds[slotNo]];
+            if (obj.is_quant == 1 && obj.link < 0x200 && obj.link != 1)
+            {
+                _ = Coroutine.Run(TakeFromTradeSlotStack(slotNo, isPlayerSide), main.instance);
+                return false;
+            }
+            return TakeFromTradeSlot(slotNo, isPlayerSide, obj.ObjectQuantity);
+        }
 
-            playerdat.ObjectInHand = itemIds[slotNo];
-            var obj = UWTileMap.current_tilemap.LevelObjects[playerdat.ObjectInHand];
+        /// <summary>
+        /// Asks how many of the stack in a trade slot to take and takes them (AskHowMany, uw1 INVPANEL.C:452-497,
+        /// uw2 INVPANEL.C:436-479). Nothing, or not a number, takes nothing; more than the stack takes the stack.
+        /// </summary>
+        public static IEnumerator TakeFromTradeSlotStack(int slotNo, bool isPlayerSide)
+        {
+            int[] itemIds = isPlayerSide ? PlayerItemIDs : NPCItemIDs;
+            var obj = UWTileMap.current_tilemap.LevelObjects[itemIds[slotNo]];
+            MessageScrollLine[] linesToRestore = BackupLines(instance.scroll.Lines, 5);
+            MessageDisplay.WaitingForTypedInput = true;
+            instance.TypedInput.Text = obj.ObjectQuantity.ToString();
+            instance.TypedInput.CaretColumn = instance.TypedInput.Text.Length;
+            instance.scroll.Clear();
+            AddToMessageScroll("Move how many? {TYPEDINPUT}|", mode: MessageDisplay.MessageDisplayMode.TypedInput);
+
+            while (MessageDisplay.WaitingForTypedInput)
+            {
+                yield return new WaitOneFrame();
+            }
+
+            for (int i = 0; i <= linesToRestore.GetUpperBound(0); i++)
+            {
+                instance.scroll.Lines[i] = new MessageScrollLine(linesToRestore[i].OptionNo, linesToRestore[i].LineText);
+            }
+            instance.scroll.UpdateMessageDisplay();
+            if (int.TryParse(instance.TypedInput.Text, out int count) && count > 0
+                && playerdat.ObjectInHand == -1 && itemIds[slotNo] == obj.index)
+            {
+                TakeFromTradeSlot(slotNo, isPlayerSide, System.Math.Min(count, obj.ObjectQuantity));
+            }
+            yield return true;
+        }
+
+        /// <summary>
+        /// Takes count of the item in a trade slot into the hand, leaving the rest of a stack in the slot, unselected.
+        /// Fails with "That is too heavy to take." when the player cannot carry that many (EncumCheck), and the stack is left whole.
+        /// Picking up from either side forgets the valuations of the player's slot of the same number, as DOS does even for an NPC slot.
+        /// (UseTradeSlot, uw1 BARTER.C:357-376, uw2 BARTER.C:318-336)
+        /// </summary>
+        static bool TakeFromTradeSlot(int slotNo, bool isPlayerSide, int count)
+        {
+            int[] itemIds = isPlayerSide ? PlayerItemIDs : NPCItemIDs;
+            var obj = UWTileMap.current_tilemap.LevelObjects[itemIds[slotNo]];
+            uwObject rest = null;
+            if (count < obj.ObjectQuantity)
+            {//split the stack: a copy keeps the rest (AskHowMany); with no free object take nothing
+                var restIndex = ObjectCreator.PrepareNewObject(obj.item_id);
+                if (restIndex == 0)
+                {
+                    return false;
+                }
+                rest = UWTileMap.current_tilemap.LevelObjects[restIndex];
+                for (int i = 0; i < 8; i++)
+                {
+                    rest.DataBuffer[rest.PTR + i] = obj.DataBuffer[obj.PTR + i];
+                }
+                rest.link = (short)(obj.link - count);
+                obj.link = (short)count;
+            }
+            if (!playerdat.CanCarryWeight(obj))
+            {
+                if (rest != null)
+                {//put the stack back together
+                    obj.link = (short)(obj.link + rest.link);
+                    ObjectFreeLists.ReleaseFreeObject(rest);
+                }
+                AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_that_is_too_heavy_to_take_));
+                return false;
+            }
+
+            playerdat.ObjectInHand = obj.index;
             instance.mousecursor.SetCursorToObject(obj.item_id);
+            var restOfStack = rest == null ? -1 : rest.index;
             if (isPlayerSide)
             {
-                SetPlayerTradeSlot(slotNo, -1, false);
+                SetPlayerTradeSlot(slotNo, restOfStack, false);
             }
             else
             {
-                SetNPCTradeSlot(slotNo, -1, false);
+                SetNPCTradeSlot(slotNo, restOfStack, false);
             }
+            ConversationVM.PlayerJudgement[slotNo] = -1;
+            ConversationVM.PlayerAppraisals[slotNo] = -1;
             return true;
         }
 
@@ -144,6 +227,9 @@ namespace Underworld
             {
                 return;
             }
+            //the slot's item changes, so its valuations are forgotten (uw1 BARTER.C:399-400, uw2 BARTER.C:359-360)
+            ConversationVM.PlayerJudgement[slotNo] = -1;
+            ConversationVM.PlayerAppraisals[slotNo] = -1;
 
             if (PlayerItemIDs[slotNo] == -1)
             {
