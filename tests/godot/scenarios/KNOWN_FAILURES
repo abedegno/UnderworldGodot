@@ -38,7 +38,6 @@ uw2/sleep-killorn-crash  ~quest 50 set and 54 clear (Killorn crashes) expected 0
 uw1/sleep-in-void  ~fatigue after trying to sleep in the Void  # no level 9 test (src/World/sleep.cs:25); uw1 SKILLS.C:525-528 refuses
 uw2/map-area-radius  ~open squares mapped within the radius 7 circle at Casting 20  # radius Max(Casting - 13, 0) / 5 + 2, flood-filled square (src/magic/spellcasting_class_13.cs:71); uw2 SPELLS.C:996-1002 circle
 uw2/targeted-spell-mana  ~mana spent on a targeted spell before its target  # class 7 leaves applyCost true (src/magic/spellcasting.cs:77, 108); uw2 RUNES.C:247-251 holds it in mspell_mused
-uw1/uw1-casting-check  ~mana spent casting a circle 1 spell at Casting 13  # SkillCheck(Casting, circle * 3) for both games (src/magic/runicmagic.cs:339); uw1 RUNES.C:249 skill_check(Casting + 5, circle * 2)
 uw1/carry-capacity  ~carrying limit at Strength 15 expected 300  # 300 + Strength * 13 for both games (src/player/playerdat.cs:794); uw1 SKILLS.C:112 Strength * 20
 uw1/uw1-create-object-trap  ~objects made by a quality 32 create object trap  # two chance rolls, random placement (src/traps/a_create_object_trap.cs:18, 59, 194); uw1 TRIGGER.C:299-314
 uw1/uw1-sounds-dat-length  ~UW1 effects whose length is read other than high byte first  # low byte first (src/audio/sfx/SoundsDatLoader.cs:45); uw1 SOUND.C:708 high byte first
