@@ -183,12 +183,12 @@ namespace Underworld
             ViewPortMouseYPos = mouse.Y;
 
             var objToThrow = UWTileMap.current_tilemap.LevelObjects[playerdat.ObjectInHand];
-            var itemid = objToThrow.item_id;
+            var moonstone = objectsearch.HasOrIsObj(objToThrow, 294, UWTileMap.current_tilemap.LevelObjects);
             if (pickup.DropObjectByPlayer(objToThrow, true))
             {
                 playerdat.ObjectInHand = -1;
                 instance.mousecursor.SetCursorToCursor();
-                pickup.DropSpecialCases(itemid);
+                pickup.DropSpecialCases(moonstone);
             }
         }
 

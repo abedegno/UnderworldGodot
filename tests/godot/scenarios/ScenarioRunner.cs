@@ -201,6 +201,10 @@ public partial class ScenarioRunner : Node
         (() => new CutsceneLoop(), true),
         // missing routines
         (() => new StepMoves(), true),
+        // missing routines: reach
+        (() => new ReachBlockingTerrain(), true),
+        (() => new MoonstoneInContainer(), true),
+        (() => new LightSphereInContainer(), true),
         (() => new HarnessFails(), false),
     };
 
