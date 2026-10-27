@@ -816,7 +816,7 @@ namespace Underworld
                     //seg028_2941_E36:
                     //loop the object list on the tile.
                     //var indexByte = tileAtPTR.indexObjectList;
-                    while (next != 0 && si <= 0x40)
+                    while (next != 0 && si < 0x40)//at most 64 objects a square. uw1 COLLIDE.C:509, uw2 COLLIDE.C:495
                     {
                         var obj = UWTileMap.current_tilemap.LevelObjects[next];
                         if (next != MotionCalcArray.MotionArrayObjectIndexA)
@@ -866,8 +866,8 @@ namespace Underworld
                         next = obj.next;
                         si++;
                     }
-                    if (si >= 0x40)
-                    {//seg028_2941_E6F:
+                    if (si == 0x40)
+                    {//seg028_2941_E6F: a square of 64 objects ends the scan. uw1 COLLIDE.C:524-525, uw2 COLLIDE.C:510-511
                         return;
                     }
                     else
