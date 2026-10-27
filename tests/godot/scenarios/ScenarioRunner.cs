@@ -59,6 +59,7 @@ public partial class ScenarioRunner : Node
         (() => new Uw1NpcSequences(), true),
         // batch B: player and magic rules
         (() => new SmiteUndeadRule(), true),
+        (() => new SmiteFloatSkull(), true),
         (() => new KillExperience(), true),
         (() => new SkillPointGain(), true),
         (() => new LoreSkillRecord(), true),
