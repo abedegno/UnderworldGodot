@@ -17,7 +17,7 @@ namespace Underworld
         /// <param name="minorclass"></param>
         /// <param name="caster">Casting object (use if not the player casting)</param>
         /// <param name="target"></param>
-        /// <returns>false if the spell is refused, as do_spell returns 0 on an anti-magic square or (UW1) in the Ethereal Void (uw1 SPELLS.C:98-102, uw2 SPELLS.C:86-90)</returns>
+        /// <returns>false if the spell is refused, as do_spell returns 0 on an anti-magic square, (UW1) in the Ethereal Void (uw1 SPELLS.C:98-102, uw2 SPELLS.C:86-90), or for a lasting spell with three already active (uw1 SPELLS.C:107-111, uw2 SPELLS.C:101-104)</returns>
         public static bool CastSpell(int majorclass, int minorclass, uwObject caster, uwObject target, int tileX, int tileY, bool CastOnEquip)
         {
             bool PlayerCast = caster == playerdat.playerObject;
@@ -51,7 +51,11 @@ namespace Underworld
                 case 2://
                 case 3://
                     {
-                        CastClass0123_Spells(caster: caster, majorclass: majorclass, minorclass: minorclass);                        
+                        if (!CastClass0123_Spells(caster: caster, majorclass: majorclass, minorclass: minorclass) && PlayerCast)
+                        {//three active spells already: do_spell returns 0 and player_cast keeps the mana it has paid (uw1 RUNES.C:259-269, uw2 RUNES.C:248-251, 308-310)
+                            RefuseCast(majorclass, PlayerCast);
+                            return false;
+                        }
                         break;
                     }
                 case 4://healing

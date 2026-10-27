@@ -14,7 +14,3 @@
 # batch C
 # batch D: guards
 # facts Underworld Revisited observed in DOS
-uw1/cast-slots-full  ~expected "Casting was not successful."  # src/magic/spellcasting_activeeffects.cs:12-38 refuses a fourth spell silently and CastSpell still returns true; uw1 PLAYTIME.C:221-222, SPELLS.C:108-111, RUNES.C:264-269
-uw2/cast-slots-full  ~expected "Casting was not successful."  # src/magic/spellcasting_activeeffects.cs:12-38; uw2 PLAYTIME.C:250, SPELLS.C:102, RUNES.C:308-310
-uw1/no-ammo-message  ~a bow with no arrows: expected  # src/interaction/combat/combat_input.cs:189 prints block 1 string 207 (UW2's 0xCF; in UW1 "You push the lever.") and no full stop; uw1 COMBAT.C:524-528
-uw2/no-ammo-message  ~a bow with no arrows: expected  # src/interaction/combat/combat_input.cs:189 leaves out the full stop (string 0x60); uw2 COMBAT.C:559-562
