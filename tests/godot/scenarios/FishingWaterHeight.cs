@@ -35,6 +35,9 @@ public sealed class FishingWaterHeight : Scenario
     static int Class(TileInfo t) => UWClass._RES == UWClass.GAME_UW2 ? (t.terrain & 0xC0) >> 6 : t.terrain;
     static bool IsWater(TileInfo t) => UWClass._RES == UWClass.GAME_UW2 ? Class(t) == 1 : Class(t) == 0x10;
 
+    /// <summary>The text without colour tags and with runs of spaces as one, as a long message wraps over two scroll lines.</summary>
+    static string Flat(string text) => System.Text.RegularExpressions.Regex.Replace(System.Text.RegularExpressions.Regex.Replace(text, @"\[/?color[^\]]*\]", " "), @"\s+", " ").Trim();
+
     public override Task Setup(ScenarioContext c)
     {
         var p = playerdat.playerObject;
@@ -90,7 +93,7 @@ public sealed class FishingWaterHeight : Scenario
             uimanager.instance.scroll.Clear();
             fishingpole.use(p, false);
             string text = string.Join(" ", System.Linq.Enumerable.Select(uimanager.instance.scroll.Lines, l => l?.LineText ?? ""));
-            if (text.Trim().Length > 0) _refused[i] = text.Contains(refusal);
+            if (text.Trim().Length > 0) _refused[i] = Flat(text).Contains(Flat(refusal));
             if (playerdat.ObjectInHand > 0)
             {// a fish was caught: let it go
                 ObjectFreeLists.ReleaseFreeObject(UWTileMap.current_tilemap.LevelObjects[playerdat.ObjectInHand]);
