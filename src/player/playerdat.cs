@@ -652,13 +652,17 @@ namespace Underworld
                 skillpointfactor = 3000;
             }
             int[] LevelUpAt = new int[] { 0, 1, 2, 3, 4, 6, 8, 0xC, 0x10, 0x18, 0x20, 0x30, 0x40, 0x60, 0x80, 0xC0 };
-            if (newEXP > 0)
-            {
+            if ((newEXP > 0) && (_RES == GAME_UW2))
+            {//UW2 halves every gain, rounding at random (player_get_exp, uw2 SKILLCHK.C:72-73); UW1 does not
                 newEXP = (newEXP + Rng.r.Next(0, 2)) / 2;
             }
 
             if (newEXP >= 0)
             {
+                if ((_RES != GAME_UW2) && (Exp > 0x17700))
+                {//UW1 adds nothing once experience is above 0x17700, checked first (uw1 SKILLCHK.C:85-87)
+                    return;
+                }
                 if (_RES == GAME_UW2)
                 {
                     var world = (dungeon_level - 1) / 8;
@@ -764,10 +768,10 @@ namespace Underworld
                 }
                 XMIMusic.ChangeThemeMusic(XMIMusic.Fanfare); //fanfare
                 var exp_reward = critterObjectDat.experience(critter.item_id);
-                exp_reward = exp_reward + Rng.DiceRoll(2, exp_reward);
+                exp_reward = exp_reward * 4 + Rng.DiceRoll(2, exp_reward); //uw2 COMBAT.C:942, uw1 COMBAT.C:838
                 if (critter.IsPowerful == 1)
-                {
-                    exp_reward = exp_reward + (((0x18 + Rng.r.Next(0x18)) * exp_reward) / 0x10);
+                {//a powerful critter's reward is scaled by 24..47 / 16, not added to (uw2 COMBAT.C:943-944, uw1 COMBAT.C:839-840)
+                    exp_reward = (exp_reward * (Rng.r.Next(0x18) + 0x18)) / 0x10;
                 }
                 ChangeExperience(exp_reward);
             }
