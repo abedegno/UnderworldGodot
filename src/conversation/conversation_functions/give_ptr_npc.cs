@@ -19,7 +19,7 @@ namespace Underworld
                 result_register = 0;
                 return;
             }
-            //try and find in trade area first.
+            //try and find in trade area first. The shipped scripts pass an index from find_barter or show_inv, a level object index like the trade slots' (find_inv's player result is an inventory index, numbered separately in the port)
             var itemcount = GetPlayerSelectedTradeItems(out int[] itemIds, out int[] itemIndices);
 
             for (int i=0; i<itemcount;i++)
@@ -103,7 +103,7 @@ namespace Underworld
 
         /// <summary>
         /// npc_inv_add: adds an object to the NPC's inventory, adding it to a coin pile the NPC already has when the total stays under 999.
-        /// The coin merged is ITEM_GOLD_COIN 0xA1 in uw1 (uw1 BARTER.C:864-883), ITEM_COIN 0xA0 in uw2 (uw2 BARTER.C:844-863).
+        /// The coin merged is ITEM_GOLD_COIN 0xA1 in uw1 (uw1 BARTER.C:874-894), ITEM_COIN 0xA0 in uw2 (uw2 BARTER.C:854-874).
         /// </summary>
         static void NpcInvAdd(uwObject talker, uwObject obj)
         {
