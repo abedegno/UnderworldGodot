@@ -117,6 +117,7 @@ public partial class ScenarioRunner : Node
         (() => new MissImpactSound(), true),
         (() => new NewPlayerPos(), true),
         (() => new WallHitSound(), true),
+        (() => new CanPlace(), true),
         (() => new TybalTalkTrap(), true),
         (() => new XTrapsValueRange(), true),
         (() => new NumberedVariableRanges(), true),
