@@ -76,6 +76,10 @@ namespace Underworld
                     {
                         currentSpell = new RunicMagic(majorclass,minorclass);
                         uimanager.instance.mousecursor.SetCursorToCursor(10);
+                        if ((PlayerCast) && (_RES == GAME_UW2))
+                        {//uw2 holds the cost until the target is chosen: uw2 RUNES.C:247-251 (mspell_mused)
+                            applyCost = false;
+                        }
                     }
                     break;
                 case 8://spells that create or summon
@@ -137,6 +141,11 @@ namespace Underworld
                             objList: objList,
                             caster: playerdat.playerObject,                           
                             WorldObject: WorldObject); 
+                        if (_RES == GAME_UW2)
+                        {//the held cost is paid when the target is chosen: uw2 SPELLS.C:773 (target_spells), 915 (obj_spells)
+                            playerdat.play_mana = System.Math.Max(0, playerdat.play_mana - RunicMagic.PendingSpellCost);
+                            RunicMagic.PendingSpellCost = 0;
+                        }
                         currentSpell = null;
                         uimanager.instance.mousecursor.SetCursorToCursor();
                         break;
