@@ -80,8 +80,11 @@ public sealed class GaramonBurial : Scenario
             .ToList();
         _grave = graves.FirstOrDefault(o => o.tileX == _gx && o.tileY == _gy);
         if (_grave == null) { _problem = $"no gravestone with special link 0x21 at ({_gx}, {_gy}) among level {_level}'s live objects ({graves.Count} elsewhere)"; return; }
-        if (playerdat.playerObject.tileX != _gx || playerdat.playerObject.tileY != _gy)
-        { _problem = $"the player is at ({playerdat.playerObject.tileX}, {playerdat.playerObject.tileY}), not at the grave"; return; }
+        // The gravestone has a height, so the player cannot stand on its square: new_player_pos
+        // puts him on the nearest square with room, within the search box round it
+        // (uw1/src/game/UWEDIT.C:466-471, uw1/src/event/WORLDEV.C:76-168).
+        if (System.Math.Abs(playerdat.playerObject.tileX - _gx) > 4 || System.Math.Abs(playerdat.playerObject.tileY - _gy) > 4)
+        { _problem = $"the player is at ({playerdat.playerObject.tileX}, {playerdat.playerObject.tileY}), not by the grave"; return; }
 
         // 4. Garamon's bones in the backpack: made in the hand, then put in a free backpack
         //    slot the way the inventory does it (uimanager.MoveObjectInHandOutOfOpenedContainer).
