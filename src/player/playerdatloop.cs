@@ -248,8 +248,11 @@ namespace Underworld
                             }//end every 5 mins update
                             if ((_RES == GAME_UW2) && ((playerUpdateCounter % 60) == 0))//every 20 mins: uw2 PLAYTIME.C:151-165
                             {
-                                Debug.Print("TODO Update 'day' value");
-                                Debug.Print("TODO something with scd.ark");
+                                if (_RES == GAME_UW2)
+                                {//the hour: the time of day, X clock 0, steps on modulo 72 and the day schedule in SCD.ARK block 0 is run up to it (uw2 PLAYTIME.C:151-163)
+                                    SetXClock(0, (GetXClock(0) + 1) % 0x48);
+                                    scd.ProcessSCDBlock0(1);
+                                }
                                 playerUpdateCounter = 0;
                             }//end every 20 mins update
 
