@@ -51,6 +51,7 @@ namespace Underworld
                 //fail
                 yield return say_op(noYouWont);
                 result_register = 0;
+                ReturnTradeObjectsToNPC(talker, OnlyUnselected: false);//uw1 BARTER.C:734
                 npc.SetGoalAndGtarg(talker, 5, 1);//make npc hostile                    
             }
 
@@ -97,6 +98,7 @@ namespace Underworld
                     //fail
                     yield return say_op(noYouWont);
                     result_register = 0;
+                    ReturnTradeObjectsToNPC(talker, OnlyUnselected: false);//uw2 BARTER.C:711
                     npc.SetGoalAndGtarg(talker, 5, 1);//make npc hostile                    
                 }
             }
@@ -109,6 +111,7 @@ namespace Underworld
                     Set(attitudeOffset, attitude);
                 }
                 yield return say_op(whatItems);
+                ReturnTradeObjectsToNPC(talker, OnlyUnselected: false);//uw2 BARTER.C:677
                 TradeResult = 0;
             }
 

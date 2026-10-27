@@ -54,6 +54,7 @@ public partial class ScenarioRunner : Node
         (() => new PathsFreedOnLevelChange(), true),
         // batch B: player and magic rules
         (() => new SmiteUndeadRule(), true),
+        (() => new SmiteFloatSkull(), true),
         (() => new KillExperience(), true),
         (() => new SkillPointGain(), true),
         (() => new QuestFlagOperations(), true),
@@ -89,6 +90,7 @@ public partial class ScenarioRunner : Node
         (() => new EnchantRechargeWand(), true),
         (() => new GivePtrNpc(), true),
         (() => new EndBarter(), true),
+        (() => new BarterNearPut(), true),
         (() => new TrapChainFlow(), true),
         (() => new TeleportOccupied(), true),
         (() => new NewPlayerPos(), true),
@@ -107,6 +109,17 @@ public partial class ScenarioRunner : Node
         (() => new GuardLevelChange(), true),
         (() => new GuardSaveLoad(), true),
         (() => new GuardMelee(), true),
+        // death, remains and the Pits arena
+        (() => new DeathDropsCursorObject(), true),
+        (() => new CritterRemainsPutAt(), true),
+        (() => new BoulderBreaks(), true),
+        (() => new TombFloatSkulls(), true),
+        (() => new PitsArenaCoward(), true),
+        (() => new JailCatchUp(), true),
+        // missing routines: doors
+        (() => new DoorTurnsRound(), true),
+        (() => new DoorObstructed(), true),
+        (() => new GruesomeDoorHack(), true),
         (() => new HarnessFails(), false),
     };
 

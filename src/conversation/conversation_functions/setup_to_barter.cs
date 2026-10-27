@@ -27,6 +27,7 @@ namespace Underworld
                     break;
                 }
                 var obj = UWTileMap.current_tilemap.LevelObjects[nextObj];
+                nextObj = obj.next;//before the object leaves the chain
                 if (!skippedprimaryweapon)
                     {
                         if (obj.OneF0Class==0)
@@ -48,6 +49,16 @@ namespace Underworld
                 if (!skip)
                 {
                     Debug.Print($"Slot{slotindex} {obj.a_name}");
+                    //the item leaves the NPC's inventory for the slot, and an item it replaces goes back
+                    //(uw1 BARTER.C:143-148, uw2 BARTER.C:111-116). end_barter drops what is left near the NPC.
+                    ObjectRemover_OLD.RemoveObjectFromLinkedList(talker.link, obj.index, UWTileMap.current_tilemap.LevelObjects, talker.PTR + 6);
+                    var replaced = uimanager.GetNPCTradeSlot(slotindex, false);
+                    if (replaced != -1)
+                    {
+                        var replacedObj = UWTileMap.current_tilemap.LevelObjects[replaced];
+                        replacedObj.next = talker.link;
+                        talker.link = replacedObj.index;
+                    }
                     uimanager.SetNPCTradeSlot(slotindex, obj.index, false);
                     slotindex++;
                     if (slotindex>uimanager.NoOfTradeSlots-1)
@@ -60,8 +71,6 @@ namespace Underworld
                 {
                     Debug.Print($"Excluding {obj.a_name}");
                 }
-
-                nextObj = obj.next;
             }
         }
 
