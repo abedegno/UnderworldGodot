@@ -32,8 +32,6 @@ uw2/paths-freed-on-level-change  ~free paths after entering level  # free-path m
 # batch B: player and magic rules
 uw1/smite-undead  ~undead (resist bit 0x80) hit points after Smite Undead  # UW1 sends every target to the SmiteUndeadObject stub (src/magic/spellcasting_class_7.cs:407, 448); uw1 SPELLS.C:347-350 kills the undead
 uw2/smite-undead  ~living critter (no resist bit 0x80) hit points  # tests a value ScaleDamage never changes, so every critter takes 255 (spellcasting_class_7.cs:417-418); skull stub (:448); uw2 SPELLS.C:331-347, WORLDEV.C:1649
-uw1/item-protection  ~slot 2 protection minor 0x3  # class 12 only for slots 0 and 1, no +1, toughness to protection (src/magic/spellcasting_objects.cs:61-77); uw1 PLAYDATA.C:271-286
-uw2/item-protection  ~slot 2 protection minor 0x3  # same (spellcasting_objects.cs:61-77); uw2 PLAYDATA.C:249-264
 uw1/sleep-night  ~hit points after the night  # heals HPRegenerationChange(regen * comfort), 2..32 hunger, 16 drunkenness, lights as a counter (src/World/sleep.cs:117, 163, 192, 197); uw1 SKILLS.C:549, 584-605
 uw2/sleep-night  ~hit points after the night  # same (sleep.cs:117, 163, 192, 197); uw2 SKILLS.C:472, 511-532
 uw2/sleep-killorn-crash  ~quest 50 set and 54 clear (Killorn crashes) expected 0  # needs world 2 and quest 54 set, the reverse (src/World/sleep.cs:105); uw2 SKILLS.C:467-471
