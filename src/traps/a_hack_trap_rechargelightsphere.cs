@@ -22,16 +22,12 @@ namespace Underworld
                 var next = tile.indexObjectList;
                 while (next != 0)
                 {
-                    var match = objectsearch.FindMatchInObjectListChainNextObjectsOnly(
-                        ListHeadIndex: next,
-                        majorclass: 2, minorclass: 1, classindex: 3,
-                        objList: UWTileMap.current_tilemap.LevelObjects);
-
-                    if (match != null)
-                    {//the object is either a light sphere or is a container that holds one.
-                        animo.SpawnAnimoInTile(0xC,match.xpos, match.ypos, match.zpos, match.tileX, match.tileY);
+                    var match = UWTileMap.current_tilemap.LevelObjects[next];
+                    if (objectsearch.HasOrIsObj(match, 0x93, UWTileMap.current_tilemap.LevelObjects))
+                    {//the object is either a light sphere or is a container that holds one. (underworld-exhumed uw2/src/event/WORLDEV.C:1598-1600)
+                        animo.SpawnAnimoInTile(0xC, match.xpos, match.ypos, match.zpos, triggerX, triggerY);
                     }
-                    next = UWTileMap.current_tilemap.LevelObjects[next].next;
+                    next = match.next;
                 }
             }
         }

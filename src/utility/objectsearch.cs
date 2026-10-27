@@ -217,6 +217,32 @@ namespace Underworld
         }
 
         /// <summary>
+        /// Whether obj is the item item_id or holds one anywhere inside it.
+        /// </summary>
+        /// Original HasOrIsObj (underworld-exhumed uw1/src/obj/OBJECTS.C:490; uw2/src/obj/OBJECTS.C:475)
+        /// <param name="obj"></param>
+        /// <param name="item_id"></param>
+        /// <param name="objList">The list that holds obj's contents</param>
+        /// <returns></returns>
+        public static bool HasOrIsObj(uwObject obj, int item_id, uwObject[] objList)
+        {
+            if (obj.item_id == item_id)
+            {
+                return true;
+            }
+            if (obj.is_quant == 0)
+            {
+                return FindMatchInObjectChain(
+                    ListHeadIndex: obj.link,
+                    majorclass: item_id >> 6,
+                    minorclass: (item_id & 0x30) >> 4,
+                    classindex: item_id & 0xF,
+                    objList: objList) != null;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Finds a matching object in a full list of objects
         /// </summary>
         /// <param name="majorclass"></param>

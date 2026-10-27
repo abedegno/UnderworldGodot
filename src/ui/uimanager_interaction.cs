@@ -139,7 +139,8 @@ namespace Underworld
                     break;
                 case InteractionModes.ModeUse:
                     //do a use interaction with the object.
-                    if (CanReach(UWTileMap.current_tilemap.LevelObjects[index], playerdat.UseDistance))
+                    if (CanReach(UWTileMap.current_tilemap.LevelObjects[index], playerdat.UseDistance)
+                        && !BlockingTerrain(UWTileMap.current_tilemap.LevelObjects[index], playerdat.UseDistance))
                     {
                         if (useon.CurrentItemBeingUsed != null)
                         {
@@ -166,7 +167,9 @@ namespace Underworld
                 case InteractionModes.ModePickup:
                     if (playerdat.ObjectInHand == -1)//don't do pickup if holding something already.
                     {
-                        if (CanReach(UWTileMap.current_tilemap.LevelObjects[index], playerdat.PickupDistance))
+                        var inrange = CanReach(UWTileMap.current_tilemap.LevelObjects[index], playerdat.PickupDistance);
+                        var clear = !BlockingTerrain(UWTileMap.current_tilemap.LevelObjects[index], playerdat.PickupDistance);
+                        if (inrange && clear)
                         {
                             //get weight of object being picked
                             pickup.PickUp(
@@ -174,9 +177,13 @@ namespace Underworld
                                 objList: UWTileMap.current_tilemap.LevelObjects,
                                 WorldObject: true);
                         }
+                        else if (inrange)
+                        {//in range but the terrain is in the way (underworld-exhumed uw1/src/ui/INTERACT.C:484-485; uw2/src/ui/INTERACT.C:389-390)
+                            uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_you_cannot_reach_that_));
+                        }
                         else
                         {
-                            uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_you_cannot_reach_that_));
+                            uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_that_is_too_far_away_to_take_));
                         }
                     }
                     break;
@@ -225,6 +232,114 @@ namespace Underworld
                     }
                 }
 
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// The height of the highest bridge on the tile, or -1.
+        /// </summary>
+        /// Original BridgeHeight (underworld-exhumed uw1/src/ui/INTERACT.C:300; uw2/src/ui/INTERACT.C:165)
+        static int BridgeHeight(TileInfo tile)
+        {
+            int h = -1;
+            var next = tile.indexObjectList;
+            while (next != 0)
+            {
+                var obj = UWTileMap.current_tilemap.LevelObjects[next];
+                if (obj.item_id == 0x164 && obj.zpos > h)
+                {
+                    h = obj.zpos;
+                }
+                next = obj.next;
+            }
+            return h;
+        }
+
+        /// <summary>
+        /// The terrain class of a tile's floor as the reach test compares it: UW1 the whole TERRAIN.DAT word, UW2 its bits 6-7.
+        /// </summary>
+        /// (underworld-exhumed uw1/src/ui/INTERACT.C:55; uw2/src/ui/INTERACT.C:46)
+        static int ReachTerrain(TileInfo tile)
+        {
+            if (UWClass._RES == UWClass.GAME_UW2)
+            {
+                return (tile.terrain & 0xC0) >> 6;
+            }
+            else
+            {
+                return tile.terrain;
+            }
+        }
+
+        /// <summary>
+        /// Whether the terrain stops the player reaching obj: it is outside the player's height band, or a tile on the straight line to it
+        /// lies more than one floor step below the bottom of his reach (at the normal reach only), or the line crosses another terrain class
+        /// (water, lava, ice) than the one he stands on, unless a bridge carries it. A distance of 0 is never blocked.
+        /// </summary>
+        /// Original BlockingTerrain (underworld-exhumed uw1/src/ui/INTERACT.C:315-370; uw2/src/ui/INTERACT.C:180-237)
+        static bool BlockingTerrain(uwObject obj, int UseDistance)
+        {
+            if (UseDistance == 0)
+            {
+                return false;
+            }
+            var map = UWTileMap.current_tilemap;
+            int px = playerdat.playerObject.tileX;
+            int py = playerdat.playerObject.tileY;
+            int terr = ReachTerrain(map.Tiles[px, py]);
+            if (obj.tileX == px && obj.tileY == py)
+            {
+                return false;
+            }
+            int xdir = Math.Sign(obj.tileX - px);
+            int ydir = Math.Sign(obj.tileY - py);
+            int pole = playerdat.usingpole ? 1 : 0;
+            int reach = (pole + 1) << 3;
+            int high = (pole + 1) << 5;
+            int pz = playerdat.playerObject.zpos;
+            if (pz > reach)
+            {
+                pz -= reach;
+            }
+            else
+            {
+                pz = 0;
+            }
+            int oz = obj.zpos;
+            if (oz < pz || pz + high < oz)
+            {
+                return true;
+            }
+            int x = px; int y = py;
+            while (true)
+            {
+                //step one tile towards the object on each axis, stopping at its row and column.
+                x += xdir;
+                if ((xdir < 0 && x < obj.tileX) || (xdir > 0 && x > obj.tileX))
+                {
+                    x = obj.tileX;
+                }
+                y += ydir;
+                if ((ydir < 0 && y < obj.tileY) || (ydir > 0 && y > obj.tileY))
+                {
+                    y = obj.tileY;
+                }
+                var tile = map.Tiles[x, y];
+                int bridge = BridgeHeight(tile);
+                bool found = bridge >= 0 && bridge <= oz && bridge >= pz;
+                if (!found && (pz >> 3) > tile.floorHeight && UseDistance == 0x90)
+                {
+                    return true;
+                }
+                if (x == obj.tileX && y == obj.tileY)
+                {
+                    break;
+                }
+                if (UseDistance <= 0x90 && !found && ReachTerrain(tile) != 0 && ReachTerrain(tile) != terr)
+                {
+                    return true;
+                }
             }
             return false;
         }
