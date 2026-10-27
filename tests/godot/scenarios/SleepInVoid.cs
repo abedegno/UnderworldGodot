@@ -69,7 +69,7 @@ public sealed class SleepInVoid : Scenario
     }
 
     /// <summary>The first open square (tile type 1) away from the edge on a level in UW1's LEV.ARK (64x64 tiles of 4 bytes).</summary>
-    static bool FindOpenSquare(string path, int level, out int x, out int y)
+    internal static bool FindOpenSquare(string path, int level, out int x, out int y)
     {
         x = y = 0;
         if (!File.Exists(path)) return false;
