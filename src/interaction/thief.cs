@@ -44,14 +44,15 @@ namespace Underworld
                     yHeight: 15
                 );
 
-                if ((objectowner >= 0) && (illegallyusedobject.owner <= 29))
+                //the owner is cleared up to 0x1B in UW1 and 0x1D in UW2, ignoring bit 5 (uw1 CRITTIME.C:480-481, uw2 CRITTIME.C:545-546)
+                if ((objectowner >= 0) && ((illegallyusedobject.owner & 0x1F) <= (_RES == GAME_UW2 ? 0x1D : 0x1B)))
                 {
                     illegallyusedobject.owner = 0;
-                    //if this object is a container clear owner of it's contents
-                    if (illegallyusedobject.OneF0Class == 8)
-                    {
-                        CallBacks.RunCodeOnObjectsInChain(methodToCall: ClearOwnership, obj: illegallyusedobject, objList: UWTileMap.current_tilemap.LevelObjects);
-                    }
+                }
+                //UW2 only: if this object is a container clear the owner of it and of its contents, whatever its own owner (uw2 CRITTIME.C:547-548)
+                if (_RES == GAME_UW2 && illegallyusedobject.OneF0Class == 8)
+                {
+                    CallBacks.RunCodeOnObjectsInChain(methodToCall: ClearOwnership, obj: illegallyusedobject, objList: UWTileMap.current_tilemap.LevelObjects);
                 }
             }
         }
