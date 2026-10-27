@@ -1,6 +1,4 @@
 # Vector tables UnderworldGodot does not match yet: "uwN/table  # the finding". A listed table
 # still runs and prints its failing rows but passes; remove the line in the piece that fixes it.
-uw1/pickloc           # tests the defender's top against the blow's bottom (attackerZ), not its middle: combat.cs:954 vs underworld-exhumed uw1/src/combat/COMBAT.C:116
-uw2/pickloc           # tests the defender's top against the blow's bottom (attackerZ), not its middle: combat.cs:954 vs underworld-exhumed uw2/src/combat/COMBAT.C:107
 uw1/sqrt              # values >= 0x10000 wrong: div divides AX not DX:AX, the CH branch divides twice, rcr's carry is lost (uwMath.cs:154, 252, 255)
 uw2/sqrt              # values >= 0x10000 wrong: div divides AX not DX:AX, the CH branch divides twice, rcr's carry is lost (uwMath.cs:154, 252, 255)
