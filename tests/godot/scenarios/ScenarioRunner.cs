@@ -115,6 +115,8 @@ public partial class ScenarioRunner : Node
         (() => new GuardLevelChange(), true),
         (() => new GuardSaveLoad(), true),
         (() => new GuardMelee(), true),
+        // issue #69
+        (() => new Uw2AutomapSaved(), true),
         (() => new HarnessFails(), false),
     };
 
