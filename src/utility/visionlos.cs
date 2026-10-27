@@ -134,6 +134,7 @@ namespace Underworld
                 _currenttile = value;
                 if (value != null)
                 {
+                    currentTilePtr = (int)value.Ptr;
                     setAt16(_rawvisiondata, ptr + 9, (int)value.dosptr); //store the dos offset(not really needed in port but this helps with side by side comparison with dos)
                     setAt16(_rawvisiondata, ptr + 0xB, 0x7CFD);
                 }
@@ -146,6 +147,31 @@ namespace Underworld
 
 
         private TileInfo _currenttile;
+
+        /// <summary>
+        /// The map pointer of currentTile_2B67_9 (the Gvec's map, uw1 VIEW3D.C:569-582, uw2 VIEW3D.C:562-575). DOS steps it by +-1 and
+        /// +-64 with no bounds check, so past row 0 or 63 it points outside the map, where currentTile_2B67_9 is null.
+        /// </summary>
+        public int currentTilePtr;
+
+        /// <summary>
+        /// Moves the vision's tile to the map pointer ptr, which may be off the map (then currentTile_2B67_9 is null).
+        /// </summary>
+        static void SetVisionTile(VisionParams vision, int ptr)
+        {
+            vision.currentTilePtr = ptr;
+            vision.currentTile_2B67_9 = UWTileMap.GetTileByPTR(ptr);
+        }
+
+        /// <summary>
+        /// A tile's type for the vision grid. Past row 0 or 63 DOS reads memory outside the map, whose contents are not
+        /// defined (uw2 level.h:16-30); the map's edge squares are solid, so a tile off the map counts as solid, which
+        /// draws nothing and walls every side (enc_dat row 0, uw2 VIEW3D.C:84-85; tile_walls).
+        /// </summary>
+        static short TileTypeOrSolid(TileInfo tile)
+        {
+            return tile == null ? UWTileMap.TILE_SOLID : tile.tileType;
+        }
 
         /// <summary>
         /// //This is a pointer to the shading data.
@@ -697,14 +723,14 @@ namespace Underworld
             else
             {
                 //seg032_D5D
-                var var3 = dseg_452[vision.currentTile_2B67_9.tileType + (playerdat.CameraYawHeadingRelated_2B52 << 4)];
+                var var3 = dseg_452[TileTypeOrSolid(vision.currentTile_2B67_9) + (playerdat.CameraYawHeadingRelated_2B52 << 4)];
                 //var al = Pathfind.tilewallflags[var3];
                 if ((dseg_527[di] & Pathfind.tilewallflags[var3]) == 0)
                 {
                     //seg032_D8F
-                    var offset = vision.currentTile_2B67_9.Ptr + ((dseg_52F[di] * dseg_432[playerdat.CameraYawHeadingRelated_2B52 * 6]) << 2);
+                    var offset = vision.currentTilePtr + ((dseg_52F[di] * dseg_432[playerdat.CameraYawHeadingRelated_2B52 * 6]) << 2);
                     var othertile = UWTileMap.GetTileByPTR((int)offset);
-                    var al = dseg_452[othertile.tileType + (playerdat.CameraYawHeadingRelated_2B52 << 4)];//could this go out of bounds if other tile is solid and 52F[di] is -1?
+                    var al = dseg_452[TileTypeOrSolid(othertile) + (playerdat.CameraYawHeadingRelated_2B52 << 4)];//could this go out of bounds if other tile is solid and 52F[di] is -1?
                     //var ax = Pathfind.tilewallflags[al];
                     if ((dseg_527[(di + 1) % 2] & Pathfind.tilewallflags[al]) == 0)
                     {
@@ -877,6 +903,7 @@ namespace Underworld
             }
             var tmpVision = new VisionParams(_index: 0, rawdata: tmpVisionArray_var12);
             tmpVision.currentTile_2B67_9 = di_vision.currentTile_2B67_9;
+            tmpVision.currentTilePtr = di_vision.currentTilePtr;
             if (MaybeTestVisionIntoDarkness_seg032_AF5(di_vision, si_vision))
             {
                 //seg032_10F3
@@ -953,7 +980,7 @@ namespace Underworld
             short var6;
             short var8;
 
-            var di = dseg_452[vision.currentTile_2B67_9.tileType + ((playerdat.CameraYawHeadingRelated_2B52 & 0xFF) << 4)];
+            var di = dseg_452[TileTypeOrSolid(vision.currentTile_2B67_9) + ((playerdat.CameraYawHeadingRelated_2B52 & 0xFF) << 4)];
             if (vision.dseg_2B63_5 != 0)
             {
                 //seg032_712
@@ -992,9 +1019,9 @@ namespace Underworld
                 //seg032_77D
                 if ((var2 & 0x10) != 0)
                 {//seg032_787
-                    AnotherTile = UWTileMap.GetTileByPTR((int)(vision.currentTile_2B67_9.Ptr + (dseg_432[2 + playerdat.CameraYawHeadingRelated_2B52 * 6] << 2))); //array referenced is at dseg434
+                    AnotherTile = UWTileMap.GetTileByPTR((int)(vision.currentTilePtr + (dseg_432[2 + playerdat.CameraYawHeadingRelated_2B52 * 6] << 2))); //array referenced is at dseg434
                     PlayerFloorheightoffset = vision.currentTile_2B67_9.floorHeight;
-                    var8 = dseg_452[(playerdat.CameraYawHeadingRelated_2B52 << 4) + AnotherTile.tileType];
+                    var8 = dseg_452[(playerdat.CameraYawHeadingRelated_2B52 << 4) + TileTypeOrSolid(AnotherTile)];
 
                     if ((Pathfind.tilewallflags[var8] & 0x8) == 0)
                     {
@@ -1035,9 +1062,9 @@ namespace Underworld
                 if ((var2 & 0x20) != 0)
                 {
                     //Seg032_866
-                    AnotherTile = UWTileMap.GetTileByPTR((int)(vision.currentTile_2B67_9.Ptr + (dseg_432[playerdat.CameraYawHeadingRelated_2B52 * 6] << 2)));
+                    AnotherTile = UWTileMap.GetTileByPTR((int)(vision.currentTilePtr + (dseg_432[playerdat.CameraYawHeadingRelated_2B52 * 6] << 2)));
 
-                    var8 = dseg_452[AnotherTile.tileType + (playerdat.CameraYawHeadingRelated_2B52 << 4)];
+                    var8 = dseg_452[TileTypeOrSolid(AnotherTile) + (playerdat.CameraYawHeadingRelated_2B52 << 4)];
 
                     if ((Pathfind.tilewallflags[var8] & 0x2) == 0)
                     {
@@ -1079,8 +1106,8 @@ namespace Underworld
                 if ((var2 & 0x8) != 0)
                 {
                     //seg032_945
-                    AnotherTile = UWTileMap.GetTileByPTR((int)(vision.currentTile_2B67_9.Ptr - (dseg_432[playerdat.CameraYawHeadingRelated_2B52 * 6] << 2)));
-                    var8 = dseg_452[AnotherTile.tileType + (playerdat.CameraYawHeadingRelated_2B52 << 4)];
+                    AnotherTile = UWTileMap.GetTileByPTR((int)(vision.currentTilePtr - (dseg_432[playerdat.CameraYawHeadingRelated_2B52 * 6] << 2)));
+                    var8 = dseg_452[TileTypeOrSolid(AnotherTile) + (playerdat.CameraYawHeadingRelated_2B52 << 4)];
                     if ((Pathfind.tilewallflags[var8] & 4) == 0)
                     {
                         //seg032_988
@@ -1133,8 +1160,8 @@ namespace Underworld
                 {
                     //possibly looking behind player?
                     //seg032_A34
-                    AnotherTile = UWTileMap.GetTileByPTR((int)(vision.currentTile_2B67_9.Ptr + (dseg_432[2 + playerdat.CameraYawHeadingRelated_2B52 * 6] << 2)));   //array was dseg_434
-                    var tmp = dseg_452[AnotherTile.tileType + (playerdat.CameraYawHeadingRelated_2B52 << 4)];
+                    AnotherTile = UWTileMap.GetTileByPTR((int)(vision.currentTilePtr + (dseg_432[2 + playerdat.CameraYawHeadingRelated_2B52 * 6] << 2)));   //array was dseg_434
+                    var tmp = dseg_452[TileTypeOrSolid(AnotherTile) + (playerdat.CameraYawHeadingRelated_2B52 << 4)];
 
                     if ((Pathfind.tilewallflags[tmp] & 0x8) == arg4)
                     {
@@ -1201,14 +1228,14 @@ namespace Underworld
         static void GetNextVisionTilePositive_seg032_683(VisionParams vision)
         {
             vision.dseg_2B63_5++;
-            vision.currentTile_2B67_9 = UWTileMap.GetTileByPTR((int)(vision.currentTile_2B67_9.Ptr + (dseg_432[playerdat.CameraYawHeadingRelated_2B52 * 6] << 2)));
+            SetVisionTile(vision, (int)(vision.currentTilePtr + (dseg_432[playerdat.CameraYawHeadingRelated_2B52 * 6] << 2)));
             vision.dseg_2B6B_d += 2;
         }
 
         static void GetNextVisionTileNegative_seg032_6A9(VisionParams vision)
         {
             vision.dseg_2B63_5--;
-            vision.currentTile_2B67_9 = UWTileMap.GetTileByPTR((int)(vision.currentTile_2B67_9.Ptr - (dseg_432[playerdat.CameraYawHeadingRelated_2B52 * 6] << 2)));
+            SetVisionTile(vision, (int)(vision.currentTilePtr - (dseg_432[playerdat.CameraYawHeadingRelated_2B52 * 6] << 2)));
             vision.dseg_2B6B_d -= 2;
         }
 
@@ -1251,7 +1278,7 @@ namespace Underworld
                         si_vision.FovYawY_3 = (short)((si_vision.dseg_2B65_7 << 8) - playerdat.LOS_y);
                     }
                     //seg032_BB4
-                    si_vision.currentTile_2B67_9 = UWTileMap.GetTileByPTR((int)(si_vision.currentTile_2B67_9.Ptr + (dseg_432[2 + playerdat.CameraYawHeadingRelated_2B52 * 6] << 2)));
+                    SetVisionTile(si_vision, (int)(si_vision.currentTilePtr + (dseg_432[2 + playerdat.CameraYawHeadingRelated_2B52 * 6] << 2)));
                     if (si_vision.currentTile_2B67_9 == null)
                     {
                         return false;
@@ -1291,7 +1318,7 @@ namespace Underworld
                     Seg032_C7A:
                         di_vision.CameraY_2b66_8 = 0;
                         di_vision.dseg_2B6B_d += 0x42;
-                        di_vision.currentTile_2B67_9 = UWTileMap.GetTileByPTR((int)(di_vision.currentTile_2B67_9.Ptr + (dseg_432[2 + playerdat.CameraYawHeadingRelated_2B52 * 6] << 2)));
+                        SetVisionTile(di_vision, (int)(di_vision.currentTilePtr + (dseg_432[2 + playerdat.CameraYawHeadingRelated_2B52 * 6] << 2)));
                         return true;
                     }
                 }
