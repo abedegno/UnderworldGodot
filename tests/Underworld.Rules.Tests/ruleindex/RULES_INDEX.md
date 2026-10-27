@@ -2,12 +2,13 @@
 
 The original's routines that UnderworldGodot implements, and where. Written by `RULES_INDEX_RECORD=1 dotnet test --filter RuleIndex` in tests/Underworld.Rules.Tests; do not edit by hand. Routine names and files are Underworld Exhumed's (Underworld Exhumed e5deadd (https://github.com/abedegno/underworld-exhumed, uw1/map/crosswalk.tsv and uw2/map/crosswalk.tsv)).
 
-236 routines in 199 declarations: 53 UW1, 181 UW2. 10 have more than one declaration (see EXPECTED_DUPLICATES).
+238 routines in 200 declarations: 54 UW1, 182 UW2. 10 have more than one declaration (see EXPECTED_DUPLICATES).
 
 How: `name` the declaration's name carries the address, `cite` its comment cites the routine's definition, `comment` its comment gives the address.
 
 | Routine | Implemented at | How |
 |---|---|---|
+| `uw1:AddTogether@INVPANEL.C` | `src/ui/uimanager_inventory.cs:800` CanStackTogether | cite |
 | `uw1:AskHowMany@INVPANEL.C` | `src/ui/uimanager_trade.cs:122` TakeFromTradeSlotStack | cite |
 | `uw1:BlockingTerrain@INTERACT.C` | `src/ui/uimanager_interaction.cs:281` BlockingTerrain | cite |
 | `uw1:BonesLook@LOOK.C` | `src/interaction/look.cs:144` BonesLook | cite |
@@ -67,6 +68,7 @@ How: `name` the declaration's name carries the address, `cite` its comment cites
 | `uw1:toast_animobj@EFFECT.C` | `src/objects/door.cs:415` EndMovingDoor | cite |
 | `uw1:turn_music@SOUND.C` | `src/loaders/xmimusic.cs:291` TurnMusic | cite |
 | `uw1:yearly_checkup@CRITTIME.C` | `src/npc/npcutil.cs:125` yearly_checkup | cite |
+| `uw2:AddTogether@INVPANEL.C` | `src/ui/uimanager_inventory.cs:800` CanStackTogether | cite |
 | `uw2:AskHowMany@INVPANEL.C` | `src/ui/uimanager_trade.cs:122` TakeFromTradeSlotStack | cite |
 | `uw2:BlockingTerrain@INTERACT.C` | `src/ui/uimanager_interaction.cs:281` BlockingTerrain | cite |
 | `uw2:BonesLook@LOOK.C` | `src/interaction/look.cs:144` BonesLook | cite |

@@ -4,7 +4,11 @@ namespace Underworld
     {
         public static bool Use(uwObject obj, bool WorldObject)
         {
-            if (WorldObject) { return false; }
+            if (WorldObject)
+            {//a light is lit only where it is carried (uw1 USEITEMS.C:518-521, uw2 USEITEMS.C:615-619)
+                uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_lights_may_only_be_used_if_equipped_));
+                return true;
+            }
 
             if (IsUsedUp(obj))
             {//refused before the light is moved or toggled either way (uw1 USEITEMS.C:522-525, uw2 USEITEMS.C:620-624)

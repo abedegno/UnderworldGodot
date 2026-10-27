@@ -16,12 +16,6 @@
 # facts Underworld Revisited observed in DOS
 uw1/fishing-water-height  ~water at height 0 with the player at step 2: expected refused  # src/objects/fishingpole.cs:31 lets the water lie two steps above the player and fishes in water of height 0; uw1 WORLDEV.C:326-327 (unsigned height - 1)
 uw2/fishing-water-height  ~water at height 0 with the player at step 2: expected refused  # src/objects/fishingpole.cs:31; uw2 WORLDEV.C:534
-uw1/stack-merge  ~torches at 40 and 50: expected kept apart  # src/ui/uimanager_inventory.cs:683-697 merges any stackable pair (no quality band, no key owner test), weights the quality by count and adds link fields as counts; uw1 INVPANEL.C:697-721, 750-764
-uw2/stack-merge  ~torches at 40 and 50: expected kept apart  # src/ui/uimanager_inventory.cs:683-697; uw2 INVPANEL.C:686-712, 741-755
-uw1/lit-light-places  ~a lit torch put in a backpack slot expected  # src/ui/uimanager_inventory.cs:299-314 keeps a lit light lit in the backpack, src/interaction/use.cs:176-178 says "You cannot use that." for a light in the world; uw1 INVPANEL.C:586-594, USEITEMS.C:518-521
-uw2/lit-light-places  ~a lit torch put in a backpack slot expected  # src/ui/uimanager_inventory.cs:299-314, src/interaction/use.cs:176-178; uw2 INVPANEL.C:572-582, USEITEMS.C:615-619
-uw1/container-weight-first  ~expected "The map case is too full."  # src/objects/container.cs:307-420 tests the kind before the weight; uw1 INVPANEL.C:598-628
-uw2/container-weight-first  ~expected "The map case is too full."  # src/objects/container.cs:307-420; uw2 INVPANEL.C:584-617
 uw1/void-no-explore-experience  ~exploration experience on level 9 expected 0  # src/utility/visionlos.cs:303-318 gives it on every level; uw1 GRIDDB.C:256-261
 uw1/cast-slots-full  ~expected "Casting was not successful."  # src/magic/spellcasting_activeeffects.cs:12-38 refuses a fourth spell silently and CastSpell still returns true; uw1 PLAYTIME.C:221-222, SPELLS.C:108-111, RUNES.C:264-269
 uw2/cast-slots-full  ~expected "Casting was not successful."  # src/magic/spellcasting_activeeffects.cs:12-38; uw2 PLAYTIME.C:250, SPELLS.C:102, RUNES.C:308-310
