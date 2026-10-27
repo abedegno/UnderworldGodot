@@ -114,7 +114,7 @@ namespace Underworld
         {
             switch (ConversationNPC.npc_whoami)
             {
-                case 0x8C: //patterson is the only npc that will talk in combat
+                case 0x8C when _RES == GAME_UW2: //patterson is the only npc that will talk in combat. UW2 only (underworld-exhumed uw2/src/conv/CONVERSE.C:117; uw1/src/conv/CONVERSE.C:136-143 has no such case)
                     ConversationVM.StartConversation(ConversationNPC);
                     break;
                 default:

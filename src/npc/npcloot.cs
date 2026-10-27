@@ -38,64 +38,56 @@ namespace Underworld
             var Critter_var_5 = critterObjectDat.valuable_multipleprobability(critter.item_id);
             var valuableDropProbability = critterObjectDat.valuable_loot_probability(critter.item_id);
 
-            var r = new Random();
-            if (r.Next(0, 16) >= valuableDropProbability)
+            // generate_treasure (underworld-exhumed uw1/src/obj/TREASURE.C:93-134, uw2/src/obj/TREASURE.C:89-129).
+            // The type, value, quantity and dice are chars in the original, so this keeps them in sbytes.
+            if (Rng.RandMod(16) >= valuableDropProbability)
             {//Do not spawn a valuable.
                 return;
             }
             else
             { //spawn valuable
                 int offset = 0; if (_RES != GAME_UW2) { offset = 3; }
-                var valuable_type_var_1 = r.Next(0, 37 + offset - world * 3) - (30 + offset - world * 3);
+                var valuable_type_var_1 = (sbyte)(Rng.RandMod(37 + offset - world * 3) - (30 + offset - world * 3));
                 if (valuable_type_var_1 < 0) { valuable_type_var_1 = 0; }
                 if ((valuable_type_var_1 == 1) && (_RES == GAME_UW2)) { valuable_type_var_1 = 0; }//make sure no storage crystal is dropped in UW2
 
                 //now use var_1 to look up the objects monetary value within objects.dat (starting at coin)
                 var coinitemid = 0xA0;
-                var base_objectvalue_var_2 = commonObjDat.monetaryvalue(coinitemid + valuable_type_var_1);
+                var base_objectvalue_var_2 = (sbyte)(byte)commonObjDat.monetaryvalue(coinitemid + valuable_type_var_1);
 
                 if (base_objectvalue_var_2 == 0) { base_objectvalue_var_2 = 1; }
 
-                //Adjust the base value based on ranges, presumably to create a probability
+                //Stretch the value above 4. From 25 up value * 8 - 68 overflows the char and goes negative (ruby 25,
+                //large blue gem 30, sapphire 40), so those skip the chance test below and always come singly, as in DOS.
                 if (base_objectvalue_var_2 >= 12)
                 {
-                    base_objectvalue_var_2 = 0xBC + (base_objectvalue_var_2 << 3);
+                    base_objectvalue_var_2 = (sbyte)(base_objectvalue_var_2 * 8 - 68);
+                }
+                else if (base_objectvalue_var_2 >= 8)
+                {
+                    base_objectvalue_var_2 = (sbyte)(base_objectvalue_var_2 * 4 - 20);
+                }
+                else if (base_objectvalue_var_2 >= 4)
+                {
+                    base_objectvalue_var_2 = (sbyte)(base_objectvalue_var_2 * 2 - 4);
+                }
+
+                sbyte var_3_qty;
+
+                if ((Critter_var_5 << 2) < base_objectvalue_var_2)
+                {
+                    //a single instance of the valuable, at the chance 4 * prob in value
+                    if (Rng.RandMod(base_objectvalue_var_2) >= (Critter_var_5 << 2))
+                    {
+                        return;
+                    }
+                    var_3_qty = 1;
                 }
                 else
                 {
-                    if ((base_objectvalue_var_2 >= 8) && base_objectvalue_var_2 < 12)
-                    {
-                        base_objectvalue_var_2 = 0xEC + base_objectvalue_var_2 << 2;
-                    }
-                    else
-                    {
-                        if ((base_objectvalue_var_2 >= 4) && (base_objectvalue_var_2 < 8))
-                        {
-                            base_objectvalue_var_2 = 0xFC + (valuable_type_var_1 << 1);
-                        }
-                    }
-                }
-
-                var var_3_qty = 0;
-
-                if (Critter_var_5 < base_objectvalue_var_2)
-                {
-                    //do a rng roll to check if a single instance of the valuable is spawned.
-                    if ((Critter_var_5 << 2) < r.Next(0, base_objectvalue_var_2))
-                    {
-                        var_3_qty = 1;
-                    }
-                }
-                else
-                {
-                    // spawn a qty of the object based on a 4Dx dice roll.
-                    var qty_range_var_4 = ((Critter_var_5 << 2) / base_objectvalue_var_2) << 1;
-
-                    //do 4D dice roll.
-
-                    qty_range_var_4 = Rng.DiceRoll(4, qty_range_var_4);
-
-                    var_3_qty = qty_range_var_4 >> 2;
+                    // spawn a qty of the object based on a 4Dx dice roll. A value that overflowed gives no sides, and the roll is 4.
+                    var qty_range_var_4 = (sbyte)(((Critter_var_5 << 2) / base_objectvalue_var_2) << 1);
+                    var_3_qty = (sbyte)(Rng.DiceRoll(4, qty_range_var_4) >> 2);
                 }
 
                 if (var_3_qty > 0)
