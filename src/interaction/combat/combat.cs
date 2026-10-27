@@ -1013,7 +1013,7 @@ namespace Underworld
                 {
                     return false;
                 }
-                if ((Weapon.item_id >= 0x18) && (Weapon.item_id == 0x19))
+                if ((Weapon.item_id >= 0x18) && (Weapon.item_id < 0x19))
                 {
                     return false;
                 }
