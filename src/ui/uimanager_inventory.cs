@@ -709,6 +709,10 @@ namespace Underworld
             {
                 var backup = playerdat.ObjectInHand;
                 PickupObjectFromSlot(objAtSlot: target, forceFullQty: true);
+                if (playerdat.ObjectInHand == backup)
+                {//the pickup failed (no free object): keep the object in hand, leave the slot as it was
+                    return;
+                }
                 PickupToEmptySlot(backup);
                 UpdateInventoryDisplay();
             }
@@ -748,7 +752,7 @@ namespace Underworld
         /// </summary>
         /// <param name="objAtSlot"></param>
         /// <param name="DestroyInventoryObject"></param>
-        /// <returns></returns>
+        /// <returns>the new level object index, or 0 when there was no free object and nothing was picked up</returns>
         public static int DoPickup(uwObject objAtSlot, bool DestroyInventoryObject = true, bool ChangeHand = true)
         {
             var newIndex = playerdat.AddInventoryObjectToWorld(
@@ -758,6 +762,10 @@ namespace Underworld
                     DestroyInventoryObject: DestroyInventoryObject,
                     ClearLink: true
                     );
+            if (newIndex == 0)
+            {//no free object to move it into: nothing is picked up
+                return 0;
+            }
             var pickObject = UWTileMap.current_tilemap.LevelObjects[newIndex];
             pickObject.next = 0;
             if (ChangeHand)
