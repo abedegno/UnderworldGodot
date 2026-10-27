@@ -60,6 +60,7 @@ public partial class ScenarioRunner : Node
         (() => new CritterLineOfSight(), true),
         (() => new PathsFreedOnLevelChange(), true),
         (() => new Uw1NpcSequences(), true),
+        (() => new CritterFollow(), true),
         // batch B: player and magic rules
         (() => new SmiteUndeadRule(), true),
         (() => new SmiteFloatSkull(), true),

@@ -528,9 +528,9 @@ namespace Underworld
                             }
                         }
                     }
-                    //update next frame, probably a refresh rate
-                    critter.NextFrame_0XA_Bit0123 = (short)((critter.NextFrame_0XA_Bit0123 + critter.Projectile_Speed) % 16);
                 }
+                //update next frame, probably a refresh rate. Goals 3 and 0xB too (uw1 AI.C:1181, uw2 AI.C:1156)
+                critter.NextFrame_0XA_Bit0123 = (short)((critter.NextFrame_0XA_Bit0123 + critter.Projectile_Speed) % 16);
             }
             else
             {//distance >0x64 and goal is not follow. do a calculation                
@@ -803,7 +803,19 @@ namespace Underworld
                 case 2:
                     NPCWanderUpdate(critter);
                     break;
-                case 3://move/follow (skip to NPC_Move below)
+                case 3://follow the target. UW1 only, UW2's goal 3 does nothing (uw2 AI.C:1307-1308)
+                    if (_RES != GAME_UW2)
+                    {
+                        if (!gtargFound)
+                        {
+                            if (!GetDistancesToGTarg(critter))
+                            {
+                                ResetGoalAndTarget(critter);
+                                break;
+                            }
+                        }
+                        NPC_Goal3_Follow(critter);
+                    }
                     break;
                 case 4:
                     StandStillGoal(critter);
@@ -890,6 +902,71 @@ namespace Underworld
             NPC_Move(critter);
         }
 
+
+        /// <summary>
+        /// Goal 3 in UW1, keep close to the target. Within about 1.4 tiles face it and play the first attack animation (without a blow),
+        /// further than 8 tiles away jump to the tile 4 tiles from the target on the line back to the critter, else head for the target's tile.
+        /// seg007_1798_3E4, uw1 AI.C:211-247
+        /// </summary>
+        static void NPC_Goal3_Follow(uwObject critter)
+        {
+            if (currentGTargSquaredDistanceByTiles <= 2)
+            {
+                if (!IsNPCActive_dseg_67d6_2234)
+                {
+                    return;
+                }
+                critter.npc_animation = ANIMATION_COMBAT_BASH;
+                critter.AnimationFrame = (byte)((critter.AnimationFrame + 1) % 4);
+                critter.UnkBit_0X13_Bit0to6 = 0;
+                critter.heading = (short)Pathfind.GetVectorHeading((sbyte)currentGTargXVector, (sbyte)currentGTargYVector);
+                critter.Projectile_Speed = 4;
+            }
+            else if (currentGTargSquaredDistanceByTiles > 0x40)
+            {
+                var dist = SquareRoot_seg019_A78(currentGTargSquaredDistanceByTiles);
+                var x = currentGTargXHome + (currObj_XHome - currentGTargXHome) * 4 / dist;
+                var y = currentGTargYHome + (currObj_YHome - currentGTargYHome) * 4 / dist;
+                var from = UWTileMap.current_tilemap.Tiles[currObj_XHome, currObj_YHome];
+                var to = UWTileMap.current_tilemap.Tiles[x, y];
+                ObjectRemover_OLD.RemoveObjectFromLinkedList(from.indexObjectList, critter.index, UWTileMap.current_tilemap.LevelObjects, from.Ptr + 2);
+                critter.next = to.indexObjectList;
+                to.indexObjectList = critter.index;
+                critter.tileX = x; critter.tileY = y;
+                critter.npc_xhome = (short)x;
+                critter.npc_yhome = (short)y;
+                critter.xpos = 4;
+                critter.ypos = 4;
+                critter.zpos = (short)(to.floorHeight << 3);
+                objectInstance.Reposition(critter);
+            }
+            else
+            {
+                if (!IsNPCActive_dseg_67d6_2234)
+                {
+                    return;
+                }
+                NPC_Goto(critter, currentGTargXHome, currentGTargYHome, currentGTargFloorHeight);
+            }
+        }
+
+        /// <summary>
+        /// Integer square root of a value below 0x10000: five Newton steps from 4 (below 0x100) or 0x40.
+        /// cSqRt, uw1 IMATH.ASM SquareRoot_seg019_A78
+        /// </summary>
+        static int SquareRoot_seg019_A78(int value)
+        {
+            if (value == 0)
+            {
+                return 0;
+            }
+            var root = value < 0x100 ? 4 : 0x40;
+            for (int i = 0; i < 5; i++)
+            {
+                root = (root + value / root) >> 1;
+            }
+            return root;
+        }
 
         static void ResetGoalAndTarget(uwObject critter)
         {
@@ -1859,6 +1936,24 @@ namespace Underworld
             {
                 return 0;
             }
+        }
+
+        /// <summary>
+        /// clear_paths: frees all 16 stored paths and clears every critter's has-a-path bit.
+        /// Run when a level is loaded (GetLevel, uw1 GAMEWRAP.C:116, uw2 GAMEWRAP.C:102), for a new game, a restore and a level change.
+        /// uw1 PATHFIND.C:945-954, uw2 CRITTIME.C:445-456
+        /// </summary>
+        public static void ClearPaths()
+        {
+            for (int i = 2; i < 256; i++)
+            {
+                var obj = UWTileMap.current_tilemap.LevelObjects[i];
+                if (obj != null)
+                {
+                    obj.UnkBit_0X15_Bit7 = 0;
+                }
+            }
+            BitFieldForPathing_dseg_67d6_B4 = 0xFFFF;
         }
 
         /// <summary>
