@@ -248,6 +248,8 @@ public partial class ScenarioRunner : Node
         (() => new TremorHarmless(), true),
         (() => new CastSlotsFull(), true),
         (() => new NoAmmoMessage(), true),
+        (() => new SpellDurations(), true),
+        (() => new BowDrawTiming(), true),
         (() => new FlutterNeverDies(), true),
         (() => new HarnessFails(), false),
     };

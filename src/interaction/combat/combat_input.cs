@@ -11,6 +11,47 @@ namespace Underworld
     {
 
         static bool DoAttack = false;
+
+        /// <summary>
+        /// Set when "Sorry, you have no ..." has been printed. GetPlayerWeapon then waits for the button to be let go,
+        /// mouse_release(1) (uw1 COMBAT.C:551, uw2 COMBAT.C:587), so holding it down prints the message only once.
+        /// </summary>
+        static bool NoAmmoWaitForRelease = false;
+
+        /// <summary>
+        /// The game clock when a bow or sling was pulled back, and whether it has reached its hold frame.
+        /// </summary>
+        static uint RangedDrawStartPITTimer = 0;
+        static bool RangedAtHold = false;
+
+        /// <summary>
+        /// The weapon picture steps each time the 256 Hz clock passes a multiple of 32 (update_screen, uw1 PANELS.C:356,
+        /// uw2 PANELS.C:287). A bow or sling takes aim and accepts a release only at its hold frame; let go before that,
+        /// the attack ends with nothing fired (player_attack, uw1 COMBAT.C:673-697, uw2 COMBAT.C:729-753). UW1's hold is
+        /// weap_frame 3, the fourth step from -1 (uw1 PANELS.C:856-866). UW2 marks the hold with 0x40 in the weapon's frame
+        /// table, and a launcher has the idle table, whose third step is the hold (load_weapon(-1), uw2 PLAYDATA.C:382-383;
+        /// uw2 PANELS.C:550, 671-685).
+        /// </summary>
+        static int RangedHoldStep => _RES == GAME_UW2 ? 3 : 4;
+
+        static bool RangedHoldReached => ((main.GlobalPITTimer >> 5) - (RangedDrawStartPITTimer >> 5)) >= RangedHoldStep;
+
+        /// <summary>
+        /// check_ammo's message: "Sorry, you have no ", the ammunition's plural name and a full stop. UW1 has the two
+        /// ends as literals (uw1 COMBAT.C:524-528), UW2 takes them from strings 0xCF and 0x60 (uw2 COMBAT.C:559-562).
+        /// </summary>
+        static void PrintNoAmmo(int ammoType)
+        {
+            var ammo = GameStrings.GetObjectNounUW(16 + ammoType, 2);//get_name(buf, fake, 0, 1): plural, no article
+            if (_RES == GAME_UW2)
+            {
+                uimanager.AddToMessageScroll($"{GameStrings.GetString(1, 0xCF)}{ammo}{GameStrings.GetString(1, 0x60)}");
+            }
+            else
+            {
+                uimanager.AddToMessageScroll($"Sorry, you have no {ammo}.");
+            }
+        }
         /// <summary>
         /// Get how fast the charge builds up for the weapon
         /// </summary>
@@ -173,7 +214,11 @@ namespace Underworld
                         break;
                     }
                 case CombatStages.Ready:
-                    if ((MouseHeldDown) || (KeyboardAttackHeldDown))
+                    if (!MouseHeldDown && !KeyboardAttackHeldDown)
+                    {
+                        NoAmmoWaitForRelease = false;
+                    }
+                    if (((MouseHeldDown) || (KeyboardAttackHeldDown)) && !NoAmmoWaitForRelease)
                     {
                         PreviousCombatPITTimer = main.GlobalPITTimer;
                         CombatTimerDifference = 0;
@@ -186,10 +231,14 @@ namespace Underworld
                             var foundammo = objectsearch.FindMatchInFullObjectList(0, 1, ammoType, playerdat.InventoryObjects);
                             if (foundammo == null)
                             {
-                                uimanager.AddToMessageScroll($"{GameStrings.GetString(1, 207)}{GameStrings.GetSimpleObjectNameUW(16 + ammoType)}s");//sorry you have no Xs
+                                PrintNoAmmo(ammoType);
+                                NoAmmoWaitForRelease = true;
                                 PlayerWeaponSound = 4;//uw2 COMBAT.C:588
                                 return;
                             }
+                            RangedDrawStartPITTimer = main.GlobalPITTimer;
+                            RangedAtHold = false;
+                            uimanager.ChangePower(1);//set_screen_frame(3, 1): uw1 COMBAT.C:753, uw2 COMBAT.C:853
                         }
                         else
                         {
@@ -270,7 +319,10 @@ namespace Underworld
                         {
                             combatanimationtimer += delta;
                             playerdat.PlayerQuietness = 0xA;
-                            CombatChargingLoop();
+                            if (isWeapon(playerdat.PrimaryHandObject) != 2)
+                            {//a bow or sling does not charge (player_attack's fire_mode branch, uw1 COMBAT.C:682-697, uw2 COMBAT.C:738-753)
+                                CombatChargingLoop();
+                            }
                             switch (isWeapon(playerdat.PrimaryHandObject))
                             {
                                 case 1:
@@ -285,9 +337,11 @@ namespace Underworld
                                     //uimanager.CurrentWeaponAnim = WeaponAnimGroup + WeaponAnimStrikeOffset + WeaponAnimHandednessOffset;
                                     break;
                                 case 2://ranged
-                                    if (PlayerAttackCharge >= mincharge)
+                                    if (!RangedAtHold && RangedHoldReached)
                                     {
-                                        //ranged weapon change targeting icon
+                                        //at the hold frame: the power gem to 9 and the targeting cursor
+                                        RangedAtHold = true;
+                                        uimanager.ChangePower(9);
                                         uimanager.instance.mousecursor.SetCursorToCursor(9);
                                     }
                                     break;
@@ -304,39 +358,37 @@ namespace Underworld
                         combatanimationtimer = 0;
                         //if (uimanager.IsMouseInViewPort())
                         //{
-                            if (PlayerAttackCharge >= mincharge)
-                            {                                                         
-                                Debug.Print($"Releasing attack at charge {PlayerAttackCharge}");
-                                if (isWeapon(playerdat.PrimaryHandObject) == 2)
+                            if (isWeapon(playerdat.PrimaryHandObject) == 2)
+                            {
+                                //ranged: let go at the hold frame fires, let go before it ends the attack with nothing fired
+                                //(uw1 COMBAT.C:673-679, 690-696; uw2 COMBAT.C:729-735, 746-752)
+                                if (RangedAtHold || RangedHoldReached)
                                 {
-                                    //ranged
-                                    //launch projectile if has ammo
+                                    //launch projectile if has ammo. player_fire looks again (uw1 MISSILE.C:96)
                                     var ammoType = rangedObjectDat.RangedWeaponType(playerdat.PrimaryHandObject.item_id);
-                                    //check if player has one some ammo.
                                     var foundammo = objectsearch.FindMatchInFullObjectList(0, 1, ammoType, playerdat.InventoryObjects);
                                     if (foundammo == null)
                                     {
-                                        uimanager.AddToMessageScroll($"{GameStrings.GetString(1, 207)}{GameStrings.GetSimpleObjectNameUW(16 + ammoType)}s");//sorry you have no Xs
-                                        return;
+                                        PrintNoAmmo(ammoType);
                                     }
                                     else
                                     {
                                         MissileRelease(playerdat.PrimaryHandObject.classindex, foundammo);
                                     }
-                                    //if has ammo launch projectile
-                                    EndCombatLoop();//reset
                                 }
-                                else
-                                {
-                                    //melee
-                                    //start release
-                                    //start strike animation.
-                                    uimanager.DrawWeaponAnimation(WeaponAnimGroup + WeaponAnimStrikeOffset + WeaponAnimHandednessOffset + 1, 0);
-                                    combatanimationtimer = 0f;
-                                    uimanager.CombatAnimationStage = uimanager.CombatAnimationStages.StrikingWeapon;
-                                    //uimanager.CurrentWeaponAnim = WeaponAnimGroup + WeaponAnimStrikeOffset + WeaponAnimHandednessOffset + 1;
-                                    stage = CombatStages.SwingingAtTarget;
-                                }
+                                EndCombatLoop();//reset, missile_finish or fin_attack
+                            }
+                            else if (PlayerAttackCharge >= mincharge)
+                            {
+                                Debug.Print($"Releasing attack at charge {PlayerAttackCharge}");
+                                //melee
+                                //start release
+                                //start strike animation.
+                                uimanager.DrawWeaponAnimation(WeaponAnimGroup + WeaponAnimStrikeOffset + WeaponAnimHandednessOffset + 1, 0);
+                                combatanimationtimer = 0f;
+                                uimanager.CombatAnimationStage = uimanager.CombatAnimationStages.StrikingWeapon;
+                                //uimanager.CurrentWeaponAnim = WeaponAnimGroup + WeaponAnimStrikeOffset + WeaponAnimHandednessOffset + 1;
+                                stage = CombatStages.SwingingAtTarget;
                             }
                             else
                             {
