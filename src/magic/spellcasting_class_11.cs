@@ -325,7 +325,7 @@ namespace Underworld
                 Teleportation.CodeToRunOnTeleport = Teleportation.JumpToMoonStoneOnLevel;
                 Teleportation.Teleport(
                     character: 0,
-                    tileX: 32, tileY: 32,
+                    tileX: 0x3F, tileY: 0x3F,//no square: CodeToRunOnTeleport sets it, so no search for room here (uw1 SPELLS.C:805)
                     newLevel: playerdat.GetMoonstone(0),
                     HeadingHeightFlag: 0);
             }

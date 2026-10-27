@@ -333,6 +333,19 @@ namespace Underworld
                     }
                 }
 
+                // A teleport within this level goes to the nearest square round the
+                // destination where the player fits, and fails if there is none
+                // (uw2 WORLDEV.C:199-205).
+                if ((newLevel == 0 || newLevel == playerdat.dungeon_level) && tileX != 0x3F && tileY != 0x3F)
+                {
+                    if (!FindGoodXAndY(playerdat.playerObject, tileX, tileY, out int goodX, out int goodY))
+                    {
+                        CodeToRunOnTeleport = null;//no teleport, so nothing to run after it (uw2 WORLDEV.C:228-229)
+                        return 2;
+                    }
+                    tileX = goodX; tileY = goodY;
+                }
+
                 //queue up the teleport.
                 if (newLevel == 0)
                 {
@@ -393,6 +406,18 @@ namespace Underworld
 
         static int TeleportUW1(int character, int tileX, int tileY, int newLevel)
         {
+            // A teleport within this level goes to the nearest square round the
+            // destination where the player fits, and fails if there is none
+            // (uw1 WORLDEV.C:183-190).
+            if ((newLevel == 0 || newLevel == playerdat.dungeon_level) && tileX != 0x3F && tileY != 0x3F)
+            {
+                if (!FindGoodXAndY(playerdat.playerObject, tileX, tileY, out int goodX, out int goodY))
+                {
+                    CodeToRunOnTeleport = null;//no teleport, so nothing to run after it (uw1 WORLDEV.C:183-201)
+                    return 2;
+                }
+                tileX = goodX; tileY = goodY;
+            }
             if (newLevel != 0)
             {
                 if (newLevel == playerdat.dungeon_level)
@@ -408,9 +433,92 @@ namespace Underworld
             {
                 TeleportLevel = -1;
             }
+            if ((tileX == 0x3F || tileY == 0x3F) && CodeToRunOnTeleport != null)
+            {
+                // Gate travel and resurrection pass square 0x3F, 0x3F (uw1 SPELLS.C:805,
+                // SKILLS.C:863): the real square comes later from CodeToRunOnTeleport. Park
+                // the player in the middle of the map until it runs.
+                tileX = 32; tileY = 32;
+            }
             TeleportTileX = tileX;
             TeleportTileY = tileY;
             return 2;
+        }
+
+        /// <summary>
+        /// find_good_x_and_y (uw1 WORLDEV.C:76-168, uw2 WORLDEV.C:65-157, the same code in both games).
+        /// A breadth-first search outwards from (x, y), at most 20 squares a ring, through the box
+        /// xmin..xmin+9, ymin..ymin+9 round it, for the first square where the object fits at the
+        /// square's centre (can_place at x * 8 + 3, y * 8 + 3, on the floor, raised by 4 on a slope).
+        /// Solid squares are not searched through and diagonals only through their open sides.
+        /// The original's clear argument (punting objects out of the way, used only by
+        /// new_player_pos, uw1 UWEDIT.C:466-467) is not ported: do_teleport always passes 0.
+        /// </summary>
+        /// <returns>false when there is no such square</returns>
+        public static bool FindGoodXAndY(uwObject obj, int x, int y, out int newX, out int newY)
+        {
+            newX = x; newY = y;
+            int xmin = System.Math.Min(System.Math.Max(1, x - 4), 0x3A);
+            int ymin = System.Math.Min(System.Math.Max(1, y - 4), 0x3A);
+            int xmax = System.Math.Min(xmin + 9, 0x3E);
+            int ymax = System.Math.Min(ymin + 9, 0x3E);
+            // The original's visited is uint16[9] and only its first 9 bytes are cleared, so
+            // column xmin + 9 writes past it and later columns start with whatever was on the
+            // stack. Here every column starts clear.
+            var visited = new int[10];
+            var cur = new System.Collections.Generic.List<(int, int)> { (x, y) };
+            var next = new System.Collections.Generic.List<(int, int)>();
+            if (x >= xmin && y >= ymin)
+            {// the original marks x 0 or y 0 one place outside the array
+                visited[x - xmin] |= 1 << (y - ymin);
+            }
+
+            void Visit(int tx, int ty)
+            {
+                if (next.Count < 20 && tx >= xmin && tx <= xmax && ty >= ymin && ty <= ymax
+                    && (visited[tx - xmin] & (1 << (ty - ymin))) == 0)
+                {
+                    next.Add((tx, ty));
+                    visited[tx - xmin] |= 1 << (ty - ymin);
+                }
+            }
+
+            while (cur.Count > 0)
+            {
+                foreach (var (tx, ty) in cur)
+                {
+                    var tile = UWTileMap.current_tilemap.Tiles[tx, ty];
+                    int z = (tile.floorHeight << 3) + (((motion.TileTraversalFlags_dseg_67d6_1BA6[tile.tileType] & 0x20) != 0) ? 4 : 0);
+                    if (motion.TestIfObjectFitsInTile(obj.item_id, obj.index, tx * 8 + 3, ty * 8 + 3, z, 0, 8))
+                    {
+                        newX = tx; newY = ty;
+                        return true;
+                    }
+                    switch (tile.tileType)
+                    {
+                        case UWTileMap.TILE_SOLID:
+                            break;
+                        case UWTileMap.TILE_DIAG_SE:
+                            Visit(tx + 1, ty); Visit(tx, ty - 1);
+                            break;
+                        case UWTileMap.TILE_DIAG_SW:
+                            Visit(tx - 1, ty); Visit(tx, ty - 1);
+                            break;
+                        case UWTileMap.TILE_DIAG_NE:
+                            Visit(tx + 1, ty); Visit(tx, ty + 1);
+                            break;
+                        case UWTileMap.TILE_DIAG_NW:
+                            Visit(tx - 1, ty); Visit(tx, ty + 1);
+                            break;
+                        default:
+                            Visit(tx - 1, ty); Visit(tx, ty - 1); Visit(tx + 1, ty); Visit(tx, ty + 1);
+                            break;
+                    }
+                }
+                (cur, next) = (next, cur);
+                next.Clear();
+            }
+            return false;
         }
 
         /// <summary>
