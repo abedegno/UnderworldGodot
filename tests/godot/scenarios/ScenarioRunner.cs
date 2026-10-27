@@ -214,6 +214,11 @@ public partial class ScenarioRunner : Node
         // visual effects
         (() => new WeaponSway(), true),
         (() => new MenuPaletteCycle(), true),
+        (() => new StartupIntro(), true),
+        (() => new MainMenuKeys(), true),
+        (() => new OptionsKeys(), true),
+        (() => new OptionShortcuts(), true),
+        (() => new OptionsMouseRelease(), true),
         (() => new HarnessFails(), false),
     };
 
@@ -432,8 +437,10 @@ public partial class ScenarioRunner : Node
     /// be refused as too soon after an earlier scenario's.
     /// start-up). Without this a scenario's 20-second and 5-minute ticks fall where earlier
     /// scenarios left them, and pathfinding runs with the paths an earlier scenario took.
-    /// Also the palette number (palette.cs), which uimanager.ReturnToMainMenu leaves at 2 when a scenario ends the
-    /// game: main.StartGame sets 0, and a change there cycles palettes that are not loaded yet and throws.
+    /// Also the palette number (palette.cs) and its colour-cycle steps (paletteloader.cs:36-37): a scenario that ends
+    /// the game or goes to the main menu leaves palette 2 and a step of its longer menu cycle, and main.StartGame's
+    /// switch back to palette 0 then indexes past palette 0's cycle (paletteloader.cs:431) and stops the next game
+    /// starting. The field is set directly, so the reset does not touch the shader.
     /// </summary>
     static void ResetProcessStatics()
     {
@@ -443,6 +450,8 @@ public partial class ScenarioRunner : Node
         SetStatic(typeof(playerdat), "secondcounter", 0);
         SetStatic(typeof(npc), "BitFieldForPathing_dseg_67d6_B4", 0xFFFF);
         SetStatic(typeof(RunicMagic), "LastSpellCastClock_dseg_5c99_16E3", 0);
+        PaletteLoader.NextPaletteCycle_GAME = -1;
+        PaletteLoader.NextPaletteCycle_UI = -1;
     }
 
     static void SetStatic(Type type, string name, object value)
@@ -452,19 +461,39 @@ public partial class ScenarioRunner : Node
         field.SetValue(null, value);
     }
 
+    /// <summary>The cutscenes the game played at start-up, in order, before the new game.</summary>
+    public static readonly System.Collections.Generic.List<int> StartupCutscenes = new();
+
     /// <summary>
-    /// From the scene just added to "in game on level 1": stop the intro cutscene that
-    /// main.StartGame queued, wait for its callback (uimanager.ReturnToMainMenu) to reach the
-    /// main menu, then make the calls main.LaunchUWDemo makes. Returns null or why it failed.
+    /// Whether the temporary game folder held a saved game at start-up. It starts empty, but a
+    /// scenario that saves leaves its slot for the later ones.
+    /// </summary>
+    public static bool StartupHadSaves;
+
+    /// <summary>
+    /// From the scene just added to "in game on level 1": stop the title cutscene that
+    /// main.StartGame queued and the introduction its callback (uimanager.TitleFinished) plays
+    /// when there is no saved game, wait for the main menu, then make the calls
+    /// main.LaunchUWDemo makes. Returns null or why it failed.
     /// </summary>
     async Task<string> StartNewGame()
     {
-        cutsplayer.StopCutscene();
+        // The title (cutscene 9) and, with no saved game in the temporary game folder, the
+        // introduction after it (uimanager.TitleFinished): each is stopped as it starts, and its
+        // number recorded for startup-intro.
+        StartupCutscenes.Clear();
+        StartupHadSaves = uimanager.AnySavedGames();
         ulong deadline = Time.GetTicksMsec() + CutsceneStopMs;
         while (cutsplayer.IsPlaying || uimanager.CurrentGameMode != uimanager.GameModes.MAIN)
         {
             if (Time.GetTicksMsec() > deadline)
-                return $"the intro cutscene did not stop (mode {uimanager.CurrentGameMode}, playing {cutsplayer.IsPlaying})";
+                return $"the intro cutscene did not stop (mode {uimanager.CurrentGameMode}, playing {cutsplayer.IsPlaying}, stopped {string.Join(", ", StartupCutscenes)}, last {cutsplayer.CurrentCutsceneNo})";
+            if (cutsplayer.IsPlaying
+                && (StartupCutscenes.Count == 0 || StartupCutscenes[^1] != cutsplayer.CurrentCutsceneNo))
+            {
+                StartupCutscenes.Add(cutsplayer.CurrentCutsceneNo);
+                cutsplayer.StopCutscene();
+            }
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         }
 

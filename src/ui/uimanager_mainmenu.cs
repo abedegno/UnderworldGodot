@@ -164,43 +164,37 @@ namespace Underworld
 
 		private void _on_introduction_mouse_entered()
 		{
-			TurnButtonsOff();
-			MainMenuButtons[0].Texture = grOptbtn.LoadImageAt(1);
+			SetMainMenuCursor(0);
 		}
 
 
 		private void _on_introduction_mouse_exited()
 		{
-			TurnButtonsOff();
-			MainMenuButtons[0].Texture = grOptbtn.LoadImageAt(0);
+			DrawMainMenuButtons();
 		}
 
 
 		private void _on_create_character_mouse_entered()
 		{
-			TurnButtonsOff();
-			MainMenuButtons[1].Texture = grOptbtn.LoadImageAt(3);
+			SetMainMenuCursor(1);
 		}
 
 
 		private void _on_create_character_mouse_exited()
 		{
-			TurnButtonsOff();
-			MainMenuButtons[1].Texture = grOptbtn.LoadImageAt(2);
+			DrawMainMenuButtons();
 		}
 
 
 		private void _on_acknowledgements_mouse_entered()
 		{
-			TurnButtonsOff();
-			MainMenuButtons[2].Texture = grOptbtn.LoadImageAt(5);
+			SetMainMenuCursor(2);
 		}
 
 
 		private void _on_acknowledgements_mouse_exited()
 		{
-			TurnButtonsOff();
-			MainMenuButtons[2].Texture = grOptbtn.LoadImageAt(4);
+			DrawMainMenuButtons();
 		}
 
 		//
@@ -208,24 +202,19 @@ namespace Underworld
 		{
 			if (@event is InputEventMouseButton eventMouseButton && eventMouseButton.Pressed && eventMouseButton.ButtonIndex == MouseButton.Left)
 			{
-				// Introduction button plays CS000 → CS001 only.
-				// Splash screens (Origin, LGS, title) play on game startup.
-				CurrentGameMode = GameModes.CUTSCENE;
-				cutsplayer.PlayCutscene(0xA, ReturnToMainMenu);
+				MainMenuChoose(2);
 			}
 		}
 
 		private void _on_journey_onwards_mouse_entered()
 		{
-			TurnButtonsOff();
-			MainMenuButtons[3].Texture = grOptbtn.LoadImageAt(7);
+			SetMainMenuCursor(3);
 		}
 
 
 		private void _on_journey_onwards_mouse_exited()
 		{
-			TurnButtonsOff();
-			MainMenuButtons[3].Texture = grOptbtn.LoadImageAt(6);
+			DrawMainMenuButtons();
 		}
 
 
@@ -237,9 +226,7 @@ namespace Underworld
 		{
 			if (@event is InputEventMouseButton eventMouseButton && eventMouseButton.Pressed && eventMouseButton.ButtonIndex == MouseButton.Left)
 			{
-				CurrentGameMode = GameModes.JOURNEY;
-				ToggleMainMenuButtons(false);
-				ToggleSaves();
+				MainMenuChoose(3);
 			}
 		}
 
@@ -247,6 +234,7 @@ namespace Underworld
 		{
 			if (show)
 			{
+				var slots = new System.Collections.Generic.List<int>();
 				for (int i = 1; i <= 4; i++)
 				{
 					var path = Path.Combine(SlotTransaction.SlotDirectory(UWClass.BasePath, i), "DESC");
@@ -254,12 +242,18 @@ namespace Underworld
 					{
 						EnableDisable(SaveGamesNames[i - 1], true);
 						SaveGamesNames[i - 1].Text = savename;
+						slots.Add(i);
 					}
 					else
 					{
 						EnableDisable(SaveGamesNames[i - 1], false);
 					}
 				}
+				// do_journey lists the saved games in slot order and starts on the first
+				// (uw1 MAINMENU.C:390-400, uw2 MAINMENU.C:364-374).
+				JourneySlots = slots.ToArray();
+				JourneyCursor = 0;
+				DrawJourneyList();
 			}
 			else
 			{
@@ -268,6 +262,294 @@ namespace Underworld
 					EnableDisable(SaveGamesNames[i - 1], false);
 				}
 			}
+		}
+
+		/// <summary>
+		/// The lit main menu button, parse_start_input's cur (uw1 MAINMENU.C:309-370, uw2
+		/// MAINMENU.C:285-344): 0 introduction, 1 create character, 2 acknowledgements, 3 journey
+		/// onward.
+		/// </summary>
+		public static int MainMenuCursor = 1;
+
+		/// <summary>
+		/// How many buttons the keys reach, parse_start_input's n: journey onward only when a
+		/// saved game exists (real_start, uw1 MAINMENU.C:167-168, uw2 MAINMENU.C:140-141).
+		/// </summary>
+		static int MainMenuCount = 3;
+
+		/// <summary>The slots of the saved games listed by journey onward, in order.</summary>
+		public static int[] JourneySlots = new int[0];
+
+		/// <summary>The lit saved game, an index into JourneySlots.</summary>
+		public static int JourneyCursor = 0;
+
+		/// <summary>
+		/// True if any of the four slots holds a saved game: get_save_descs finds a slot by its
+		/// DESC file (uw1 GAMEWRAP.C:151-170).
+		/// </summary>
+		public static bool AnySavedGames()
+		{
+			for (int i = 1; i <= 4; i++)
+			{
+				var path = Path.Combine(SlotTransaction.SlotDirectory(UWClass.BasePath, i), "DESC");
+				if (SaveDescription.TryReadSlot(path, out _))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/// <summary>
+		/// The menu is shown afresh: real_start lights journey onward when there is a saved game
+		/// and create character when there is none, each time round its loop (uw1
+		/// MAINMENU.C:167-168, 191; uw2 MAINMENU.C:140-141, 164).
+		/// </summary>
+		void ResetMainMenuCursor()
+		{
+			bool saves = AnySavedGames();
+			MainMenuCount = saves ? 4 : 3;
+			MainMenuCursor = saves ? 3 : 1;
+			DrawMainMenuButtons();
+		}
+
+		void SetMainMenuCursor(int i)
+		{
+			MainMenuCursor = i;
+			DrawMainMenuButtons();
+		}
+
+		/// <summary>
+		/// The buttons with the cursor's lit (draw_start_buttons, uw1 MAINMENU.C:118-124, uw2
+		/// MAINMENU.C:91-97). Each button's lit picture follows its unlit one in OPBTN.GR.
+		/// </summary>
+		void DrawMainMenuButtons()
+		{
+			if (grOptbtn == null) return;
+			for (int i = 0; i < 4; i++)
+			{
+				if (MainMenuButtons[i] != null)
+					MainMenuButtons[i].Texture = grOptbtn.LoadImageAt(i * 2 + (i == MainMenuCursor ? 1 : 0));
+			}
+		}
+
+		/// <summary>
+		/// Acts on main menu button i (real_start's switch, uw1 MAINMENU.C:192-240, uw2
+		/// MAINMENU.C:167-217), or quits for -1.
+		/// </summary>
+		void MainMenuChoose(int i)
+		{
+			switch (i)
+			{
+				case 0:
+					CurrentGameMode = GameModes.CUTSCENE;
+					PlayIntroduction();
+					break;
+				case 1:
+					CurrentGameMode = GameModes.CHARGEN;
+					InitChargenUI();
+					break;
+				case 2:
+					// Splash screens (Origin, LGS, title) play on game startup.
+					CurrentGameMode = GameModes.CUTSCENE;
+					cutsplayer.PlayCutscene(0xA, ReturnToMainMenu);
+					break;
+				case 3:
+					CurrentGameMode = GameModes.JOURNEY;
+					ToggleMainMenuButtons(false);
+					ToggleSaves();
+					break;
+				case -1:
+					QuitTheGame();
+					break;
+			}
+		}
+
+		/// <summary>
+		/// The introduction, then back to the menu: cutscene 0 in UW1 (uw1 MAINMENU.C:235), 0 and
+		/// then 1 in UW2 (uw2 MAINMENU.C:211-212).
+		/// </summary>
+		static void PlayIntroduction()
+		{
+			if (UWClass._RES == UWClass.GAME_UW2)
+			{
+				cutsplayer.PlayCutscene(0, () =>
+					cutsplayer.PlayCutscene(1, ReturnToMainMenu));
+			}
+			else
+			{
+				cutsplayer.PlayCutscene(0, ReturnToMainMenu);
+			}
+		}
+
+		/// <summary>
+		/// After the title at start-up the original enters the menu with real_start(1) (uw1
+		/// UWEDIT.C:141, uw2 UWEDIT.C:139), whose do_intro_scene plays the introduction first
+		/// when there is no saved game (uw1 MAINMENU.C:94-107, uw2 MAINMENU.C:65-80). Returning
+		/// to the menu after death or the end uses real_start(0), with no introduction.
+		/// </summary>
+		public static void TitleFinished()
+		{
+			if (AnySavedGames())
+			{
+				ReturnToMainMenu();
+			}
+			else
+			{
+				CurrentGameMode = GameModes.CUTSCENE;
+				PlayIntroduction();
+			}
+		}
+
+		void SetJourneyCursorToSlot(int slot)
+		{
+			int i = System.Array.IndexOf(JourneySlots, slot);
+			if (i >= 0)
+			{
+				JourneyCursor = i;
+				DrawJourneyList();
+			}
+		}
+
+		/// <summary>
+		/// The saved games with the cursor's in the selected colour (draw_start_buttons, uw1
+		/// MAINMENU.C:125-141, uw2 MAINMENU.C:98-113).
+		/// </summary>
+		void DrawJourneyList()
+		{
+			for (int i = 0; i < JourneySlots.Length; i++)
+			{
+				var colour = i == JourneyCursor ? PaletteIndexSaveGameSelected : PaletteIndexSaveGameUnSelected;
+				SaveGamesNames[JourneySlots[i] - 1].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(colour, false, false));
+			}
+		}
+
+		void ChooseSavedGame(int slot)
+		{
+			_ = Coroutine.Run(
+			   ClearMainMenu()
+			   , main.instance);
+			JourneyOnwards($"SAVE{slot}");
+		}
+
+		/// <summary>
+		/// Leaves the list of saved games for the menu.
+		/// </summary>
+		void BackToMainMenuButtons()
+		{
+			CurrentGameMode = GameModes.MAIN;
+			ToggleMainMenuButtons(true);
+			ToggleSaves(false);
+			EnableDisable(PanelChargen, false);
+			EnableDisable(PanelMainMenu, true);
+			ResetMainMenuCursor();
+		}
+
+		/// <summary>
+		/// One key on the main menu's buttons (text false) or its list of saved games (text
+		/// true), as parse_start_input takes it (uw1 MAINMENU.C:324-367, uw2 MAINMENU.C:298-341):
+		/// Right, Down, Ctrl+F and Ctrl+N move to the next, Up, Left, Ctrl+B and Ctrl+P to the one
+		/// before, Home, PgUp and Alt+&lt; to the first, End, PgDn and Alt+&gt; to the last, all
+		/// stopping at the ends; Enter chooses; Alt+X, and Escape on the list only, give -1. Returns
+		/// the choice, or -2 for none.
+		/// </summary>
+		static int ParseStartKey(InputEventKey key, int n, bool text, ref int cur)
+		{
+			int result = -2;
+			bool ctrl = key.CtrlPressed && !key.AltPressed;
+			bool alt = key.AltPressed && !key.CtrlPressed;
+			switch (key.Keycode)
+			{
+				case Key.Right:
+				case Key.Down:
+					cur++;
+					break;
+				case Key.F:
+				case Key.N:
+					if (ctrl) cur++;
+					break;
+				case Key.Up:
+				case Key.Left:
+					cur--;
+					break;
+				case Key.B:
+				case Key.P:
+					if (ctrl) cur--;
+					break;
+				case Key.Enter:
+				case Key.KpEnter:
+					if (!key.Echo) result = cur;
+					break;
+				case Key.Home:
+				case Key.Pageup:
+					cur = 0;
+					break;
+				case Key.End:
+				case Key.Pagedown:
+					cur = n - 1;
+					break;
+				case Key.Less:
+				case Key.Comma:
+					if (alt && (key.Keycode == Key.Less || key.ShiftPressed)) cur = 0;
+					break;
+				case Key.Greater:
+				case Key.Period:
+					if (alt && (key.Keycode == Key.Greater || key.ShiftPressed)) cur = n - 1;
+					break;
+				case Key.Escape:
+					if (text && !key.Echo) result = -1;
+					break;
+				case Key.X:
+					if (alt && !key.Echo) result = -1;
+					break;
+			}
+			if (cur < 0)
+				cur = 0;
+			else if (cur >= n)
+				cur = n - 1;
+			return result;
+		}
+
+		/// <summary>
+		/// The keys of the main menu and of its list of saved games. Returns true if the key was
+		/// one of them.
+		/// </summary>
+		bool MainMenuKey(InputEventKey key)
+		{
+			switch (CurrentGameMode)
+			{
+				case GameModes.MAIN:
+					{
+						if (!PanelMainMenu.Visible) return false;
+						int cur = MainMenuCursor;
+						int result = ParseStartKey(key, MainMenuCount, false, ref cur);
+						SetMainMenuCursor(cur);
+						if (result != -2)
+						{
+							MainMenuChoose(result);
+						}
+						return true;
+					}
+				case GameModes.JOURNEY:
+					{
+						int cur = JourneyCursor;
+						int result = ParseStartKey(key, JourneySlots.Length, true, ref cur);
+						JourneyCursor = cur;
+						DrawJourneyList();
+						if (result >= 0)
+						{
+							ChooseSavedGame(JourneySlots[result]);
+						}
+						else if (result == -1)
+						{
+							// do_journey returns 0 and the menu comes back (uw1 MAINMENU.C:401,
+							// 420; uw2 MAINMENU.C:375, 394).
+							BackToMainMenuButtons();
+						}
+						return true;
+					}
+			}
+			return false;
 		}
 
 		private IEnumerator ClearMainMenu()
@@ -414,8 +696,7 @@ namespace Underworld
 		{
 			if (@event is InputEventMouseButton eventMouseButton && eventMouseButton.Pressed && eventMouseButton.ButtonIndex == MouseButton.Left)
 			{
-				CurrentGameMode = GameModes.CHARGEN;
-				InitChargenUI();
+				MainMenuChoose(1);
 			}
 		}
 
@@ -423,83 +704,51 @@ namespace Underworld
 
 		private void _on_save_1_gui_input(InputEvent @event)
 		{
-			if (@event is InputEventMouse eventMouse)
+			if (@event is InputEventMouse)
 			{
-				//Set the font for the save games.
-				SaveGamesNames[0].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameSelected, false, false));
-				SaveGamesNames[1].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameUnSelected, false, false));
-				SaveGamesNames[2].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameUnSelected, false, false));
-				SaveGamesNames[3].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameUnSelected, false, false));
+				SetJourneyCursorToSlot(1);
 			}
 			if (@event is InputEventMouseButton eventMouseButton && eventMouseButton.Pressed && eventMouseButton.ButtonIndex == MouseButton.Left)
 			{
-				_ = Coroutine.Run(
-				   ClearMainMenu()
-				   , main.instance);
-				JourneyOnwards("SAVE1");
+				ChooseSavedGame(1);
 			}
 		}
 
 		private void _on_save_2_gui_input(InputEvent @event)
 		{
-			if (@event is InputEventMouse eventMouse)
+			if (@event is InputEventMouse)
 			{
-				//Set the font for the save games.
-				SaveGamesNames[0].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameUnSelected, false, false));
-				SaveGamesNames[1].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameSelected, false, false));
-				SaveGamesNames[2].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameUnSelected, false, false));
-				SaveGamesNames[3].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameUnSelected, false, false));
+				SetJourneyCursorToSlot(2);
 			}
 			if (@event is InputEventMouseButton eventMouseButton && eventMouseButton.Pressed && eventMouseButton.ButtonIndex == MouseButton.Left)
 			{
-				_ = Coroutine.Run(
-				   ClearMainMenu()
-				   , main.instance);
-
-				JourneyOnwards("SAVE2");
+				ChooseSavedGame(2);
 			}
 		}
 
 
 		private void _on_save_3_gui_input(InputEvent @event)
 		{
-			if (@event is InputEventMouse eventMouse)
+			if (@event is InputEventMouse)
 			{
-				//Set the font for the save games.
-				SaveGamesNames[0].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameUnSelected, false, false));
-				SaveGamesNames[1].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameUnSelected, false, false));
-				SaveGamesNames[2].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameSelected, false, false));
-				SaveGamesNames[3].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameUnSelected, false, false));
+				SetJourneyCursorToSlot(3);
 			}
 			if (@event is InputEventMouseButton eventMouseButton && eventMouseButton.Pressed && eventMouseButton.ButtonIndex == MouseButton.Left)
 			{
-				_ = Coroutine.Run(
-				   ClearMainMenu()
-				   , main.instance);
-
-				JourneyOnwards("SAVE3");
+				ChooseSavedGame(3);
 			}
 		}
 
 
 		private void _on_save_4_gui_input(InputEvent @event)
 		{
-			if (@event is InputEventMouse eventMouse)
+			if (@event is InputEventMouse)
 			{
-				//Set the font for the save games.
-				SaveGamesNames[0].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameUnSelected, false, false));
-				SaveGamesNames[1].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameUnSelected, false, false));
-				SaveGamesNames[2].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameUnSelected, false, false));
-				SaveGamesNames[3].Set("theme_override_colors/font_color", PaletteLoader.Palettes[MainMenuPalette].ColorAtIndex(PaletteIndexSaveGameSelected, false, false));
+				SetJourneyCursorToSlot(4);
 			}
-
 			if (@event is InputEventMouseButton eventMouseButton && eventMouseButton.Pressed && eventMouseButton.ButtonIndex == MouseButton.Left)
 			{
-				_ = Coroutine.Run(
-				   ClearMainMenu()
-				   , main.instance);
-
-				JourneyOnwards("SAVE4");
+				ChooseSavedGame(4);
 			}
 		}
 
@@ -507,18 +756,7 @@ namespace Underworld
 		{
 			if (@event is InputEventMouseButton eventMouseButton && eventMouseButton.Pressed && eventMouseButton.ButtonIndex == MouseButton.Left)
 			{
-				CurrentGameMode = GameModes.CUTSCENE;
-				if (UWClass._RES == UWClass.GAME_UW2)
-				{
-					// Introduction button plays CS000 → CS001 only.
-					cutsplayer.PlayCutscene(0, () =>
-						cutsplayer.PlayCutscene(1, ReturnToMainMenu));
-				}
-				else
-				{
-					// Introduction button plays CS000 only.
-					cutsplayer.PlayCutscene(0, ReturnToMainMenu);
-				}
+				MainMenuChoose(0);
 			}
 		}
 
@@ -580,6 +818,24 @@ namespace Underworld
 				}
 			}
 
+			// UW2's options buttons followed while held (better_mouse_release).
+			if (OptionsMouseHoldInput(@event))
+			{
+				GetViewport().SetInputAsHandled();
+				return;
+			}
+
+			// The keys of the options panel and of the main menu.
+			if (@event is InputEventKey menuKey && menuKey.Pressed)
+			{
+				if ((CurrentGameMode == GameModes.OPTIONS && !SaveDescriptionPromptActive && OptionsHandleKey(menuKey))
+					|| MainMenuKey(menuKey))
+				{
+					GetViewport().SetInputAsHandled();
+					return;
+				}
+			}
+
 			if (@event is InputEventKey keyinput)
 			{
 				if (keyinput.Pressed)
@@ -600,10 +856,7 @@ namespace Underworld
 							case GameModes.CHARGEN:
 							case GameModes.JOURNEY:
 								{
-									ToggleMainMenuButtons(true);
-									ToggleSaves(false);
-									EnableDisable(PanelChargen, false);
-									EnableDisable(PanelMainMenu, true);
+									BackToMainMenuButtons();
 									break;
 								}
 							case GameModes.GAME://ingame
@@ -688,7 +941,8 @@ namespace Underworld
 			StartMainMenuMusic();
 			EnableDisable(instance.PanelMainMenu, true);
 			instance.ToggleMainMenuButtons(true);
-			instance.ToggleSaves(false); 
+			instance.ToggleSaves(false);
+			instance.ResetMainMenuCursor();
 			EnableDisable(instance.DragonPanel,false);           
 			//InGame = false;
 			Node3D the_tiles = main.instance.GetNode<Node3D>("../tilemap");
