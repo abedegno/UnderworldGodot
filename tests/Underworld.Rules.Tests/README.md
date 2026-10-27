@@ -26,7 +26,7 @@ The test prints how many values each folder gives (`dotnet test --logger "consol
 
 Rule functions that cannot run without Godot or game data are not pinned. Scenarios in `tests/godot` cover some of them in play.
 
-- Every static of `npc`, because `npc`'s static constructor loads a Godot resource: `SquareRoot_seg019_A78`, `CheckIfAtOrNearTargetTile`, `set_gridx_and_y_based_on_tile_type`, `RandomLootQuality`, `GetCritterRange_seg007_17A2_30D1`, `CheckIfMatchingRaceUW2`, the `ANIMATION_*` and `COMBAT_HITFRAME` properties, and the table `NPCAnimationHeadingTable`.
+- Every static of `npc`, because `npc`'s static constructor loads a Godot resource: `CheckIfAtOrNearTargetTile`, `set_gridx_and_y_based_on_tile_type`, `RandomLootQuality`, `GetCritterRange_seg007_17A2_30D1`, `CheckIfMatchingRaceUW2`, the `ANIMATION_*` and `COMBAT_HITFRAME` properties, and the table `NPCAnimationHeadingTable`.
 - The door checks (`door.isOpen`, `isMoving`, `isSecretDoor`, `isPortcullis`, `NoOfFrames`), which reach `GRLoader` and Godot textures.
 - `chargen.RollSkill`, `chargen.RollClassBaseSkills` and `GameStrings.GetDirectionStringToTile`, whose classes read game files on start-up; `chargen.InitClassAttributes`, which redraws the stats panel.
 - Functions that report through the message scroll or move things in the 3D scene: the attack chain in `combat` (`AttackTarget`, `CalcAttackResults`, `checkAttackHit`, `AttackerAppliesFinalDamage`), `damage.DamagePlayer`, the hit point, mana, experience and level functions of `playerdat`, `leech.LeechDamage`, player motion, and the traps' `Activate` methods.
