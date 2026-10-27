@@ -23,7 +23,7 @@ namespace Underworld.Scenarios;
 ///
 /// Precondition that the sleep really ran to its end: fatigue, set to 0x30 first, is 0 after
 /// (the uninterrupted night zeroes it, uw1 SKILLS.C:589, uw2 SKILLS.C:516; an interrupted sleep
-/// takes off 0x20 in DOS, uw1 SKILLS.C:566-569, and 0x18 in the port, src/World/sleep.cs:238, so
+/// takes off 0x20 in UW1, uw1 SKILLS.C:563-567, and 0x18 in UW2, uw2 SKILLS.C:492-493, so
 /// it would leave 0x10 or 0x18, not 0) and hunger has dropped (uw1 SKILLS.C:601, uw2
 /// SKILLS.C:528).
 /// </summary>
