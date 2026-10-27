@@ -860,6 +860,13 @@ public partial class main : Node3D
 			return;
 		}
 
+		// The "Move how many?" prompt takes its keys and any click before anything else.
+		if (uimanager.HowManyInput(@event))
+		{
+			GetViewport().SetInputAsHandled();
+			return;
+		}
+
 		if ((@event is InputEventMouseButton eventMouseButton)
 			&&
 			((eventMouseButton.ButtonIndex == MouseButton.Left) || (eventMouseButton.ButtonIndex == MouseButton.Right)))
