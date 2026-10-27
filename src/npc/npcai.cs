@@ -2914,6 +2914,12 @@ namespace Underworld
 
             var animVar4 = 0x20;
             var AttackTypeVar6 = 0;
+            //UW1 writes its own sequence numbers: SEQ_COMBAT 0, SEQ_BACK_OFF 7, SEQ_WALK 0x2C. uw1 AI.C:405-431, uw1 critter.h:124-132
+            int combatSeq = 2, backOffSeq = 1, walkSeq = 1;
+            if (_RES != GAME_UW2)
+            {
+                combatSeq = 0; backOffSeq = 7; walkSeq = 0x2C;
+            }
 
             if (DistArg0 >= 0x31)
             {
@@ -2922,20 +2928,20 @@ namespace Underworld
                     //seg007_17A2_A61:
                     if (Rng.r.Next(0x40) >= critterObjectDat.dexterity(critter.item_id))
                     {
-                        animVar4 = 2;
+                        animVar4 = combatSeq;
                         AttackTypeVar6 = 0;
                     }
                     else
                     {
                         headingvar2 = Rng.r.Next(8);
-                        animVar4 = 2;
+                        animVar4 = combatSeq;
                         AttackTypeVar6 = 1;
                     }
                 }
                 else
                 {
                     //seg007_17A2_A55:
-                    animVar4 = 1;
+                    animVar4 = walkSeq;
                     AttackTypeVar6 = 2;
                 }
             }
@@ -2945,14 +2951,14 @@ namespace Underworld
                 {
                     //seg007_17A2_A33:
                     headingvar2 = (headingvar2 + 4) % 8;
-                    animVar4 = 1;
+                    animVar4 = backOffSeq;
                     AttackTypeVar6 = 2;
                 }
                 else
                 {
                     //seg007_17A2_9F5:
                     headingvar2 = ((headingvar2 + (Rng.r.Next(2) << 1) - 1) + 8) % 8;
-                    animVar4 = 2;
+                    animVar4 = combatSeq;
                     AttackTypeVar6 = (critterObjectDat.unk_b(critter.item_id) << 1) / 3;
                 }
             }
@@ -2993,7 +2999,7 @@ namespace Underworld
             }
 
             //seg007_17A2_BA8: 
-            if (DistArg0 <= 0x100)
+            if (DistArg0 <= 0x64)//in reach. uw1 AI.C:442, uw2 AI.C:432
             {
                 if (Rng.r.Next(4) != 0)
                 {
@@ -3007,7 +3013,7 @@ namespace Underworld
                 {
                     var rngSI = Rng.r.Next(0x64);
                     var attackNoVar8 = 0;
-                    while ((critterObjectDat.attackprobability(critter.item_id, attackNoVar8) >= rngSI) && (attackNoVar8 < 2))
+                    while ((critterObjectDat.attackprobability(critter.item_id, attackNoVar8) <= rngSI) && (attackNoVar8 < 2))//uw1 AI.C:445, uw2 AI.C:435
                     {
                         rngSI -= critterObjectDat.attackprobability(critter.item_id, attackNoVar8);//reduce probability threshold for next check.
                         attackNoVar8++;
