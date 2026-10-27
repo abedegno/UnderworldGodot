@@ -427,7 +427,7 @@ namespace Underworld
                 if (result == playerdat.SkillCheckResult.CritSucess)
                 {
                     AttackWasACrit = true;
-                    var critbonus = (48 + Rng.r.Next(30)) >> 5;
+                    var critbonus = (48 + Rng.r.Next(32)) >> 5;//((rand() & 0x1F) + 0x30) >> 5, uw1 COMBAT.C:305, uw2 COMBAT.C:331
                     AttackDamage = AttackDamage * critbonus;
 
                     if (DefendingCharacter.index == 1)
@@ -444,12 +444,12 @@ namespace Underworld
                         }
                         else
                         {
-                            if (si_slot <= 2)
+                            if ((si_slot != 0) && (si_slot <= 2))
                             {
                                 si_slot = 7 + playerdat.handednessvalue;
                             }
                         }
-                        Debug.Print($"Equipment damage to slot {si_slot} of {Rng.DiceRoll(2, 4)}");
+                        damage.DamageEquipment(si_slot, Rng.DiceRoll(2, 4), 4, 1, 1);//uw1 COMBAT.C:307-311, uw2 COMBAT.C:332-336
                     }
 
                     return 0;//a hit
@@ -460,11 +460,10 @@ namespace Underworld
                     {
                         if (AttackingCharacter.index == 1)
                         {
-                            if (critterObjectDat.damagesWeaponOnCritMiss(DefendingCharacter.item_id))
-                            {
-                                var weaponselfdamage = Rng.DiceRoll(2, 3);
+                            if (!critterObjectDat.damagesWeaponOnCritMiss(DefendingCharacter.item_id))
+                            {//the weapon wears unless the critter's passive bit (byte 0xA bit 0) is set. uw1 COMBAT.C:316-320, uw2 COMBAT.C:341-345
                                 var si_slot = 8 - playerdat.handednessvalue;
-                                Debug.Print($"Equipment damage to slot {si_slot} of {Rng.DiceRoll(2, 3)}");
+                                damage.DamageEquipment(si_slot, Rng.DiceRoll(2, 3), 4, 0, 1);
                             }
                         }
 
@@ -485,7 +484,7 @@ namespace Underworld
                         if (Rng.r.Next(0, 0xC) < (DefendingCharacter.item_id & 0x7) << 1)
                         {
                             var si_slot = 8 - playerdat.handednessvalue;
-                            Debug.Print($"Equipment damage to slot {si_slot} of {Rng.DiceRoll(2, 4)}");
+                            damage.DamageEquipment(si_slot, Rng.DiceRoll(2, 4), 4, 0, 1);//uw1 COMBAT.C:290-295, uw2 COMBAT.C:310-315
                         }
 
                     }

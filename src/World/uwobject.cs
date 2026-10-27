@@ -1628,7 +1628,7 @@ namespace Underworld
 
         public static bool CheckIfObjectInValidSlot(uwObject obj, int slot)
         {
-            if ((slot >= 0) && (slot < 4))
+            if ((slot >= 0) && (slot <= 4))//ObjWorn: slots 0-4, uw1 INVDATA.C:403, uw2 INVDATA.C:384
             {
                 return true;
             }
@@ -1636,11 +1636,7 @@ namespace Underworld
             {
                 return true;
             }
-            if (
-                (playerdat.isLefty && slot == 8)
-                ||
-                (!playerdat.isLefty && slot == 7)
-                )
+            if (slot == 7 + playerdat.handednessvalue)//the shield hand, player->lefty + 7, uw1 INVDATA.C:407, uw2 INVDATA.C:388
             {
                 if (obj.majorclass == 0)
                 {
