@@ -595,6 +595,10 @@ namespace Underworld
 			playerdat.playerObject.link = 0;//prevents infinite loops.
 			playerdat.playerObject.tileX = playerdat.playerObject.npc_xhome;
 			playerdat.playerObject.tileY = playerdat.playerObject.npc_yhome;
+
+			//set camera to player before the first view below. The old reference belonged to the previous map, or to an earlier game.
+			//The original's camera (UsPtr) is the player's object slot itself (uw1 PLAYER.C:136, uw2 PLAYER.C:129).
+			playerdat.CameraReference = playerdat.playerObject;
 			
 			if (folder.ToUpper() == "DATA")
 			{
@@ -667,8 +671,6 @@ namespace Underworld
 				PreviousInteractionMode = InteractionModes.ModeUse;
 			}
 			uimanager.UpdateCompass();
-			//set camera to player
-			playerdat.CameraReference = playerdat.playerObject;
 			//reset camera pitch which is not serialised
 			playerdat.PlayerCameraPitch_dseg_67d6_33D6 = 0;
 			//turn off moongate sucking effect (uw1 endgame)

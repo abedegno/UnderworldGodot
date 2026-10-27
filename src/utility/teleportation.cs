@@ -672,9 +672,9 @@ namespace Underworld
             {
                 if (mode == EnterLevelMode)
                 {
+                    //init_level_creature_stuff (uw2 CRITTIME.C:458-463): forget the last critter hit and free the paths
                     playerdat.LastDamagedNPCIndex = 0; playerdat.LastDamagedNPCType = -1;
-                    CallBacks.RunCodeOnAllMobiles(ClearUnkBit_0x15_7_OnMobiles, null);
-                    npc.BitFieldForPathing_dseg_67d6_B4 = 0xFFFF;//clear_paths frees all 16 stored paths. uw2 CRITTIME.C:455
+                    npc.ClearPaths();
                     if (playerdat.play_drawn == 0)
                     {
                         //reselect level theme music.
@@ -773,9 +773,9 @@ namespace Underworld
             {
                 if (mode == EnterLevelMode)
                 {
+                    //init_level_creature_stuff (uw1 CRITTIME.C:402-407): forget the last critter hit and free the paths
                     playerdat.LastDamagedNPCIndex = 0; playerdat.LastDamagedNPCType = -1;
-                    CallBacks.RunCodeOnAllMobiles(ClearUnkBit_0x15_7_OnMobiles, null);
-                    npc.BitFieldForPathing_dseg_67d6_B4 = 0xFFFF;//clear_paths frees all 16 stored paths. uw1 PATHFIND.C:953
+                    npc.ClearPaths();
                 }
                 else
                 {
@@ -834,12 +834,6 @@ namespace Underworld
                         }
                 }
             }
-        }
-
-
-        static void ClearUnkBit_0x15_7_OnMobiles(uwObject obj, int[] paramsarray)
-        {
-            obj.UnkBit_0X15_Bit7 = 0;
         }
 
     }//end class

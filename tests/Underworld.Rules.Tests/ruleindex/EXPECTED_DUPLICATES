@@ -6,7 +6,6 @@
 # RuleIndex_ExpectedDuplicatesAreCurrent. Remove a "duplicate, to review" line in the piece that
 # merges the two.
 
-uw1:SquareRoot_seg019_A78@IMATH.ASM | src/audio/sfx/PositionalAudio.cs#IntSqrt src/npc/npcai.cs#SquareRoot_seg019_A78 | duplicate, to review: two square roots for cSqRt. IntSqrt is an exact floor root by Newton's method to convergence; SquareRoot_seg019_A78 takes five Newton steps from 4 or 0x40 and is only right below 0x10000. The original takes five steps from a guess set by the highest non-zero byte of a 32-bit value (uw1 IMATH.ASM:100-107), and play_effect calls it on the squared distance (uw1 SOUND.C:558, uw2 SOUND.C:581), so neither copy is the original for every input.
 uw1:DegradeLights@PLAYTIME.C | src/player/playerdatloop.cs#DegradeLights src/player/playerdatloop.cs#UpdateLightStability | wrapper: UpdateLightStability is DegradeLights with amount 1.
 uw2:DegradeLights@PLAYTIME.C | src/player/playerdatloop.cs#DegradeLights src/player/playerdatloop.cs#UpdateLightStability | wrapper: UpdateLightStability is DegradeLights with amount 1.
 uw1:kill_effect@SOUND.C | src/audio/UWSoundEffects.cs#KillEffect src/audio/sfx/TvfxVoice.cs#Stop src/audio/sfx/godot/SoundEffects.cs#Stop | wrapper: KillEffect sends the handle to SoundEffects.Stop, which stops that effect's voice (TvfxVoice.Stop); three layers of one rule.
