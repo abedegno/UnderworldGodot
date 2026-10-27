@@ -152,7 +152,7 @@ namespace Underworld
                 {
                     Debug.Print("Add calm function here");
                     uwObject.ResetMobileObjects();
-                    a_create_object_trap.FindAndRunCreateObjectTraps();
+                    a_create_object_trap.FindAndRunCreateObjectTraps(isPlayer: false);//DoWanderingMonsters(0), uw1 SKILLS.C:579, uw2 SKILLS.C:506
 
                     si_hourstosleep = 7 + Rng.r.Next(4) - si_hourstosleep;
                     if (playerdat.play_hp < 0xA)
