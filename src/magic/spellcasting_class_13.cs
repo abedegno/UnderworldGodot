@@ -157,9 +157,9 @@ namespace Underworld
             //try and find a guardian signet ring in the area
             for (int aX = cX - range; aX <= cX + range; aX++)
             {
-                for (int aY = cX - range; aY <= cY + range; aY++)
-                {
-                    if (UWTileMap.ValidTile(aY, aX))
+                for (int aY = cY - range; aY <= cY + range; aY++)
+                {//every square within two of the player (gronk_area(ThePlayer, 1, ..., 2): uw2 SPELLS2.C:807)
+                    if (UWTileMap.ValidTile(aX, aY))
                     {
                         var tile = UWTileMap.current_tilemap.Tiles[aX, aY];
                         var next = tile.indexObjectList;
