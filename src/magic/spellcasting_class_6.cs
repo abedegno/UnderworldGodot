@@ -272,8 +272,17 @@ namespace Underworld
         /// <returns></returns>
         public static bool RepelUndead(int x, int y, uwObject targetObject, TileInfo tile, int srcIndex)
         {
+            if (srcIndex != 1)
+            {//only the player's spell does anything. uw2 SPELLS.C:555-556
+                return true;
+            }
             if (targetObject == null)
-            {
+            {//a square: one in three gets an effect at the caster's height plus 20. uw2 SPELLS.C:557-560
+                if (Rng.RandMod(3) == 0)
+                {
+                    var caster = UWTileMap.current_tilemap.LevelObjects[srcIndex];
+                    animo.SpawnAnimoInTile(subclassindex: 7, xpos: 3, ypos: 3, zpos: (short)(caster.zpos + 20), tileX: x, tileY: y);
+                }
                 return false;
             }
             else
