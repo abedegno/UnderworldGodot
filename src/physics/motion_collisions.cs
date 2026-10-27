@@ -38,14 +38,31 @@ namespace Underworld
             UWMotionParamArray.RelatedToMotionZ_dseg_67d6_402 = 0;
 
 
+            // The terrain and pitch tests differ between the games. UW2 settles when the
+            // terrain's low two bits equal 1 and the pitch is not above zero:
+            // (3 & hits0) == 1 && vel[2] <= 0, uw2 MOTION.C:514-515. UW1 tests bit 0 alone,
+            // which also passes for 3, and settles only on a falling pitch:
+            // (1 & hits0) && vel[2] < 0, uw1 MOTION.C:505-506. See #117.
+            bool settleTerrain;
+            bool settlePitch;
+            if (_RES == GAME_UW2)
+            {
+                settleTerrain = (MotionCalcArray.UnkC_terrain_base & 0x3) == 1;
+                settlePitch = MotionParams.unk_a_pitch <= 0;
+            }
+            else
+            {
+                settleTerrain = (MotionCalcArray.UnkC_terrain_base & 0x1) != 0;
+                settlePitch = MotionParams.unk_a_pitch < 0;
+            }
             if (
                 (UWMotionParamArray.ACollisionIndex_dseg_67d6_416 == -1)
                 &&
-                ((MotionCalcArray.UnkC_terrain_base & 0x3) == 1)
+                settleTerrain
                 &&
                 (MotionCalcArray.Radius8_base + MotionCalcArray.Unk10_base >= MotionCalcArray.z4_base)
                 &&
-                (MotionParams.unk_a_pitch <= 0)
+                settlePitch
                 )
             {//seg031_2CFA_DDE: 
                 ZeroiseMotionValues_seg031_2CFA_7BF(MotionParams);
