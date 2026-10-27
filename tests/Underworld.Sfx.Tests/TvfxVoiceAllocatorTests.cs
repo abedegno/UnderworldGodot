@@ -87,4 +87,44 @@ public class TvfxVoiceAllocatorTests
         public CountingSink(System.Action onWrite) { _onWrite = onWrite; }
         public void WriteReg(int addr, byte val) => _onWrite();
     }
+
+    private sealed class RecordingSink : IOplRegisterSink
+    {
+        public readonly List<(int Addr, byte Val)> Writes = new();
+        public void WriteReg(int addr, byte val) => Writes.Add((addr, val));
+    }
+
+    [Fact]
+    public void Stop_silences_only_the_voice_with_that_handle_and_keys_it_off()
+    {
+        // kill_effect stops one effect slot at once (uw1 SOUND.C:627-637).
+        var a = new TvfxVoiceAllocator();
+        var p = SyntheticPatch.Build(0xFFFF, 0x8000);
+        var first = a.Allocate()!;
+        first.StartKeyon(p, lifetimeTicks: -1, handle: 0x100);
+        var second = a.Allocate()!;
+        second.StartKeyon(p, lifetimeTicks: -1, handle: 0x101);
+
+        var sink = new RecordingSink();
+        a.Stop(0x100, sink);
+
+        Assert.Equal(TvfxPhase.Idle, first.Phase);
+        Assert.NotEqual(TvfxPhase.Idle, second.Phase);
+        var keyOff = sink.Writes.FindLast(w => w.Addr == 0xB0 + first.Channel);
+        Assert.Equal(0, keyOff.Val & 0x20);
+        Assert.DoesNotContain(sink.Writes, w => w.Addr == 0xB0 + second.Channel);
+    }
+
+    [Fact]
+    public void Stop_all_handles_silences_every_voice()
+    {
+        // kill_all_effects (uw2 SOUND.C:1222-1239).
+        var a = new TvfxVoiceAllocator();
+        var p = SyntheticPatch.Build(0xFFFF, 0x8000);
+        for (int i = 0; i < 3; i++) a.Allocate()!.StartKeyon(p, lifetimeTicks: -1, handle: 0x100 + i);
+
+        a.Stop(SfxCommand.AllHandles, new NullSink());
+
+        Assert.Equal(0, a.ActiveCount);
+    }
 }
