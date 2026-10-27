@@ -120,6 +120,10 @@ namespace Underworld
                 var desttile = UWTileMap.current_tilemap.Tiles[31, 29];
                 var foundwand = playerdat.InventoryObjects[FoundAcademyWand];
                 var newIndex = uimanager.DoPickup(foundwand, ChangeHand: false);
+                if (newIndex == 0)
+                {//no free object: the wand stays in the inventory
+                    return;
+                }
                // var dropcoordinate = uwObject.XYZToVector3(x: 96 + (desttile.tileX << 8), y: desttile.floorHeight << 3, z: 96 + (desttile.tileY << 8)); //uwObject.GetCoordinate_OBSOLETE(desttile.tileX, desttile.tileY, 3, 3, (short)desttile.floorHeight<<3);
                 
                 var MovedWand = UWTileMap.current_tilemap.LevelObjects[newIndex];
