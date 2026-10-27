@@ -96,6 +96,9 @@ public partial class ScenarioRunner : Node
         (() => new Uw1AreaSpells(), true),
         (() => new AreaSpellArea(), true),
         (() => new Uw1Class7Ahead(), true),
+        (() => new SpellRefusedNoMagic(), true),
+        (() => new MindSpells(), true),
+        (() => new CreatedObjectFineY(), true),
         // end batch B
         // batch C
         (() => new TimeOfDayHourlyStep(), true),
@@ -380,8 +383,10 @@ public partial class ScenarioRunner : Node
     /// Puts back the statics a fresh process starts with that a new game does not reset and a
     /// scenario may have moved: the player loop's tick counters (playerdatloop.cs:13-17; only
     /// Load resets one of them) and the critters' free-path mask (npcai.cs:185, set only at
-    /// start-up). Without this a scenario's 20-second and 5-minute ticks fall where earlier
-    /// scenarios left them, and pathfinding runs with the paths an earlier scenario took.
+    /// start-up), and the clock of the last spell cast (runicmagic.cs, reset by DOS only on a
+    /// restore or a death). Without this a scenario's 20-second and 5-minute ticks fall where earlier
+    /// scenarios left them, pathfinding runs with the paths an earlier scenario took, and a cast can
+    /// be refused as too soon after an earlier scenario's.
     /// </summary>
     static void ResetProcessStatics()
     {
@@ -389,6 +394,7 @@ public partial class ScenarioRunner : Node
         SetStatic(typeof(playerdat), "playerUpdateCounter", 0);
         SetStatic(typeof(playerdat), "secondcounter", 0);
         SetStatic(typeof(npc), "BitFieldForPathing_dseg_67d6_B4", 0xFFFF);
+        SetStatic(typeof(RunicMagic), "LastSpellCastClock_dseg_5c99_16E3", 0);
     }
 
     static void SetStatic(Type type, string name, object value)
