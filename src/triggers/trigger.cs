@@ -48,6 +48,13 @@ namespace Underworld
                         }
                     }
                 }
+                if (triggerType < 0)
+                {
+                    // Reached along a trap chain (type -1): no check on who set it off
+                    // (uw1 TRIGGER.C:116, uw2 TRIGGER.C:98).
+                    RunTrapFromTrigger(character: character, ObjectUsed: ObjectUsed, TriggerObject: TriggerObject, triggerType: triggerType, objList: objList);
+                    return 2;
+                }
                 if (triggerType == triggerObjectDat.triggertype(TriggerObject.item_id) || (triggerType == (int)triggerObjectDat.triggertypes.ALL))
                 {
                     if (character == 1)
