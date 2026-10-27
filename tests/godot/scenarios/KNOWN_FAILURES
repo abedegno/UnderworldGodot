@@ -14,8 +14,6 @@ uw2/sleep-killorn-crash  ~quest 50 set and 54 clear (Killorn crashes) expected 0
 uw1/sleep-in-void  ~fatigue after trying to sleep in the Void  # no level 9 test (src/World/sleep.cs:25); uw1 SKILLS.C:525-528 refuses
 # end batch B
 # batch C
-uw1/repair-time-floor  ~repair whose formula gives 5 min expected  # repair time capped at 15 min, not floored, plus Math.Abs: repair.cs:83-84; uw1 WORLDEV.C:629-630
-uw2/repair-time-floor  ~repair whose formula gives 5 min expected  # repair time capped at 15 min, not floored, plus Math.Abs: repair.cs:83-84; uw2 WORLDEV.C:1010-1011
 uw1/give-ptr-npc  ~give_ptr_npc(coins, 2) result expected 1  # looks the inventory index up in the level objects, never takes from the pack, returns 0: give_ptr_npc.cs:28-71; uw1 CONVERSE.C:696-716
 uw2/give-ptr-npc  ~give_ptr_npc(coins, 2) result expected 1  # looks the inventory index up in the level objects, never takes from the pack, returns 0: give_ptr_npc.cs:28-71; uw2 CONVERSE.C:680-712
 uw1/end-barter-returns-items  ~deselected item left in the trade area expected put back  # only selected player slots dropped at conversation end: conversationvm.cs:640-646; uw1 BARTER.C:212-225
