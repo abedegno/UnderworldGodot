@@ -313,21 +313,19 @@ namespace Underworld
                         // seg030_2B26_788 and returns. Nothing restores the momentum, and
                         // nothing saves it either, so var6 is read on the UW2 path alone.
                         //
-                        // The condition itself is NOT faithful and is left as it was found.
-                        // DOS restores when (C & 3) == 3 and bit 2 of C is SET (test ...,4
-                        // then jnz to the restore at seg031_2CFA_10ED), and it SKIPS the
-                        // restore when bit 0x800 of E is set (test ...,800h then jnz to
-                        // seg031_2CFA_10F9). Both read inverted below. UW2 only, so it is
-                        // not fixed here.
+                        // UW2 puts the speed back, so a bounce on ice does not slow it, when
+                        // the centre stands on an ice floor (class 3, TERRAIN_ICE, with 4,
+                        // on the floor), or a corner is on ice (0x40) and none is over a
+                        // drop (0x800):
+                        // (hits0 & 3) == 3 && hits0 & 4 || hits1 & 0x40 && !(hits1 & 0x800),
+                        // uw2 MOTION.C:600-601.
                         if (
                             (_RES == GAME_UW2)
                             &&
                             (
-                            (((MotionCalcArray.UnkC_terrain_base & 3) == 3) && ((MotionCalcArray.UnkC_terrain_base & 0xC & 4) != 4))
+                            (((MotionCalcArray.UnkC_terrain_base & 3) == 3) && ((MotionCalcArray.UnkC_terrain_base & 4) != 0))
                             ||
-                            (((MotionCalcArray.UnkC_terrain_base & 3) == 3) && ((MotionCalcArray.UnkC_terrain_base & 0xC & 4) == 4) && ((MotionCalcArray.UnkE_base & 0x40) != 0) && ((MotionCalcArray.UnkE_base & 0x800) == 0x800))
-                            ||
-                            (((MotionCalcArray.UnkC_terrain_base & 3) != 3) && ((MotionCalcArray.UnkE_base & 0x40) != 0) && ((MotionCalcArray.UnkE_base & 0x800) == 0x800))
+                            (((MotionCalcArray.UnkE_base & 0x40) != 0) && ((MotionCalcArray.UnkE_base & 0x800) == 0))
                             )
                             )
                         {
