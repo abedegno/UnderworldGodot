@@ -55,8 +55,6 @@ uw1/uw1-casting-check  ~mana spent casting a circle 1 spell at Casting 13  # Ski
 uw1/summon-monster  ~creature summoned at Casting 10  # picks 0..lvl-1 (src/magic/spellcasting_class_8.cs:84); uw1 SPELLS.C:605-612 picks lvl..2lvl-1
 uw2/summon-monster  ~creature summoned at Casting 10  # same (spellcasting_class_8.cs:84); uw2 SPELLS2.C:511-518
 uw1/carry-capacity  ~carrying limit at Strength 15 expected 300  # 300 + Strength * 13 for both games (src/player/playerdat.cs:794); uw1 SKILLS.C:112 Strength * 20
-uw1/light-burn-rates  ~light 0x94 (period 10) quality after 40 steps  # class index as the burn period, out at quality 1 (src/player/playerdatloop.cs:378-380); uw1 PLAYTIME.C:166-181
-uw2/light-burn-rates  ~light 0x94 (period 10) quality after 40 steps  # same (playerdatloop.cs:378-380); uw2 PLAYTIME.C:191-206
 uw1/repair-critical-failure  ~repair result on a critical failure (seed 1  # destroys when the roll is <= quality + skill (src/interaction/repair.cs:208); uw1 WORLDEV.C:643 when above
 uw2/repair-critical-failure  ~repair result on a critical failure (seed 1  # same (repair.cs:208); uw2 WORLDEV.C:1024
 uw1/uw1-create-object-trap  ~objects made by a quality 32 create object trap  # two chance rolls, random placement (src/traps/a_create_object_trap.cs:18, 59, 194); uw1 TRIGGER.C:299-314
@@ -83,5 +81,3 @@ uw1/teleport-occupied-square  ~expected to land on another square  # no find_goo
 uw2/teleport-occupied-square  ~expected to land on another square  # no find_good_x_and_y: teleportation.cs:169; uw2 WORLDEV.C:65-157, 199-205
 uw1/hack-trap-tybal-talk  ~hack trap 0x32 expected the 0xD8 critter to talk  # no UW1 hack 0x32: hack_trap.cs:456; uw1 TRIGGER.C:486-493, 526-527
 # batch D: guards
-uw1/guard-light  ~torch quality after 15 ticks  # a lit light burns a point when the tick count is a multiple of its class index (src/player/playerdatloop.cs:378), not of its burn rate Lights[inclass].duration from OBJECTS.DAT (uw1/src/game/PLAYTIME.C:166-170): the torch burns at 1 in 5 ticks, not 1 in 3; UW1 lights also go out at quality 1 (playerdatloop.cs:380), not 0 (PLAYTIME.C:177-181)
-uw2/guard-light  ~torch quality after 15 ticks  # as uw1: the class index (src/player/playerdatloop.cs:378) where uw2/src/game/PLAYTIME.C:192-196 uses Lights[inclass].duration
