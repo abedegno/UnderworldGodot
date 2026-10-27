@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # Runs the gameplay scenarios (tests/godot/scenarios) in headless Godot 4.3, one process per game.
 #
-#   tests/scenarios.sh [--game uw1|uw2] [--uw1-dir DIR] [--uw2-dir DIR] [name...]
+#   tests/scenarios.sh [--game uw1|uw2] [--uw1-dir DIR] [--uw2-dir DIR] [--reverse|--shuffle SEED] [name...]
 #   tests/scenarios.sh --find-godot
 #
 # No names runs every scenario (--all); names run just those, including ones --all leaves out.
+# --reverse runs them last first, --shuffle SEED in an order shuffled by the whole number SEED
+# (the same seed gives the same order), to show no scenario depends on one run before it.
+# SCENARIO_STATE_REPORT=1 also prints the runner's STATE lines: the statics each scenario left
+# changed, and those that differ at a scenario's start from the first one's (see the README).
 # Both games by default. Each game's folder (the one holding DATA) comes from --uwN-dir, else the
 # UW1_DIR / UW2_DIR environment variable, else pathuw1 / pathuw2 in the game's own settings.json,
 # read and never written. A game with no folder, or one with no DATA, is skipped.
@@ -24,7 +28,8 @@
 # Environment: GODOT (the Godot 4.3 mono binary; set but not runnable is a failure, not a skip),
 # UW1_DIR, UW2_DIR, SCENARIO_TIMEOUT (whole seconds per game), SCENARIO_IMPORT_TIMEOUT (whole
 # seconds for the one-time import, default 180), DOTNET_ROOT (where the .NET runtime is, if dotnet
-# on the PATH does not say), SCENARIO_NO_BUILD=1 to skip the C# build.
+# on the PATH does not say), SCENARIO_NO_BUILD=1 to skip the C# build, SCENARIO_STATE_REPORT=1,
+# SCENARIO_STATE_GUARD=0 (the runner does not restore the game's statics between scenarios).
 set -u
 
 repo="$(cd "$(dirname "$0")/.." && pwd)"
@@ -41,6 +46,7 @@ home_real="$HOME"
 
 games=(uw1 uw2)
 find_mode=0
+order=()
 names=()
 dirs=()
 while [ $# -gt 0 ]; do
@@ -51,12 +57,17 @@ while [ $# -gt 0 ]; do
         --uw1-dir|--uw2-dir)
             [ $# -ge 2 ] || { echo "scenarios: $1 needs a folder" >&2; exit 2; }
             dirs+=("$1" "$2"); shift 2 ;;
+        --reverse)
+            order=(--order reverse); shift ;;
+        --shuffle)
+            if ! printf '%s' "${2:-}" | grep -Eq '^[0-9]+$'; then echo "scenarios: --shuffle takes a whole-number seed" >&2; exit 2; fi
+            order=(--order "shuffle:$2"); shift 2 ;;
         --find-godot)
             # Prints the Godot 4.3 this script would use and exits 0; or prints why not and
             # exits 1 (GODOT set but not runnable) or 3 (none found).
             find_mode=1; shift ;;
         -h|--help)
-            sed -n '2,10p' "$0"; exit 0 ;;
+            sed -n '2,14p' "$0"; exit 0 ;;
         -*)
             echo "scenarios: unknown option $1" >&2; exit 2 ;;
         *)
@@ -253,8 +264,10 @@ for g in "${games[@]}"; do
     out="$tmp/$g.log"
     watch "$out" "$timeout_s" "GODOT-TEST-VERDICT" \
         "$godot" --headless --fixed-fps 60 --path "$repo" res://tests/godot/scenarios/scenario_runner.tscn \
-        -- --game "$g" "${sel[@]}" --temp-home "$home_tmp" --uw1-dir "$uw1_dir" --uw2-dir "$uw2_dir"
+        -- --game "$g" "${sel[@]}" ${order[@]+"${order[@]}"} --temp-home "$home_tmp" --uw1-dir "$uw1_dir" --uw2-dir "$uw2_dir"
 
+    if [ ${#order[@]} -gt 0 ]; then grep -E '^SCENARIO-ORDER ' "$out" | sed "s/^SCENARIO-ORDER /scenarios: $g order /"; fi
+    if [ "${SCENARIO_STATE_REPORT:-0}" = 1 ]; then grep -E '^STATE' "$out"; fi
     grep -E '^SCENARIO |^    note: ' "$out"
 
     # Every requested scenario must report. Named runs are checked against the names asked
