@@ -214,11 +214,12 @@ public partial class main : Node3D
 		else
 		{
 			playerdat.CharName = "DEMO";
-			playerdat.max_hp = 30;
 			playerdat.play_hp = 30;
 			playerdat.STR = 20;
 			playerdat.INT = 20;
 			playerdat.DEX = 20;
+			//derive max hp, max mana and the carrying limit from the attributes and fill the mana, as player_compute(1) does after the attributes are set. uw1 CHARGEN.C:137, 259, SKILLS.C:102-116
+			playerdat.RecalculateHPManaMaxWeight(true);
 		}
 
 		uimanager.instance.JourneyOnwards("DATA");
