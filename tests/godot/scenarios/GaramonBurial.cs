@@ -23,7 +23,7 @@ namespace Underworld.Scenarios;
 /// the original's UseUtil does for bones 0xC2..0xC6 when how is set (uw1/src/obj/USEITEMS.C:396-399;
 /// how is 1 for a use in the inventory, uw1/src/inv/BAGS.C:104, and 0 in the world,
 /// uw1/src/ui/INTERACT.C:545), then the click on the grave, pickup.PickUp, which hands an item
-/// waiting for a target to useon.UseOn (src/interaction/pickup.cs:235). Asking for the target is
+/// waiting for a target to useon.UseOn (src/interaction/pickup.cs, PickUp). Asking for the target is
 /// asserted, so a fix that buries Garamon in useon but leaves the bones unusable still fails. When
 /// the use asks for nothing, the scenario sets useon.CurrentItemBeingUsed itself, as every port
 /// item with a target does (src/objects/lockpick.cs:10 and others), so the burial itself is still
@@ -121,7 +121,7 @@ public sealed class GaramonBurial : Scenario
         }
         // The click on the grave: PickUp passes it to the item waiting for a target.
         var objects = UWTileMap.current_tilemap.LevelObjects;
-        c.Note($"the grave weighs {container.GetTotalMass(objectToWeight: _grave, objList: objects, IgnoreNext: true)} against a capacity of {playerdat.WeightCapacity} (pickup.PickUp checks weight before the use-on; DOS checks it only to pick up, uw1/src/ui/INTERACT.C:459, not for a target, 598-601)");
+        c.Note($"the grave weighs {container.GetTotalMass(objectToWeight: _grave, objList: objects, IgnoreNext: true)} against a capacity of {playerdat.WeightCapacity} (a use-on target is not weighed, uw1/src/ui/INTERACT.C:605-609)");
         pickup.PickUp(_grave.index, objects, WorldObject: true);
         _useOnReached = useon.CurrentItemBeingUsed == null;   // UseOn clears it as it finishes
         await c.Frames(2);
