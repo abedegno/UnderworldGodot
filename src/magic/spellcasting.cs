@@ -27,6 +27,10 @@ namespace Underworld
             {
                 if (playerdat.dungeon_level==9)
                 {
+                    if (PlayerCast)
+                    {//refused: player_cast drops the cost it held (uw1 RUNES.C:268)
+                        RunicMagic.PendingSpellCost = 0;
+                    }
                     return; //no casting in the ethereal void.
                 }
             }
@@ -36,6 +40,10 @@ namespace Underworld
                 var tile = UWTileMap.current_tilemap.Tiles[tileX, tileY];
                 if (tile.noMagic == 1)
                 {
+                    if (PlayerCast)
+                    {//refused: player_cast drops the cost it held (uw1 RUNES.C:268, uw2 RUNES.C:309)
+                        RunicMagic.PendingSpellCost = 0;
+                    }
                     return;
                 }
             }
@@ -77,7 +85,7 @@ namespace Underworld
                         currentSpell = new RunicMagic(majorclass,minorclass);
                         uimanager.instance.mousecursor.SetCursorToCursor(10);
                         if ((PlayerCast) && (_RES == GAME_UW2))
-                        {//uw2 holds the cost until the target is chosen: uw2 RUNES.C:247-251 (mspell_mused)
+                        {//UW2 holds the cost until the target is clicked, and pays it only if the spell works (uw2 RUNES.C:248-251, SPELLS.C:772-773, 915). UW1 pays now (uw1 RUNES.C:260-263).
                             applyCost = false;
                         }
                     }
@@ -141,11 +149,6 @@ namespace Underworld
                             objList: objList,
                             caster: playerdat.playerObject,                           
                             WorldObject: WorldObject); 
-                        if (_RES == GAME_UW2)
-                        {//the held cost is paid when the target is chosen: uw2 SPELLS.C:773 (target_spells), 915 (obj_spells)
-                            playerdat.play_mana = System.Math.Max(0, playerdat.play_mana - RunicMagic.PendingSpellCost);
-                            RunicMagic.PendingSpellCost = 0;
-                        }
                         currentSpell = null;
                         uimanager.instance.mousecursor.SetCursorToCursor();
                         break;
