@@ -354,6 +354,14 @@ public partial class ScenarioRunner : Node
         playerdat.STR = 20;
         playerdat.INT = 20;
         playerdat.DEX = 20;
+        // The carrying limit comes from player_compute (RecalculateHPManaMaxWeight), which the
+        // stand-in never runs: computed only inside InitEmptyPlayer, at Strength 0, it is 0 in UW1
+        // (Strength * 20, uw1 SKILLS.C:112). Run it for the stand-in Strength, keeping the
+        // stand-in's hit points and mana.
+        int standInMaxMana = playerdat.max_mana;
+        playerdat.RecalculateHPManaMaxWeight(false);
+        playerdat.max_hp = 30;
+        playerdat.max_mana = standInMaxMana;
         uimanager.instance.JourneyOnwards("DATA");
         await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
 
