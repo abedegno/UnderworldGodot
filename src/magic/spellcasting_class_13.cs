@@ -180,7 +180,13 @@ namespace Underworld
                                 if (nextObj.invis == 1 && nextObj.doordir == 1)
                                 {//line of power marked by an invisible signet ring with doordir=1
                                     nextObj.doordir = 0;
-                                    if ((linesOfPower & worldflag) == 0)
+                                    if ((linesOfPower & worldflag) != 0)
+                                    {//line already cut: the marker is removed all the same, and the spell has no noticeable effect. uw2 SPELLS2.C:829-835, 807-812
+                                        ObjectRemover_OLD.DeleteObjectFromTile_DEPRECIATED(nextObj.tileX, nextObj.tileY, nextObj.index);
+                                        uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x142));
+                                        return;
+                                    }
+                                    else
                                     {//line can be cut
 
                                         //update bit

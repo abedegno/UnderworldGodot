@@ -196,6 +196,7 @@ namespace Underworld
                     playerdat.ChangeHunger(-24 - Rng.r.Next(0x20));//player_eat(-24 - (rand() & 0x1F)) (uw2 SKILLS.C:528, uw1 SKILLS.C:601)
                     UpdateIntoxication(0x20);//a full night takes 32 off drunkenness (uw2 SKILLS.C:529-532, uw1 SKILLS.C:602-605)
 
+                    //Only UW2 has this "revived" step (uw2 SKILLS.C:533-546); UW1 leaves HP at 0 through the dream, so the result is the same
                     if (playerdat.play_hp == 0 && sleepmethod >= 0)
                     {
                         playerdat.play_hp = 1;//keep player alive
@@ -208,6 +209,7 @@ namespace Underworld
                     }
                     else
                     {
+                        //The original only fades the view back in here (fadein3d, uw1 SKILLS.C:618-621, uw2 SKILLS.C:556-557)
                         uimanager.FlashColour(1, uimanager.Cuts3DWin, 0.5f);
                         uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x13 - foodregenfactor_var2));
                     }

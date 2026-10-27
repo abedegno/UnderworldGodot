@@ -21,10 +21,15 @@ namespace Underworld
         const int RightHeadCowerIndex = 6;
         const int RightHeadIdleIndex = 7;
 
-        static bool LeftDragonHeadBusy = false;
-        static bool RightDragonHeadBusy = false;
         static bool LeftDragonTailBusy = false;
         static bool RightDragonTailBusy = false;
+
+        /// <summary>
+        /// set_screen_frame's goal and setting for the two dragons' heads, SCR_DRAGON (left) and SCR_DRAGON2 (right):
+        /// the animation asked for and not yet started, and the one playing (0 for none). uw1 PANELS.C:68, 71
+        /// </summary>
+        static readonly int[] DragonGoal = new int[2];
+        static readonly int[] DragonSetting = new int[2];
 
         static readonly int[,] AnimFrames =
             {
@@ -66,46 +71,86 @@ namespace Underworld
                 return;
             }
 
-            //if right side offset index by +5
-            bool IsRightSide = false;
-            bool IsTail = false;
-            if (animationNo == 0)
+            if (animationNo != 0)
             {
-                IsTail = true;
+                ChooseDragon(animationNo);
+                return;
             }
-            //pick a random dragon to animate.
+
+            //the tail. Not asked for by any caller.
+            bool IsRightSide = false;
             if (Rng.r.Next(2) >= 1)
             {
                 IsRightSide = true;
                 animationNo = animationNo + 5;
             }
-
-            if ((IsTail == false))
+            if (IsRightSide ? RightDragonTailBusy : LeftDragonTailBusy)
             {
-                if (IsRightSide && RightDragonHeadBusy)
-                {
-                    return;//do nothing
-                }
-                if (!IsRightSide && LeftDragonHeadBusy)
-                {
-                    return;
-                }
+                return;
+            }
+            if (IsRightSide)
+            {
+                RightDragonTailBusy = true;
             }
             else
             {
-                if (IsRightSide && RightDragonTailBusy)
+                LeftDragonTailBusy = true;
+            }
+            _ = Peaky.Coroutines.Coroutine.Run(
+                        DragonAnimation(animationNo: animationNo, IsRightSide: IsRightSide, IsTail: true),
+                        main.instance);
+        }
+
+        /// <summary>
+        /// Gives a head animation to a dragon as set_screen_frame(SCR_DRAGON, n) does (uw1 PANELS.C:295-316).
+        /// Nothing changes when either dragon already has it as its goal or setting. A dragon is drawn at random only
+        /// when both are idle, or both busy with no goal; otherwise an idle one, or the one without a goal, gets it.
+        /// An idle dragon starts at once; a busy one keeps it as its goal and plays it when its own animation ends
+        /// (adjust_dragons, uw1 PANELS.C:498-501).
+        /// </summary>
+        static void ChooseDragon(int animationNo)
+        {
+            if (DragonGoal[0] == animationNo || DragonGoal[1] == animationNo
+                || DragonSetting[0] == animationNo || DragonSetting[1] == animationNo)
+            {
+                return;
+            }
+            int which = 0;
+            if (DragonSetting[0] == 0 && DragonSetting[1] == 0)
+            {
+                which = Rng.Source.Rand() & 1;
+            }
+            else if (DragonSetting[0] != 0)
+            {
+                if (DragonSetting[1] == 0)
                 {
-                    return;//do nothing
+                    which = 1;
                 }
-                if (!IsRightSide && LeftDragonTailBusy)
+                else if (DragonGoal[0] == 0 && DragonGoal[1] == 0)
                 {
-                    return;
+                    which = Rng.Source.Rand() & 1;
+                }
+                else if (DragonGoal[0] != 0 && DragonGoal[1] == 0)
+                {
+                    which = 1;
                 }
             }
+            DragonGoal[which] = animationNo;
+            if (DragonSetting[which] == 0)
+            {
+                StartDragonGoal(which);
+            }
+        }
 
-
+        /// <summary>
+        /// Starts dragon which's goal: it becomes the setting until the animation ends.
+        /// </summary>
+        static void StartDragonGoal(int which)
+        {
+            DragonSetting[which] = DragonGoal[which];
+            DragonGoal[which] = 0;
             _ = Peaky.Coroutines.Coroutine.Run(
-                        DragonAnimation(animationNo: animationNo, IsRightSide: IsRightSide, IsTail: IsTail),
+                        DragonAnimation(animationNo: DragonSetting[which] + 5 * which, IsRightSide: which == 1, IsTail: false),
                         main.instance);
         }
 
@@ -144,30 +189,37 @@ namespace Underworld
                 yield return new WaitForSeconds(0.2f);
             }
 
-            //clear busy flags
-            if (IsRightSide && !IsTail)
+            if (IsTail)
             {
-                RightDragonHeadBusy = false;
+                if (IsRightSide)
+                {
+                    RightDragonTailBusy = false;
+                }
+                else
+                {
+                    LeftDragonTailBusy = false;
+                }
             }
-            if (IsRightSide && IsTail)
+            else
             {
-                RightDragonTailBusy = false;
-            }
-
-            if (!IsRightSide && !IsTail)
-            {
-                LeftDragonHeadBusy = false;
-            }
-            if (!IsRightSide && IsTail)
-            {
-                LeftDragonTailBusy = false;
+                //the animation is over; start the goal it was given meanwhile, if any
+                int which = IsRightSide ? 1 : 0;
+                DragonSetting[which] = 0;
+                if (DragonGoal[which] != 0)
+                {
+                    StartDragonGoal(which);
+                }
             }
 
             yield return null;
         }
 
         private void InitDragons()
-        {      
+        {
+            //no animation playing or waiting, as init_scrgr leaves them (uw1 PANELS.C:219)
+            DragonGoal[0] = DragonGoal[1] = 0;
+            DragonSetting[0] = DragonSetting[1] = 0;
+            LeftDragonTailBusy = RightDragonTailBusy = false;
             EnableDisable(instance.DragonPanel,false);                  
             if (UWClass._RES != UWClass.GAME_UW2)
             {

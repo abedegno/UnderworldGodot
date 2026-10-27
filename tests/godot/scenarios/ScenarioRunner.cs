@@ -154,6 +154,9 @@ public partial class ScenarioRunner : Node
         (() => new CreateObjectTrapPutAt(), true),
         (() => new Uw1SetVariableQuestBit(), true),
         (() => new MessagesAndSounds(), true),
+        (() => new DragonChoice(), true),
+        (() => new AltarasWandCutLine(), true),
+        (() => new RepelUndeadSquare(), true),
         // batch D: guards
         (() => new GuardEat(), true),
         (() => new GuardLight(), true),
