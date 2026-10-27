@@ -210,6 +210,7 @@ public partial class ScenarioRunner : Node
         (() => new TalismanLookScenario(), true),
         (() => new BonesBurial(), true),
         (() => new LastTalismanKeepsHp(), true),
+        (() => new CritterLockedDoor(), true),
         (() => new HarnessFails(), false),
     };
 
