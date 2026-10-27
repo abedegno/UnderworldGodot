@@ -193,7 +193,16 @@ public sealed class DeathDropsCursorObject : Scenario
         await c.Frames(2);
         p = playerdat.playerObject;
 
-        // B: waking from the Void, back to this square.
+        // B: waking from the Void, back to an empty open square. The gem's square can leave near_mob_put_at no room,
+        // and then whether the coin survives the culling test depends on the draws that came before; the seed is
+        // set again so it cannot.
+        var open = DeathCutscene.FindEmptySquare();
+        if (open.x < 0) { _problem = "no empty open square (B)"; return; }
+        Teleportation.Teleport(0, open.x, open.y, 0, 0);
+        Teleportation.HandleTeleportation();
+        await c.Frames(2);
+        p = playerdat.playerObject;
+        Rng.Source = new BorlandRandSource(Seed);
         int heldB = Hold();
         if (heldB <= 0) { _problem = "no coin could be held (B)"; return; }
         int bx = (p.tileX << 3) + p.xpos, by = (p.tileY << 3) + p.ypos;
