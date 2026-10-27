@@ -1747,5 +1747,117 @@ namespace Underworld
             }
         }
 
+        /// <summary>
+        /// Puts obj near src's position, within range eighths of a tile (near_mob_put_at, COLLIDE.C).
+        /// Returns true if the object is in the map.
+        /// </summary>
+        public static bool NearMobPutAt(uwObject src, uwObject obj, int range, bool nocull)
+        {
+            return PutAt(
+                x: (src.npc_xhome << 3) + src.xpos,
+                y: (src.npc_yhome << 3) + src.ypos,
+                z: src.zpos,
+                obj: obj, range: range, nocull: nocull);
+        }
+
+        /// <summary>
+        /// Puts obj near x, y, z (eighths of a tile) with DropAroundPlace, or failing that exactly at x, y
+        /// unless the culling test removes it (nocull skips that test); a culled object is freed (put_at, COLLIDE.C).
+        /// Returns true if the object is in the map.
+        /// </summary>
+        public static bool PutAt(int x, int y, int z, uwObject obj, int range, bool nocull)
+        {
+            if (DropAroundPlace(obj, x, y, z, range))
+            {
+                return true;
+            }
+            if (nocull || !ObjectRemover_OLD.ObjectCullingTest(obj, 10))
+            {
+                var tile = UWTileMap.current_tilemap.Tiles[x >> 3, y >> 3];
+                obj.xpos = (short)(x & 7);
+                obj.ypos = (short)(y & 7);
+                obj.tileX = x >> 3; obj.tileY = y >> 3;
+                obj.next = tile.indexObjectList;
+                tile.indexObjectList = obj.index;
+                objectInstance.RedrawFull(obj);
+                return true;
+            }
+            FreeObjectAndContents(obj);
+            return false;
+        }
+
+        /// <summary>
+        /// Tries up to 24 random spots within range of x, y for obj and adds it at the end of the first
+        /// one's tile list that it fits in; a mobile object gets its home tile, a static one is settled
+        /// by PlacedObjectCollision (drop_around_place, COLLIDE.C). Returns false if none fits.
+        /// </summary>
+        public static bool DropAroundPlace(uwObject obj, int x, int y, int z, int range)
+        {
+            var span = range * 2 + 1;
+            for (int tries = 0; tries < 24; tries++)
+            {
+                var tx = x - range + Rng.RandMod(span);
+                var ty = y - range + Rng.RandMod(span);
+                if (TestIfObjectFitsInTile(obj.item_id, obj.index, tx, ty, z, 1, 0))
+                {
+                    var tile = UWTileMap.current_tilemap.Tiles[tx >> 3, ty >> 3];
+                    obj.xpos = (short)(tx & 7);
+                    obj.ypos = (short)(ty & 7);
+                    obj.zpos = (short)z;
+                    obj.tileX = tx >> 3; obj.tileY = ty >> 3;
+                    //add at the end of the tile's list
+                    obj.next = 0;
+                    if (tile.indexObjectList == 0)
+                    {
+                        tile.indexObjectList = obj.index;
+                    }
+                    else
+                    {
+                        var last = UWTileMap.current_tilemap.LevelObjects[tile.indexObjectList];
+                        while (last.next != 0)
+                        {
+                            last = UWTileMap.current_tilemap.LevelObjects[last.next];
+                        }
+                        last.next = obj.index;
+                    }
+                    if (!obj.IsStatic)
+                    {
+                        obj.npc_xhome = (short)(tx >> 3);
+                        obj.npc_yhome = (short)(ty >> 3);
+                        objectInstance.RedrawFull(obj);
+                    }
+                    else
+                    {
+                        objectInstance.RedrawFull(obj);
+                        var settled = PlacedObjectCollision_seg030_2BB7_10BC(obj, tx >> 3, ty >> 3, 1);
+                        if (settled != null && settled != obj)
+                        {
+                            objectInstance.RedrawFull(settled);
+                        }
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Frees an object that is in no list, and everything inside it (Obj_FreeLinkChain with no list head).
+        /// </summary>
+        static void FreeObjectAndContents(uwObject obj)
+        {
+            if (obj.is_quant == 0)
+            {
+                var next = obj.link;
+                while (next != 0)
+                {
+                    var inside = UWTileMap.current_tilemap.LevelObjects[next];
+                    next = inside.next;
+                    FreeObjectAndContents(inside);
+                }
+            }
+            ObjectFreeLists.ReleaseFreeObject(obj);
+        }
+
     }//end class
 }//end namespace
