@@ -191,7 +191,7 @@ namespace Underworld
                 value = 30;
             }
             Debug.Print($"Setting skill {GameStrings.GetString(2, 31 + skillNo)} ({skillNo}) to {value} ");
-            RecalculateHPManaMaxWeight(false);
+            //No recompute here: get_skill and x_skills write the skill alone, and the maxima follow at the next player_compute (uw1 SKILLS.C:189-218, BABLHACK.C:109-112)
             SetAt(0x22 + skillNo, (byte)value);
         }
 

@@ -160,6 +160,7 @@ namespace Underworld
             {
                 SetSkillValue(s, 0);
             }
+            RecalculateHPManaMaxWeight(true);//init_char ends the record with player_compute(1) (uw1 CHARGEN.C:137, uw2 CHARGEN.C:125); the attributes here are still 0
 
             dungeon_level = 1;
 
