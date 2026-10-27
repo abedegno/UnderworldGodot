@@ -66,6 +66,7 @@ public partial class ScenarioRunner : Node
         (() => new MapAreaRadius(), true),
         (() => new BritanniaSpellCircle(), true),
         (() => new AcademyManaLevel(), true),
+        (() => new SlowTickInterval(), true),
         (() => new TargetedSpellMana(), true),
         (() => new Uw1CastingCheck(), true),
         (() => new SummonMonsterLevel(), true),
