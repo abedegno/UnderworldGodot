@@ -16,7 +16,5 @@ uw1/give-ptr-npc  ~give_ptr_npc(coins, 2) result expected 1  # looks the invento
 uw2/give-ptr-npc  ~give_ptr_npc(coins, 2) result expected 1  # looks the inventory index up in the level objects, never takes from the pack, returns 0: give_ptr_npc.cs:28-71; uw2 CONVERSE.C:680-712
 uw1/end-barter-returns-items  ~deselected item left in the trade area expected put back  # only selected player slots dropped at conversation end: conversationvm.cs:640-646; uw1 BARTER.C:212-225
 uw2/end-barter-returns-items  ~deselected item left in the trade area expected put back  # only selected player slots dropped at conversation end: conversationvm.cs:640-646; uw2 BARTER.C:172-190
-uw1/trap-chain-flow  ~ward trap -> set variable: variable 10 (the chain ends) expected 0  # ward and door traps pass the chain on, chained triggers checked, unhandled hacks stop: a_ward_trap.cs:29, trigger.cs:51-55, hack_trap.cs:456; uw1 TRIGGER.C:116, 339-340, 403-436
-uw2/trap-chain-flow  ~ward trap -> set variable: variable 10 (the chain ends) expected 0  # ward passes the chain on, chained triggers checked, unhandled hacks stop: a_ward_trap.cs:29, trigger.cs:51-55, trap.cs:300; uw2 TRIGGER.C:98, 693, 702-712
 uw1/hack-trap-tybal-talk  ~hack trap 0x32 expected the 0xD8 critter to talk  # no UW1 hack 0x32: hack_trap.cs:456; uw1 TRIGGER.C:486-493, 526-527
 # batch D: guards
