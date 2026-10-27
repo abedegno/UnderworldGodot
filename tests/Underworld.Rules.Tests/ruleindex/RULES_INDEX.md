@@ -2,13 +2,13 @@
 
 The original's routines that UnderworldGodot implements, and where. Written by `RULES_INDEX_RECORD=1 dotnet test --filter RuleIndex` in tests/Underworld.Rules.Tests; do not edit by hand. Routine names and files are Underworld Exhumed's (Underworld Exhumed e5deadd (https://github.com/abedegno/underworld-exhumed, uw1/map/crosswalk.tsv and uw2/map/crosswalk.tsv)).
 
-241 routines in 200 declarations: 55 UW1, 184 UW2. 9 have more than one declaration (see EXPECTED_DUPLICATES).
+249 routines in 204 declarations: 59 UW1, 188 UW2. 9 have more than one declaration (see EXPECTED_DUPLICATES).
 
 How: `name` the declaration's name carries the address, `cite` its comment cites the routine's definition, `comment` its comment gives the address.
 
 | Routine | Implemented at | How |
 |---|---|---|
-| `uw1:AddTogether@INVPANEL.C` | `src/ui/uimanager_inventory.cs:800` CanStackTogether | cite |
+| `uw1:AddTogether@INVPANEL.C` | `src/ui/uimanager_inventory.cs:839` CanStackTogether | cite |
 | `uw1:AskHowMany@INVPANEL.C` | `src/ui/uimanager_trade.cs:122` TakeFromTradeSlotStack | cite |
 | `uw1:BlockingTerrain@INTERACT.C` | `src/ui/uimanager_interaction.cs:281` BlockingTerrain | cite |
 | `uw1:BonesLook@LOOK.C` | `src/interaction/look.cs:144` BonesLook | cite |
@@ -16,7 +16,10 @@ How: `name` the declaration's name carries the address, `cite` its comment cites
 | `uw1:DegradeLights@PLAYTIME.C` | `src/player/playerdatloop.cs:380` DegradeLights | cite |
 | `uw1:DegradeLights@PLAYTIME.C` | `src/player/playerdatloop.cs:438` UpdateLightStability | cite |
 | `uw1:HasOrIsObj@OBJECTS.C` | `src/utility/objectsearch.cs:227` HasOrIsObj | cite |
+| `uw1:ItemWeight@INVDATA.C` | `src/player/playerdatinventory.cs:561` RemoveFromInventory | cite |
+| `uw1:Obj_AddEnd@OBJECTS.C` | `src/ui/uimanager_inventory.cs:817` AddToEndOfContainer | cite |
 | `uw1:Obj_GarbageCollect@OBJECTS.C` | `src/utility/ObjectRemover.cs:70` GarbageCollect | cite |
+| `uw1:PutObjectInBag@BAGS.C` | `src/ui/uimanager_inventory.cs:933` MoveObjectInHandOutOfOpenedContainer | cite |
 | `uw1:SquareRoot_seg019_A78@IMATH.ASM` | `src/utility/uwMath.cs:193` sqrt_vanilla | cite |
 | `uw1:UseBonesOn@USEITEMS.C` | `src/interaction/useon.cs:221` UseBonesOn | cite |
 | `uw1:UseLockpickOn@USEITEMS.C` | `src/objects/lockpick.cs:25` UseOn | cite |
@@ -61,6 +64,7 @@ How: `name` the declaration's name carries the address, `cite` its comment cites
 | `uw1:seg007_1798_3E4@AI.C` | `src/npc/npcai.cs:909` NPC_Goal3_Follow | cite |
 | `uw1:seg014_1DC5_C7C@SOUND.C` | `src/audio/UWSoundEffects.cs:112` KillAllEffects | cite |
 | `uw1:seg014_1DC5_C7C@SOUND.C` | `src/audio/sfx/godot/SoundEffects.cs:134` StopAll | cite |
+| `uw1:set_curmagic@PLAYTIME.C` | `src/magic/spellcasting_activeeffects.cs:12` PlayerActiveStatusEffectSpells | cite |
 | `uw1:set_gridx_and_y_based_on_tile_type@CRITTIME.C` | `src/npc/npcutil.cs:222` set_gridx_and_y_based_on_tile_type | cite |
 | `uw1:simple_fizix@PHYSICS.C` | `src/physics/motion_player.cs:1275` SimpleFizix | cite |
 | `uw1:stop_speech@SOUND.C` | `src/cuts/cutsplayer.cs:247` CutOffSpeech | cite |
@@ -68,7 +72,7 @@ How: `name` the declaration's name carries the address, `cite` its comment cites
 | `uw1:toast_animobj@EFFECT.C` | `src/objects/door.cs:415` EndMovingDoor | cite |
 | `uw1:turn_music@SOUND.C` | `src/loaders/xmimusic.cs:291` TurnMusic | cite |
 | `uw1:yearly_checkup@CRITTIME.C` | `src/npc/npcutil.cs:125` yearly_checkup | cite |
-| `uw2:AddTogether@INVPANEL.C` | `src/ui/uimanager_inventory.cs:800` CanStackTogether | cite |
+| `uw2:AddTogether@INVPANEL.C` | `src/ui/uimanager_inventory.cs:839` CanStackTogether | cite |
 | `uw2:AskHowMany@INVPANEL.C` | `src/ui/uimanager_trade.cs:122` TakeFromTradeSlotStack | cite |
 | `uw2:BlockingTerrain@INTERACT.C` | `src/ui/uimanager_interaction.cs:281` BlockingTerrain | cite |
 | `uw2:BonesLook@LOOK.C` | `src/interaction/look.cs:144` BonesLook | cite |
@@ -80,8 +84,11 @@ How: `name` the declaration's name carries the address, `cite` its comment cites
 | `uw2:GetPlayerWeapon@COMBAT.C` | `src/interaction/combat/combat.cs:100` PlayerWeaponSoundClass | cite |
 | `uw2:GetSlopeHgt@COLLIDE.C` | `src/physics/motion_calc.cs:1490` GetTileZOffset_seg028_2941_1AF | name |
 | `uw2:HasOrIsObj@OBJECTS.C` | `src/utility/objectsearch.cs:227` HasOrIsObj | cite |
+| `uw2:ItemWeight@INVDATA.C` | `src/player/playerdatinventory.cs:561` RemoveFromInventory | cite |
+| `uw2:Obj_AddEnd@OBJECTS.C` | `src/ui/uimanager_inventory.cs:817` AddToEndOfContainer | cite |
 | `uw2:Obj_FreeChain@OBJECTS.C` | `src/utility/ObjectRemover.cs:182` FreeChain | cite |
 | `uw2:Obj_GarbageCollect@OBJECTS.C` | `src/utility/ObjectRemover.cs:70` GarbageCollect | cite |
+| `uw2:PutObjectInBag@BAGS.C` | `src/ui/uimanager_inventory.cs:933` MoveObjectInHandOutOfOpenedContainer | cite |
 | `uw2:ReturnTradeObjectsToNPC_ovr097_F76@BARTER.C` | `src/conversation/conversation_functions/conversationtrade.cs:302` ReturnTradeObjectsToNPC | cite |
 | `uw2:Sched_Load@SCHEDULE.C` | `src/scd/scd.cs:92` SchedLoad | cite |
 | `uw2:SetSomeValuesInSCDRows_ovr151_D3@SCHEDULE.C` | `src/scd/scd.cs:213` SomethingWithSCDRows_ovr151_D3 | name |
@@ -241,6 +248,7 @@ How: `name` the declaration's name carries the address, `cite` its comment cites
 | `uw2:scroll_wait@SCROLLIO.C` | `src/ui/MessageDisplay.cs:314` ScrollWait | cite |
 | `uw2:seg021_22FD_B78@IMATH.ASM` | `src/physics/satellite.cs:200` seg021_22FD_B78_maybetangent | name |
 | `uw2:seg021_22FD_BA2@IMATH.ASM` | `src/physics/satellite.cs:161` seg021_22FD_BA2_MaybeTangent | name |
+| `uw2:set_curmagic@PLAYTIME.C` | `src/magic/spellcasting_activeeffects.cs:12` PlayerActiveStatusEffectSpells | cite |
 | `uw2:set_gridx_and_y_based_on_tile_type@CRITTIME.C` | `src/npc/npcutil.cs:222` set_gridx_and_y_based_on_tile_type | cite |
 | `uw2:set_next_square_on_path@PATHFIND.C` | `src/npc/npcai.cs:2175` UpdatePathFlag_seg006_1413_2ABB | name |
 | `uw2:set_phys_data@OBJPHYS.C` | `src/physics/motion.cs:110` ApplyProjectileMotion | comment |

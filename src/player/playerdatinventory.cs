@@ -552,14 +552,23 @@ namespace Underworld
 
 
         /// <summary>
-        /// Removes the object data at index from the player inventory.
+        /// Removes the object data at index from the player inventory. The player's weight goes down by the object's weight
+        /// with its contents (ItemWeight, uw1 INVDATA.C:469-483, uw2 INVDATA.C:450-464, as invRemoveObject and takeFromSlot
+        /// take it off, uw1 INVDATA.C:260, 287, 382-383, uw2 INVDATA.C:243, 271, 363-364), and the contents go with it.
+        /// WithContents false is for an object whose contents have already been moved out (AddInventoryObjectToWorld).
         /// </summary>
         /// <param name="index"></param>
-        public static void RemoveFromInventory(int index, bool updateUI = true, bool ClearLink = true)
+        public static void RemoveFromInventory(int index, bool updateUI = true, bool ClearLink = true, bool WithContents = true)
         {
             var obj = InventoryObjects[index];
             var next = obj.next;
-            
+
+            if (WithContents && (obj.is_quant == 0) && (obj.link != 0) && (obj.item_id != 288))
+            {//a_spell's link is not an inventory object (AddObjectToPlayerInventory)
+                RemoveContents(obj.link);
+                obj.link = 0;
+            }
+
             //Remove the weight from the player inventory.
             playerdat.WeightCarried -= (short)(commonObjDat.mass(obj.item_id) * obj.ObjectQuantity);
             Debug.Print ($"Removing weight of {obj.a_name}(x{obj.ObjectQuantity}) {commonObjDat.mass(obj.item_id) * obj.ObjectQuantity}");
@@ -598,6 +607,29 @@ namespace Underworld
                     uimanager.BackPackIndices[uimanager.CurrentSlot - 11] = -1;
                 }
                 uimanager.UpdateInventoryDisplay();
+            }
+        }
+
+
+        /// <summary>
+        /// Takes the objects in the list at head, and their contents, out of the inventory and their weight off the player's.
+        /// </summary>
+        static void RemoveContents(int head)
+        {
+            for (int guard = 0; (head != 0) && (guard < 1024); guard++)
+            {
+                var obj = InventoryObjects[head];
+                if (obj == null)
+                {
+                    return;
+                }
+                if ((obj.is_quant == 0) && (obj.link != 0) && (obj.item_id != 288))
+                {
+                    RemoveContents(obj.link);
+                }
+                playerdat.WeightCarried -= (short)(commonObjDat.mass(obj.item_id) * obj.ObjectQuantity);
+                InventoryObjects[head] = null;
+                head = obj.next;
             }
         }
 
@@ -720,7 +752,8 @@ namespace Underworld
                 RemoveFromInventory(
                     index: objIndex,
                     updateUI: updateUI,
-                    ClearLink: ClearLink);
+                    ClearLink: ClearLink,
+                    WithContents: false);//the contents are already in the world
             }
             return newIndex;
         }
@@ -869,7 +902,8 @@ namespace Underworld
         }
 
         /// <summary>
-        /// Destuctively clears the player inventory.
+        /// Destuctively clears the player inventory: every slot, the backpack's last included, and every object, and
+        /// the player carries nothing, as Armageddon leaves it (uw1 SPELLS.C:815-821).
         /// </summary>
         public static void ClearInventory()
         {
@@ -878,11 +912,11 @@ namespace Underworld
             {
                 uimanager.BackPackIndices[s]=-1;
             }
-            for (int s=0;s<18;s++)
+            for (int s=0;s<=18;s++)
             {
                 SetInventorySlotListHead(s,0);
             }
-            for (int i = 0; i<InventoryObjects.GetUpperBound(0);i++)
+            for (int i = 0; i<=InventoryObjects.GetUpperBound(0);i++)
             {
                 var obj = InventoryObjects[i];
                 if (obj!=null)
@@ -891,8 +925,11 @@ namespace Underworld
                     {
                         pdat[obj.PTR+b] = 0;
                     }
+                    InventoryObjects[i] = null;
                 }
             }
+            WeightCarried = 0;
+            uimanager.RefreshWeightDisplay();
             uimanager.UpdateInventoryDisplay();
         }
     } //end class
