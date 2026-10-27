@@ -297,9 +297,10 @@ namespace Underworld
                 tmpPalette.alpha = toCycle.alpha;
             }
 
-            var NewCycledPalette = new ImageTexture[2, 8, 28]; //mono/light,light level,Cycle
-            for (int l = 0; l < 8; l++)
+            var NewCycledPalette = new ImageTexture[2, 9, 28]; //mono/light,light level (8 is shade.Unlit),Cycle
+            for (int l = 0; l < 9; l++)
             {
+                var shading = (l == shade.Unlit) ? new short[16] : shade.shadesdata[l].shadingbasedata;//unlit: light table 0 at every distance
                 for (int c = 0; c <= 27; c++)
                 {//Create palette cycles
                     switch (_RES)
@@ -313,7 +314,7 @@ namespace Underworld
                             Palette.cyclePaletteReverse(tmpPalette, 16, 7);//Reverse direction.
                             break;
                     }
-                    NewCycledPalette[0, l, c] = shade.GetFullShadingImage(pal: tmpPalette, light, l, shade.shadesdata[l].shadingbasedata);//$"light_{l}_{c}");   // tmpPalette.toImage();
+                    NewCycledPalette[0, l, c] = shade.GetFullShadingImage(pal: tmpPalette, light, l, shading);//$"light_{l}_{c}");   // tmpPalette.toImage();
                     if (_RES == GAME_UWDEMO)
                     {
                         //UWDEMO does not have a mono palette. To maintain compatability the colour palette is copied.
@@ -321,7 +322,7 @@ namespace Underworld
                     }
                     else
                     {
-                        NewCycledPalette[1, l, c] = shade.GetFullShadingImage(pal: tmpPalette, mono, l, shade.shadesdata[l].shadingbasedata);//$"mono_{l}_{c}");
+                        NewCycledPalette[1, l, c] = shade.GetFullShadingImage(pal: tmpPalette, mono, l, shading);//$"mono_{l}_{c}");
                     }
 
                 }
@@ -423,7 +424,7 @@ namespace Underworld
             {
                 RenderingServer.GlobalShaderParameterSet(
                     name: "smoothpalette",
-                    value: (Texture)Palettes[Palette.CurrentPalette].cycledGamePalette[Palette.ColourTone, playerdat.lightlevel, NextPaletteCycle_GAME]);
+                    value: (Texture)Palettes[Palette.CurrentPalette].cycledGamePalette[Palette.ColourTone, shade.DrawnLightLevel, NextPaletteCycle_GAME]);
             }
 
             if (NextPaletteCycle_UI != -1)
