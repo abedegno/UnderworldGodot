@@ -45,6 +45,7 @@ public partial class ScenarioRunner : Node
         (() => new CritterMeleeChoice(), true),
         (() => new NpcCastNeedsSlot(), true),
         (() => new FleeingCritterSteers(), true),
+        (() => new CritterFlees(), true),
         (() => new AlliesJoinFight(), true),
         (() => new AlliesWearOff(), true),
         (() => new WanderingMonsters(), true),
