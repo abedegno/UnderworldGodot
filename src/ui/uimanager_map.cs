@@ -104,6 +104,11 @@ namespace Underworld
 
         public static void DrawAutoMap(int level, int worldno)
         {
+            if (UWClass._RES == UWClass.GAME_UW2 && uimanager.CurrentGameMode != GameModes.AUTOMAP)
+            {
+                // Opening the map screen silences the effects (uw2 AUTOMAP.C:123). UW1's does not.
+                UWsoundeffects.KillAllEffects();
+            }
             uimanager.CurrentGameMode = GameModes.AUTOMAP;
             int blockno = GetAutomapBlock(ref level, worldno);
             Debug.Print($"Displaying automap {blockno}");

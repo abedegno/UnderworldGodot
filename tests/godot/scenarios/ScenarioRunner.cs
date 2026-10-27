@@ -193,6 +193,12 @@ public partial class ScenarioRunner : Node
         (() => new DoorTurnsRound(), true),
         (() => new DoorObstructed(), true),
         (() => new GruesomeDoorHack(), true),
+        // missing routines: stopping sounds and cutscene speech
+        (() => new WaterSoundStops(), true),
+        (() => new EffectsStopSoundOff(), true),
+        (() => new MapStopsEffects(), true),
+        (() => new CutsceneSpeechStops(), true),
+        (() => new CutsceneLoop(), true),
         (() => new HarnessFails(), false),
     };
 
