@@ -38,9 +38,9 @@ public sealed class NpcCastNeedsSlot : Scenario
     int ShotFrame(ScenarioContext c) => Uw1(c) ? 4 : 3;
 
     /// <summary>
-    /// Whether the port has art for frame of sequence seq. The port's renderer puts a critter whose
-    /// art lacks the frame back to frame 0 (src/npc/npc.cs:174-178), and then it would never reach
-    /// the shot frame.
+    /// Whether the port has art for frame of sequence seq. The port's UW2 renderer puts a critter
+    /// whose art lacks the frame back to frame 0 (src/npc/npc.cs, ApplyCritterAnimation), and then
+    /// it would never reach the shot frame.
     /// </summary>
     static bool HasFrame(int id, int seq, int frame) =>
         CritterArt.GetCritter(id & 0x3F).Animations.TryGetValue(CritterArt.GetAnimName(seq, 0), out var a) && a.animIndices[frame] != -1;

@@ -231,6 +231,7 @@ namespace Underworld
                     }
                 }
                 var newanim = new CritterAnimation(AnimName, newIndices);
+                newanim.pageFirstSprite = spriteIndex;
                 if (!Animations.ContainsKey(AnimName))
                 {
                     Animations.Add(AnimName, newanim);
@@ -1063,6 +1064,11 @@ namespace Underworld
         public string animName;
         //public int[] animSequence = { -1, -1, -1, -1, -1, -1, -1, -1 };
         public int[] animIndices = { -1, -1, -1, -1, -1, -1, -1, -1 };
+        /// <summary>
+        /// UW1: the sprite index of the first image of the page file the animation is in, which
+        /// parse_cpg draws for a frame the animation lacks (uw1 PGCACHE.ASM:930-934).
+        /// </summary>
+        public int pageFirstSprite;
         public CritterAnimation(string _animName, int[] _indices)
         {
             animName = _animName;
