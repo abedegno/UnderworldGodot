@@ -1,0 +1,1024 @@
+# UnderworldGodot rule pins. Written by RulePinTests; do not edit by hand.
+# value: a named constant or table of the game assembly. rule: a rule function's outputs over a fixed grid of inputs.
+# Re-record with PINS_RECORD=1 dotnet test tests/Underworld.Rules.Tests --filter RulePinTests
+# and commit this file in the same commit as the deliberate change. See the README.
+value Underworld.ConversationVM.NPC_SAY = 0
+value Underworld.ConversationVM.PC_SAY = 1
+value Underworld.ConversationVM.PRINT_SAY = 2
+value Underworld.ConversationVM.UI_SAY = 3
+value Underworld.ConversationVM.cnv_ADDSP = 30
+value Underworld.ConversationVM.cnv_BEQ = 16
+value Underworld.ConversationVM.cnv_BNE = 17
+value Underworld.ConversationVM.cnv_BPTOSP = 29
+value Underworld.ConversationVM.cnv_BRA = 18
+value Underworld.ConversationVM.cnv_CALL = 19
+value Underworld.ConversationVM.cnv_CALLI = 20
+value Underworld.ConversationVM.cnv_EXIT_OP = 38
+value Underworld.ConversationVM.cnv_FETCHM = 31
+value Underworld.ConversationVM.cnv_JMP = 15
+value Underworld.ConversationVM.cnv_NOP = 0
+value Underworld.ConversationVM.cnv_OFFSET = 33
+value Underworld.ConversationVM.cnv_OPADD = 1
+value Underworld.ConversationVM.cnv_OPAND = 7
+value Underworld.ConversationVM.cnv_OPDIV = 4
+value Underworld.ConversationVM.cnv_OPMOD = 5
+value Underworld.ConversationVM.cnv_OPMUL = 2
+value Underworld.ConversationVM.cnv_OPNEG = 41
+value Underworld.ConversationVM.cnv_OPNOT = 8
+value Underworld.ConversationVM.cnv_OPOR = 6
+value Underworld.ConversationVM.cnv_OPSUB = 3
+value Underworld.ConversationVM.cnv_POP = 24
+value Underworld.ConversationVM.cnv_POPBP = 27
+value Underworld.ConversationVM.cnv_PUSHBP = 26
+value Underworld.ConversationVM.cnv_PUSHI = 22
+value Underworld.ConversationVM.cnv_PUSHI_EFF = 23
+value Underworld.ConversationVM.cnv_PUSH_REG = 36
+value Underworld.ConversationVM.cnv_RESPOND_OP = 40
+value Underworld.ConversationVM.cnv_RET = 21
+value Underworld.ConversationVM.cnv_SAVE_REG = 35
+value Underworld.ConversationVM.cnv_SAY_OP = 39
+value Underworld.ConversationVM.cnv_SPTOBP = 28
+value Underworld.ConversationVM.cnv_START = 34
+value Underworld.ConversationVM.cnv_STO = 32
+value Underworld.ConversationVM.cnv_STRCMP = 37
+value Underworld.ConversationVM.cnv_SWAP = 25
+value Underworld.ConversationVM.cnv_TSTEQ = 13
+value Underworld.ConversationVM.cnv_TSTGE = 10
+value Underworld.ConversationVM.cnv_TSTGT = 9
+value Underworld.ConversationVM.cnv_TSTLE = 12
+value Underworld.ConversationVM.cnv_TSTLT = 11
+value Underworld.ConversationVM.cnv_TSTNE = 14
+value Underworld.ConversationVM.import_function = 273
+value Underworld.ConversationVM.import_variable = 271
+value Underworld.ConversationVM.return_int = 297
+value Underworld.ConversationVM.return_string = 299
+value Underworld.ConversationVM.return_void = 0
+value Underworld.ObjectFreeLists.ObjectListType.MobileList = 1
+value Underworld.ObjectFreeLists.ObjectListType.StaticList = 0
+value Underworld.Pathfind.PathXOffsetTable = int[4] {0, 1, 0, -1}
+value Underworld.Pathfind.PathYOffsetTable = int[4] {1, 0, -1, 0}
+value Underworld.Pathfind.SlopePathingTypes = int[4] {6, 8, 7, 9}
+value Underworld.Pathfind.TilePathingFlags = int[9] {255, 3, 255, 2, 255, 0, 255, 1, 255}
+value Underworld.Pathfind.tilewallflags = int[10] {30, 0, 19, 21, 11, 13, 32, 32, 32, 32}
+value Underworld.Rng.Multiplier = 22695477
+value Underworld.SpellCasting.ObjectSpellInterval = 765
+value Underworld.SpellCasting.UW1MagicProjectileIDs = int[4] {7, 5, 4, 6}
+value Underworld.SpellCasting.UW2MagicProjectileIDs = int[6] {7, 5, 4, 6, 11, 12}
+value Underworld.Teleportation.EnterLevelMode = 0
+value Underworld.Teleportation.ExitLevelMode = 1
+value Underworld.Teleportation.LoadSaveMode = 2
+value Underworld.UWClass.GAME_UW1 = 1
+value Underworld.UWClass.GAME_UW2 = 2
+value Underworld.UWClass.GAME_UWDEMO = 0
+value Underworld.UWTileMap.ObjectStorageTile = 99
+value Underworld.UWTileMap.TILE_DIAG_NE = 4
+value Underworld.UWTileMap.TILE_DIAG_NW = 5
+value Underworld.UWTileMap.TILE_DIAG_SE = 2
+value Underworld.UWTileMap.TILE_DIAG_SW = 3
+value Underworld.UWTileMap.TILE_OPEN = 1
+value Underworld.UWTileMap.TILE_SLOPE_E = 8
+value Underworld.UWTileMap.TILE_SLOPE_N = 6
+value Underworld.UWTileMap.TILE_SLOPE_S = 7
+value Underworld.UWTileMap.TILE_SLOPE_W = 9
+value Underworld.UWTileMap.TILE_SOLID = 0
+value Underworld.UWTileMap.TileMapDataSize = 31752
+value Underworld.UWTileMap.TileMapSizeX = 63
+value Underworld.UWTileMap.TileMapSizeY = 63
+value Underworld.UWTileMap.UW1_TEXTUREMAPSIZE = 64
+value Underworld.UWTileMap.UW2_TEXTUREMAPSIZE = 70
+value Underworld.UWTileMap.UWDEMO_TEXTUREMAPSIZE = 63
+value Underworld.UWTileMap.UW_CEILING_HEIGHT = 32
+value Underworld.UWTileMap.vBOTTOM = 2
+value Underworld.UWTileMap.vEAST = 1
+value Underworld.UWTileMap.vNORTH = 4
+value Underworld.UWTileMap.vSOUTH = 5
+value Underworld.UWTileMap.vTOP = 0
+value Underworld.UWTileMap.vWEST = 3
+value Underworld.VisionParams.cardinallookup_44A = short[4] {0, 16384, -32768, -16384}
+value Underworld.VisionParams.dseg_432 = sbyte[24] {1, 0, 64, 0, -1, -1, -64, -1, 1, 0, 64, 0, -1, -1, -64, -1, 1, 0, 64, 0, -1, -1, -64, -1}
+value Underworld.VisionParams.dseg_452 = byte[64] sha256:8cbd67ee3b26e341
+value Underworld.VisionParams.dseg_493 = byte[70] sha256:7694d7dab32a90ab
+value Underworld.VisionParams.dseg_523 = byte[16] {16, 0, 0, 0, 2, 0, 4, 0, 2, 0, 3, 0, 255, 255, 1, 0}
+value Underworld.VisionParams.dseg_527 = byte[2] {2, 4}
+value Underworld.VisionParams.dseg_52B = short[4] {2, 0, 3, 0}
+value Underworld.VisionParams.dseg_52F = short[2] {-1, 1}
+value Underworld.a_change_from_trap.ChangeFromTrapDataVar26 = int[4] {63, 15, 10, 15}
+value Underworld.a_hack_trap_castleschedule.CastleX = short[14] {42, 36, 21, 37, 22, 25, 27, 44, 43, 22, 21, 24, 26, 25}
+value Underworld.a_hack_trap_castleschedule.CastleY = short[14] {43, 51, 42, 35, 51, 43, 36, 48, 49, 37, 34, 39, 48, 34}
+value Underworld.a_hack_trap_gemteleport.arriveX = int[8] {33, 27, 18, 31, 4, 59, 32, 32}
+value Underworld.a_hack_trap_gemteleport.arriveY = int[8] {32, 34, 39, 31, 38, 20, 32, 22}
+value Underworld.a_hack_trap_gemteleport.dungeonNos = int[8] {9, 17, 25, 33, 41, 57, 49, 69}
+value Underworld.a_hack_trap_gemteleport.heading = int[8] {56, 32, 48, 1, 48, 32, 48, 35}
+value Underworld.a_hack_trap_qbert.qbertmoongatelinks = int[7] {33, 127, 79, 91, 16, 41, 194}
+value Underworld.a_hack_trap_vending.VendingMachineChoices = int[8] {182, 176, 187, 293, 188, 3, 257, 145}
+value Underworld.animationObjectDat.offset = 3490
+value Underworld.armourObjectDat.offset = 178
+value Underworld.automapnote.MaxNoteLength = 46
+value Underworld.automaptileinfo.DisplayTypeBridge1UW1 = 9
+value Underworld.automaptileinfo.DisplayTypeBridge2UW1 = 10
+value Underworld.automaptileinfo.DisplayTypeBridgeUW2 = 6
+value Underworld.automaptileinfo.DisplayTypeClear = 0
+value Underworld.automaptileinfo.DisplayTypeDoorUW1 = 4
+value Underworld.automaptileinfo.DisplayTypeDoorUW2 = 1
+value Underworld.automaptileinfo.DisplayTypeIce = 12
+value Underworld.automaptileinfo.DisplayTypeLava = 2
+value Underworld.automaptileinfo.DisplayTypeStairUW1 = 12
+value Underworld.automaptileinfo.DisplayTypeStairUW2 = 3
+value Underworld.automaptileinfo.DisplayTypeWaterUW1 = 1
+value Underworld.automaptileinfo.DisplayTypeWaterUW2 = 4
+value Underworld.automaptileinfo.TILE_DIAG_NE = 4
+value Underworld.automaptileinfo.TILE_DIAG_NW = 5
+value Underworld.automaptileinfo.TILE_DIAG_SE = 2
+value Underworld.automaptileinfo.TILE_DIAG_SW = 3
+value Underworld.automaptileinfo.TILE_OPEN = 1
+value Underworld.automaptileinfo.TILE_SLOPE_E = 8
+value Underworld.automaptileinfo.TILE_SLOPE_N = 6
+value Underworld.automaptileinfo.TILE_SLOPE_S = 7
+value Underworld.automaptileinfo.TILE_SLOPE_W = 9
+value Underworld.automaptileinfo.TILE_SOLID = 0
+value Underworld.automaptileinfo.UndiscoveredTiles = byte[16] {10, 11, 12, 13, 14, 15, 11, 11, 11, 11, 10, 11, 12, 13, 14, 15}
+value Underworld.boulder.LargeBoulder1 = 339
+value Underworld.boulder.LargeBoulder2 = 340
+value Underworld.boulder.MediumBoulder = 341
+value Underworld.boulder.SmallBoulder = 342
+value Underworld.chargen.ClassSkillChoices = int[6] {20, 20, 20, 20, 20, 20}
+value Underworld.chargen.SkillChoices = int[18] {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+value Underworld.combat.BodyHitZ = short[5] {5, 3, 1, 7, 0}
+value Underworld.combat.CombatStages.Charging = 1
+value Underworld.combat.CombatStages.OutOfCombat = -1
+value Underworld.combat.CombatStages.Ready = 0
+value Underworld.combat.CombatStages.ReleaseSwing = 2
+value Underworld.combat.CombatStages.Resetting = 5
+value Underworld.combat.CombatStages.StrikingTarget = 4
+value Underworld.combat.CombatStages.SwingingAtTarget = 3
+value Underworld.combat.NPCSwingCharges = short[16] {50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 155, 170, 185, 205, 230, 255}
+value Underworld.combat.fist = 15
+value Underworld.containerObjectDat.offset = 3378
+value Underworld.critterObjectDat.offset = 306
+value Underworld.door.RadiansPerDoorState = 0.39269908169872414
+value Underworld.door.framethickness = 0.08
+value Underworld.foodObjectDat.offset = 3458
+value Underworld.lightsourceObjectDat.offset = 3426
+value Underworld.model3D.CEILING_HEIGHT = 32
+value Underworld.motion.BaseBackwardsSpeed_3_dseg_67d6_CA = 188
+value Underworld.motion.BaseForwardSpeed_1_dseg_67d6_CE = 940
+value Underworld.motion.BaseSlideSpeed_2_dseg_67d6_CC = 235
+value Underworld.motion.CameraBobArray = sbyte[16] {-4, -3, -2, -1, 0, 1, 2, 3, 4, 3, 2, 1, 0, -1, -2, -3}
+value Underworld.motion.HeadingLookupTable = short[321] sha256:8788a4c76e0438d2
+value Underworld.motion.PlayerCardinalHeadingLookupTable = short[4] {0, 16384, -32768, -16384}
+value Underworld.motion.ProjectileNewItemIDTable = int[3] {450, 453, 450}
+value Underworld.motion.ProjectileOldItemIDTable = int[3] {20, 21, 29}
+value Underworld.motion.TangentTable_seg62_832 = short[258] sha256:0a023a658dda74a5
+value Underworld.motion.TangentTable_seg62_934 = short[129] sha256:8da22c266d62f29c
+value Underworld.motion.TileOffsetArray = int[9] {-65, -64, -63, -1, 0, 1, 63, 64, 65}
+value Underworld.motion.TileTraversalFlags_dseg_67d6_1BA6 = int[16] {30, 0, 19, 21, 11, 13, 32, 32, 32, 32, 0, 0, 0, 0, 0, 30}
+value Underworld.motion.dseg_67d6_3C4_Lookup = sbyte[13] {1, -1, -1, 1, 5, 4, 3, 6, 9, 2, 7, 0, 1}
+value Underworld.motion.dseg_67d6_3E8 = byte[18] {0, 0, 1, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 4, 0}
+value Underworld.motion.dseg_67d6_421 = short[321] sha256:a64706b67c490980
+value Underworld.motion.dseg_67d6_743 = sbyte[16] {1, 3, 4, 3, 1, -3, 0, 0, 1, 3, 4, 3, 1, -3, 0, 0}
+value Underworld.motion.dseg_67d6_753 = sbyte[16] {0, 0, -1, -2, -7, -5, -6, -6, -4, -3, -2, -1, 0, 0, 0, -4}
+value Underworld.npc.npc_goals.npc_goal_attack_5 = 5
+value Underworld.npc.npc_goals.npc_goal_attack_9 = 9
+value Underworld.npc.npc_goals.npc_goal_charmed_8 = 8
+value Underworld.npc.npc_goals.npc_goal_fear_6 = 6
+value Underworld.npc.npc_goals.npc_goal_follow = 3
+value Underworld.npc.npc_goals.npc_goal_goto_1 = 1
+value Underworld.npc.npc_goals.npc_goal_petrified = 15
+value Underworld.npc.npc_goals.npc_goal_stand_still_0 = 0
+value Underworld.npc.npc_goals.npc_goal_stand_still_11 = 11
+value Underworld.npc.npc_goals.npc_goal_stand_still_12 = 12
+value Underworld.npc.npc_goals.npc_goal_stand_still_7 = 7
+value Underworld.npc.npc_goals.npc_goal_unk13 = 13
+value Underworld.npc.npc_goals.npc_goal_unk14 = 14
+value Underworld.npc.npc_goals.npc_goal_wander_2_confusion = 2
+value Underworld.npc.npc_goals.npc_goal_wander_4 = 4
+value Underworld.npc.npc_goals.npc_goal_want_to_talk = 10
+value Underworld.playerdat.FootStepSoundEffectsUW2 = byte[6] {1, 2, 47, 48, 29, 29}
+value Underworld.playerdat.FootstepSoundPanning = byte[2] {56, 72}
+value Underworld.playerdat.NoOfEncryptedBytes = 210
+value Underworld.playerdat.SkillCheckResult.CritFail = -1
+value Underworld.playerdat.SkillCheckResult.CritSucess = 2
+value Underworld.playerdat.SkillCheckResult.Fail = 0
+value Underworld.playerdat.SkillCheckResult.Success = 1
+value Underworld.triggerObjectDat.offset = 3474
+value Underworld.triggerObjectDat.triggertypes.ALL = -1
+value Underworld.triggerObjectDat.triggertypes.CLOSE = 9
+value Underworld.triggerObjectDat.triggertypes.ENTER = 6
+value Underworld.triggerObjectDat.triggertypes.EXIT = 14
+value Underworld.triggerObjectDat.triggertypes.LOOK = 5
+value Underworld.triggerObjectDat.triggertypes.MOVE = 0
+value Underworld.triggerObjectDat.triggertypes.OPEN_UW1 = 7
+value Underworld.triggerObjectDat.triggertypes.OPEN_UW2 = 8
+value Underworld.triggerObjectDat.triggertypes.PICKUP = 2
+value Underworld.triggerObjectDat.triggertypes.PRESSURE = 7
+value Underworld.triggerObjectDat.triggertypes.PRESSURE_RELEASE = 15
+value Underworld.triggerObjectDat.triggertypes.SCHEDULED = 12
+value Underworld.triggerObjectDat.triggertypes.STEP_ON = 1
+value Underworld.triggerObjectDat.triggertypes.TIMER = 10
+value Underworld.triggerObjectDat.triggertypes.UNLOCK_UW1 = 6
+value Underworld.triggerObjectDat.triggertypes.UNLOCK_UW2 = 11
+value Underworld.triggerObjectDat.triggertypes.USE = 4
+value Underworld.weaponObjectDat.offset = 2
+value Underworld.worlds.UW1_Dungeons.Catacombs = 5
+value Underworld.worlds.UW1_Dungeons.EntranceLevel = 1
+value Underworld.worlds.UW1_Dungeons.Ethereal = 9
+value Underworld.worlds.UW1_Dungeons.Knights = 4
+value Underworld.worlds.UW1_Dungeons.MountainMen = 2
+value Underworld.worlds.UW1_Dungeons.Seers = 6
+value Underworld.worlds.UW1_Dungeons.Swamp = 3
+value Underworld.worlds.UW1_Dungeons.Tybal = 7
+value Underworld.worlds.UW1_Dungeons.Volcano = 8
+value Underworld.worlds.UW1_LevelNames = string[9] {"Outcast", "Dwarf", "Swamp", "Knight", "Tombs", "Seers", "Tybal", "Abyss", "Void"}
+value Underworld.worlds.UW2_LevelNos.Academy0 = 40
+value Underworld.worlds.UW2_LevelNos.Academy1 = 41
+value Underworld.worlds.UW2_LevelNos.Academy2 = 42
+value Underworld.worlds.UW2_LevelNos.Academy3 = 43
+value Underworld.worlds.UW2_LevelNos.Academy4 = 44
+value Underworld.worlds.UW2_LevelNos.Academy5 = 45
+value Underworld.worlds.UW2_LevelNos.Academy6 = 46
+value Underworld.worlds.UW2_LevelNos.Academy7 = 47
+value Underworld.worlds.UW2_LevelNos.Britannia0 = 0
+value Underworld.worlds.UW2_LevelNos.Britannia1 = 1
+value Underworld.worlds.UW2_LevelNos.Britannia2 = 2
+value Underworld.worlds.UW2_LevelNos.Britannia3 = 3
+value Underworld.worlds.UW2_LevelNos.Britannia4 = 4
+value Underworld.worlds.UW2_LevelNos.Ethereal0 = 64
+value Underworld.worlds.UW2_LevelNos.Ethereal1 = 65
+value Underworld.worlds.UW2_LevelNos.Ethereal2 = 66
+value Underworld.worlds.UW2_LevelNos.Ethereal3 = 67
+value Underworld.worlds.UW2_LevelNos.Ethereal4 = 68
+value Underworld.worlds.UW2_LevelNos.Ethereal5 = 69
+value Underworld.worlds.UW2_LevelNos.Ethereal6 = 70
+value Underworld.worlds.UW2_LevelNos.Ethereal7 = 71
+value Underworld.worlds.UW2_LevelNos.Ethereal8 = 72
+value Underworld.worlds.UW2_LevelNos.Ice0 = 24
+value Underworld.worlds.UW2_LevelNos.Ice1 = 25
+value Underworld.worlds.UW2_LevelNos.Killorn0 = 16
+value Underworld.worlds.UW2_LevelNos.Killorn1 = 17
+value Underworld.worlds.UW2_LevelNos.Pits0 = 56
+value Underworld.worlds.UW2_LevelNos.Pits1 = 57
+value Underworld.worlds.UW2_LevelNos.Pits2 = 58
+value Underworld.worlds.UW2_LevelNos.Prison0 = 8
+value Underworld.worlds.UW2_LevelNos.Prison1 = 9
+value Underworld.worlds.UW2_LevelNos.Prison2 = 10
+value Underworld.worlds.UW2_LevelNos.Prison3 = 11
+value Underworld.worlds.UW2_LevelNos.Prison4 = 12
+value Underworld.worlds.UW2_LevelNos.Prison5 = 13
+value Underworld.worlds.UW2_LevelNos.Prison6 = 14
+value Underworld.worlds.UW2_LevelNos.Prison7 = 15
+value Underworld.worlds.UW2_LevelNos.Talorus0 = 32
+value Underworld.worlds.UW2_LevelNos.Talorus1 = 33
+value Underworld.worlds.UW2_LevelNos.Tomb0 = 48
+value Underworld.worlds.UW2_LevelNos.Tomb1 = 49
+value Underworld.worlds.UW2_LevelNos.Tomb2 = 50
+value Underworld.worlds.UW2_LevelNos.Tomb3 = 51
+value Underworld.worlds.world_ids.Academy = 5
+value Underworld.worlds.world_ids.Britannia = 0
+value Underworld.worlds.world_ids.Ethereal = 8
+value Underworld.worlds.world_ids.Ice = 3
+value Underworld.worlds.world_ids.Killorn = 2
+value Underworld.worlds.world_ids.Pits = 7
+value Underworld.worlds.world_ids.PrisonTower = 1
+value Underworld.worlds.world_ids.Talorus = 4
+value Underworld.worlds.world_ids.Tomb = 6
+rule uw1 Underworld.Rng.RandMod(n) = 41 rows sha256:ff3dc38fc56ff079, 1 throw parts 50e3 13f3 1b3c 3f73 d2af 6cb9 0c41 8033 5fbb 17e6 c082 4303 094d db77 f34e 262c
+rule uw1 Underworld.Rng.RandMod(n) (0) = throws DivideByZeroException
+rule uw1 Underworld.Rng.RandMod(n) (1) = 0 seed=02b49c6b
+rule uw1 Underworld.Rng.RandMod(n) (2) = 0 seed=040eeaa0
+rule uw1 Underworld.Rng.RandMod(n) (3) = 2 seed=056938d5
+rule uw2 Underworld.Rng.RandMod(n) = 41 rows sha256:ff3dc38fc56ff079, 1 throw parts 50e3 13f3 1b3c 3f73 d2af 6cb9 0c41 8033 5fbb 17e6 c082 4303 094d db77 f34e 262c
+rule uw2 Underworld.Rng.RandMod(n) (0) = throws DivideByZeroException
+rule uw2 Underworld.Rng.RandMod(n) (1) = 0 seed=02b49c6b
+rule uw2 Underworld.Rng.RandMod(n) (2) = 0 seed=040eeaa0
+rule uw2 Underworld.Rng.RandMod(n) (3) = 2 seed=056938d5
+rule uw1 Underworld.Rng.RandScale(n) = 41 rows sha256:905872a6bda41a24 parts 1b2c 00c4 8ecc 7831 3bae 340e b0e4 6b06 6c66 a86d bd64 2f29 e9f6 fbc0 9cca 3be1
+rule uw1 Underworld.Rng.RandScale(n) (0) = 0 seed=015a4e36
+rule uw1 Underworld.Rng.RandScale(n) (1) = 0 seed=02b49c6b
+rule uw1 Underworld.Rng.RandScale(n) (2) = 0 seed=040eeaa0
+rule uw1 Underworld.Rng.RandScale(n) (3) = 0 seed=056938d5
+rule uw2 Underworld.Rng.RandScale(n) = 41 rows sha256:905872a6bda41a24 parts 1b2c 00c4 8ecc 7831 3bae 340e b0e4 6b06 6c66 a86d bd64 2f29 e9f6 fbc0 9cca 3be1
+rule uw2 Underworld.Rng.RandScale(n) (0) = 0 seed=015a4e36
+rule uw2 Underworld.Rng.RandScale(n) (1) = 0 seed=02b49c6b
+rule uw2 Underworld.Rng.RandScale(n) (2) = 0 seed=040eeaa0
+rule uw2 Underworld.Rng.RandScale(n) (3) = 0 seed=056938d5
+rule uw1 Underworld.Rng.DiceRoll(NoOfLoops, diceRange) = 147 rows sha256:9af56030fb2c9c20 parts 2c09 e4db 24bc 0cae 5353 45e5 5a13 6bee 01ce d900 b45c 1f07 49f2 0a52 29bc c033
+rule uw1 Underworld.Rng.DiceRoll(NoOfLoops, diceRange) (0,0) = 0
+rule uw1 Underworld.Rng.DiceRoll(NoOfLoops, diceRange) (1,0) = 1
+rule uw1 Underworld.Rng.DiceRoll(NoOfLoops, diceRange) (1,1) = 1 seed=1f1d06c4
+rule uw1 Underworld.Rng.DiceRoll(NoOfLoops, diceRange) (1,2) = 1 seed=207754f9
+rule uw2 Underworld.Rng.DiceRoll(NoOfLoops, diceRange) = 147 rows sha256:9af56030fb2c9c20 parts 2c09 e4db 24bc 0cae 5353 45e5 5a13 6bee 01ce d900 b45c 1f07 49f2 0a52 29bc c033
+rule uw2 Underworld.Rng.DiceRoll(NoOfLoops, diceRange) (0,0) = 0
+rule uw2 Underworld.Rng.DiceRoll(NoOfLoops, diceRange) (1,0) = 1
+rule uw2 Underworld.Rng.DiceRoll(NoOfLoops, diceRange) (1,1) = 1 seed=1f1d06c4
+rule uw2 Underworld.Rng.DiceRoll(NoOfLoops, diceRange) (1,2) = 1 seed=207754f9
+rule uw1 Underworld.playerdat.SkillCheck(skillValue, targetValue, debug) = 1024 rows sha256:05d1296ca8a64a78 parts 2c58 aef4 9535 fe52 e365 4d80 c00e 6e51 99bb 51f0 778f e746 61c6 8598 c54f 64c8
+rule uw1 Underworld.playerdat.SkillCheck(skillValue, targetValue, debug) (0,0,0) = 0 seed=015a4e36
+rule uw1 Underworld.playerdat.SkillCheck(skillValue, targetValue, debug) (0,2,0) = 0 seed=02b49c6b
+rule uw1 Underworld.playerdat.SkillCheck(skillValue, targetValue, debug) (0,4,0) = 0 seed=040eeaa0
+rule uw1 Underworld.playerdat.SkillCheck(skillValue, targetValue, debug) (0,6,0) = 0 seed=056938d5
+rule uw2 Underworld.playerdat.SkillCheck(skillValue, targetValue, debug) = 1024 rows sha256:05d1296ca8a64a78 parts 2c58 aef4 9535 fe52 e365 4d80 c00e 6e51 99bb 51f0 778f e746 61c6 8598 c54f 64c8
+rule uw2 Underworld.playerdat.SkillCheck(skillValue, targetValue, debug) (0,0,0) = 0 seed=015a4e36
+rule uw2 Underworld.playerdat.SkillCheck(skillValue, targetValue, debug) (0,2,0) = 0 seed=02b49c6b
+rule uw2 Underworld.playerdat.SkillCheck(skillValue, targetValue, debug) (0,4,0) = 0 seed=040eeaa0
+rule uw2 Underworld.playerdat.SkillCheck(skillValue, targetValue, debug) (0,6,0) = 0 seed=056938d5
+rule uw1 Underworld.playerdat.GetGoverningAttribute(skillno) = 27 rows sha256:fe8ee39434942733 parts 6c2f 1e2f ce62 64a7 453c 510e 7ce8 584f cafe bd0a e7b4 f3d1 f301 699e c3bf 5d47
+rule uw1 Underworld.playerdat.GetGoverningAttribute(skillno) (-1) = 0
+rule uw1 Underworld.playerdat.GetGoverningAttribute(skillno) (7) = 2
+rule uw1 Underworld.playerdat.GetGoverningAttribute(skillno) (10) = 1
+rule uw1 Underworld.playerdat.GetGoverningAttribute(skillno) (16) = 1
+rule uw2 Underworld.playerdat.GetGoverningAttribute(skillno) = 27 rows sha256:fe8ee39434942733 parts 6c2f 1e2f ce62 64a7 453c 510e 7ce8 584f cafe bd0a e7b4 f3d1 f301 699e c3bf 5d47
+rule uw2 Underworld.playerdat.GetGoverningAttribute(skillno) (-1) = 0
+rule uw2 Underworld.playerdat.GetGoverningAttribute(skillno) (7) = 2
+rule uw2 Underworld.playerdat.GetGoverningAttribute(skillno) (10) = 1
+rule uw2 Underworld.playerdat.GetGoverningAttribute(skillno) (16) = 1
+rule uw1 Underworld.ConversationVM.Range(basevalue, min, max) = 140 rows sha256:75a9f4772c7c05db parts 51af fc43 c17b 4d3e b2c6 55c0 7334 fcaa ae05 f780 9952 fdf9 b902 ee0c c731 4153
+rule uw1 Underworld.ConversationVM.Range(basevalue, min, max) (-5,0,0) = -5 seed=015a4e36
+rule uw1 Underworld.ConversationVM.Range(basevalue, min, max) (-5,0,10) = -5 seed=02b49c6b
+rule uw1 Underworld.ConversationVM.Range(basevalue, min, max) (-5,0,50) = -5 seed=040eeaa0
+rule uw1 Underworld.ConversationVM.Range(basevalue, min, max) (-5,0,100) = -5 seed=056938d5
+rule uw2 Underworld.ConversationVM.Range(basevalue, min, max) = 140 rows sha256:75a9f4772c7c05db parts 51af fc43 c17b 4d3e b2c6 55c0 7334 fcaa ae05 f780 9952 fdf9 b902 ee0c c731 4153
+rule uw2 Underworld.ConversationVM.Range(basevalue, min, max) (-5,0,0) = -5 seed=015a4e36
+rule uw2 Underworld.ConversationVM.Range(basevalue, min, max) (-5,0,10) = -5 seed=02b49c6b
+rule uw2 Underworld.ConversationVM.Range(basevalue, min, max) (-5,0,50) = -5 seed=040eeaa0
+rule uw2 Underworld.ConversationVM.Range(basevalue, min, max) (-5,0,100) = -5 seed=056938d5
+rule uw1 Underworld.ConversationVM.TradeGain(playerValue, npcValue) = 100 rows sha256:f5ddf99b9b65c165 parts daa2 496a 6307 b499 a28a 248e 0deb 72f4 b9e2 9104 12ff 182d 6876 cef3 ae3c 6ccf
+rule uw1 Underworld.ConversationVM.TradeGain(playerValue, npcValue) (0,0) = 100
+rule uw1 Underworld.ConversationVM.TradeGain(playerValue, npcValue) (0,1) = -100
+rule uw1 Underworld.ConversationVM.TradeGain(playerValue, npcValue) (0,500) = 31
+rule uw1 Underworld.ConversationVM.TradeGain(playerValue, npcValue) (1,1) = 0
+rule uw2 Underworld.ConversationVM.TradeGain(playerValue, npcValue) = 100 rows sha256:f5ddf99b9b65c165 parts daa2 496a 6307 b499 a28a 248e 0deb 72f4 b9e2 9104 12ff 182d 6876 cef3 ae3c 6ccf
+rule uw2 Underworld.ConversationVM.TradeGain(playerValue, npcValue) (0,0) = 100
+rule uw2 Underworld.ConversationVM.TradeGain(playerValue, npcValue) (0,1) = -100
+rule uw2 Underworld.ConversationVM.TradeGain(playerValue, npcValue) (0,500) = 31
+rule uw2 Underworld.ConversationVM.TradeGain(playerValue, npcValue) (1,1) = 0
+rule uw2 Underworld.ConversationVM.CalculateJospurDebt(NoOfFighters) = 13 rows sha256:6e32ebfd2009baac parts e3b0 9027 2a6b 8f94 ba04 e3b0 fd90 6d90 a0b8 8465 e3b0 2948 c1eb 3d22 9e63 567b
+rule uw2 Underworld.ConversationVM.CalculateJospurDebt(NoOfFighters) (0) = pdat[ec:00]
+rule uw2 Underworld.ConversationVM.CalculateJospurDebt(NoOfFighters) (2) = pdat[ec:08]
+rule uw2 Underworld.ConversationVM.CalculateJospurDebt(NoOfFighters) (3) = pdat[ec:0c]
+rule uw2 Underworld.ConversationVM.CalculateJospurDebt(NoOfFighters) (4) = pdat[ec:14]
+rule uw1 Underworld.combat.PickBodyHitPoint(defenderZ, defenderTop, attackerZ, attackerTop) = 6561 rows sha256:e8b8b7c5ffbbb74e parts fc9d f46b 400f 97b6 52d2 3441 ff5c 6a53 8303 f025 2ff6 bf20 a792 5d43 f58a de7f
+rule uw1 Underworld.combat.PickBodyHitPoint(defenderZ, defenderTop, attackerZ, attackerTop) (0,0,0,0) = 2
+rule uw1 Underworld.combat.PickBodyHitPoint(defenderZ, defenderTop, attackerZ, attackerTop) (0,0,0,8) = 3
+rule uw1 Underworld.combat.PickBodyHitPoint(defenderZ, defenderTop, attackerZ, attackerTop) (0,8,0,8) = 3 seed=70475b30
+rule uw1 Underworld.combat.PickBodyHitPoint(defenderZ, defenderTop, attackerZ, attackerTop) (0,8,8,0) = 0 seed=34b138b9
+rule uw2 Underworld.combat.PickBodyHitPoint(defenderZ, defenderTop, attackerZ, attackerTop) = 6561 rows sha256:e8b8b7c5ffbbb74e parts fc9d f46b 400f 97b6 52d2 3441 ff5c 6a53 8303 f025 2ff6 bf20 a792 5d43 f58a de7f
+rule uw2 Underworld.combat.PickBodyHitPoint(defenderZ, defenderTop, attackerZ, attackerTop) (0,0,0,0) = 2
+rule uw2 Underworld.combat.PickBodyHitPoint(defenderZ, defenderTop, attackerZ, attackerTop) (0,0,0,8) = 3
+rule uw2 Underworld.combat.PickBodyHitPoint(defenderZ, defenderTop, attackerZ, attackerTop) (0,8,0,8) = 3 seed=70475b30
+rule uw2 Underworld.combat.PickBodyHitPoint(defenderZ, defenderTop, attackerZ, attackerTop) (0,8,8,0) = 0 seed=34b138b9
+rule uw1 Underworld.combat.isWeapon(weapon) = 512 rows sha256:1fb3b12b8063edf0 parts d9d9 88f7 d74b 26cc 25d6 7c50 8e07 38b7 b43d 97e4 0d59 ee17 f311 200e 0fa5 9bd5
+rule uw1 Underworld.combat.isWeapon(weapon) (0) = 1
+rule uw1 Underworld.combat.isWeapon(weapon) (16) = 0
+rule uw1 Underworld.combat.isWeapon(weapon) (24) = 2
+rule uw1 Underworld.combat.isWeapon(weapon) (170) = 0
+rule uw2 Underworld.combat.isWeapon(weapon) = 512 rows sha256:1fb3b12b8063edf0 parts d9d9 88f7 d74b 26cc 25d6 7c50 8e07 38b7 b43d 97e4 0d59 ee17 f311 200e 0fa5 9bd5
+rule uw2 Underworld.combat.isWeapon(weapon) (0) = 1
+rule uw2 Underworld.combat.isWeapon(weapon) (16) = 0
+rule uw2 Underworld.combat.isWeapon(weapon) (24) = 2
+rule uw2 Underworld.combat.isWeapon(weapon) (170) = 0
+rule uw2 Underworld.combat.checkforPoisonableWeapon(Weapon) = 512 rows sha256:e5df2db714c263aa parts 6023 88f7 d74b 26cc 25d6 7c50 8e07 38b7 b43d 97e4 0d59 ee17 f311 200e 0fa5 9bd5
+rule uw2 Underworld.combat.checkforPoisonableWeapon(Weapon) (0) = 1
+rule uw2 Underworld.combat.checkforPoisonableWeapon(Weapon) (7) = 0
+rule uw2 Underworld.combat.checkforPoisonableWeapon(Weapon) (170) = 0
+rule uw2 Underworld.combat.checkforPoisonableWeapon(Weapon) (340) = 0
+rule uw1 Underworld.combat.PlayerWeaponSoundClass(weapon) = 512 rows sha256:86ea3beeae3aea7b parts 7acb 88f7 d74b 26cc 25d6 7c50 8e07 38b7 b43d 97e4 0d59 ee17 f311 200e 0fa5 9bd5
+rule uw1 Underworld.combat.PlayerWeaponSoundClass(weapon) (0) = 1
+rule uw1 Underworld.combat.PlayerWeaponSoundClass(weapon) (16) = 0
+rule uw1 Underworld.combat.PlayerWeaponSoundClass(weapon) (22) = 3
+rule uw1 Underworld.combat.PlayerWeaponSoundClass(weapon) (170) = 0
+rule uw2 Underworld.combat.PlayerWeaponSoundClass(weapon) = 512 rows sha256:733825f8a6a5cdf8 parts 5755 88f7 d74b 26cc 25d6 7c50 8e07 38b7 b43d 97e4 0d59 ee17 f311 200e 0fa5 9bd5
+rule uw2 Underworld.combat.PlayerWeaponSoundClass(weapon) (0) = 2
+rule uw2 Underworld.combat.PlayerWeaponSoundClass(weapon) (7) = 1
+rule uw2 Underworld.combat.PlayerWeaponSoundClass(weapon) (16) = 0
+rule uw2 Underworld.combat.PlayerWeaponSoundClass(weapon) (22) = 3
+rule uw1 Underworld.damage.ScaleDamage(item_id, basedamage, damagetype) = 10260 rows sha256:b87c7f8f97341918 parts 4507 c4b9 8bd6 fdd4 e721 6dcf 8105 e5cc 26aa a08f d451 ecca 765d 312a e366 a340
+rule uw1 Underworld.damage.ScaleDamage(item_id, basedamage, damagetype) (0,0,0) = 0 basedamage=0
+rule uw1 Underworld.damage.ScaleDamage(item_id, basedamage, damagetype) (0,0,1) = 0 basedamage=0 seed=02b49c6b
+rule uw1 Underworld.damage.ScaleDamage(item_id, basedamage, damagetype) (0,0,3) = 0 basedamage=0 seed=056938d5
+rule uw1 Underworld.damage.ScaleDamage(item_id, basedamage, damagetype) (0,1,0) = 1 basedamage=1
+rule uw2 Underworld.damage.ScaleDamage(item_id, basedamage, damagetype) = 10260 rows sha256:c49444e75ce7610b parts 4efc 80cb 6b8d fdd4 509c 492e 1745 5fa4 dd4d 47ff d659 ecee 765d 312a e387 38f9
+rule uw2 Underworld.damage.ScaleDamage(item_id, basedamage, damagetype) (0,0,0) = 0 basedamage=0
+rule uw2 Underworld.damage.ScaleDamage(item_id, basedamage, damagetype) (0,0,1) = 0 basedamage=0 seed=02b49c6b
+rule uw2 Underworld.damage.ScaleDamage(item_id, basedamage, damagetype) (0,0,3) = 0 basedamage=0 seed=056938d5
+rule uw2 Underworld.damage.ScaleDamage(item_id, basedamage, damagetype) (0,1,0) = 1 basedamage=1
+rule uw1 Underworld.damage.VulnerableDamage(basedamage) = 256 rows sha256:35a00b532054ce3e parts c732 e6d3 cfae a983 2709 0f05 d808 506c 0d48 92ca edc3 a0cc 255c 6975 b2a4 d3ea
+rule uw1 Underworld.damage.VulnerableDamage(basedamage) (0) = 0 basedamage=0
+rule uw1 Underworld.damage.VulnerableDamage(basedamage) (1) = 2 basedamage=2
+rule uw1 Underworld.damage.VulnerableDamage(basedamage) (2) = 4 basedamage=4
+rule uw1 Underworld.damage.VulnerableDamage(basedamage) (3) = 6 basedamage=6
+rule uw2 Underworld.damage.VulnerableDamage(basedamage) = 256 rows sha256:35a00b532054ce3e parts c732 e6d3 cfae a983 2709 0f05 d808 506c 0d48 92ca edc3 a0cc 255c 6975 b2a4 d3ea
+rule uw2 Underworld.damage.VulnerableDamage(basedamage) (0) = 0 basedamage=0
+rule uw2 Underworld.damage.VulnerableDamage(basedamage) (1) = 2 basedamage=2
+rule uw2 Underworld.damage.VulnerableDamage(basedamage) (2) = 4 basedamage=4
+rule uw2 Underworld.damage.VulnerableDamage(basedamage) (3) = 6 basedamage=6
+rule uw1 Underworld.damage.GetObjectTypeDebris(objToDestroy, damagetype) = 5120 rows sha256:475d7384b9bde344 parts fae8 fbfd 88ec 0ba4 8d56 0214 5449 5f3e 077e 4089 84e1 a490 5601 ea89 ff67 889e
+rule uw1 Underworld.damage.GetObjectTypeDebris(objToDestroy, damagetype) (0,0) = 275
+rule uw1 Underworld.damage.GetObjectTypeDebris(objToDestroy, damagetype) (0,8) = 214
+rule uw1 Underworld.damage.GetObjectTypeDebris(objToDestroy, damagetype) (1,0) = 347
+rule uw1 Underworld.damage.GetObjectTypeDebris(objToDestroy, damagetype) (2,0) = 419
+rule uw2 Underworld.damage.GetObjectTypeDebris(objToDestroy, damagetype) = 5120 rows sha256:aead7586f96c9d18 parts 8fd5 fbfd 88ec 0ba4 8d56 0214 5449 5f3e 077e 4089 ff8a a490 5601 ea89 ff67 889e
+rule uw2 Underworld.damage.GetObjectTypeDebris(objToDestroy, damagetype) (0,0) = 272
+rule uw2 Underworld.damage.GetObjectTypeDebris(objToDestroy, damagetype) (0,8) = 214
+rule uw2 Underworld.damage.GetObjectTypeDebris(objToDestroy, damagetype) (1,0) = 344
+rule uw2 Underworld.damage.GetObjectTypeDebris(objToDestroy, damagetype) (2,0) = 416
+rule uw1 Underworld.playerdat.ArmourValue(obj) = 512 rows sha256:7e52f164a10bb042 parts 448f 0ade ff99 a45a 7218 6b30 39c0 c6c9 e03c d172 56a3 68bb 630c bd01 bf50 2af4
+rule uw1 Underworld.playerdat.ArmourValue(obj) (0) = 0
+rule uw1 Underworld.playerdat.ArmourValue(obj) (32) = 3
+rule uw1 Underworld.playerdat.ArmourValue(obj) (33) = 25
+rule uw1 Underworld.playerdat.ArmourValue(obj) (34) = 36
+rule uw2 Underworld.playerdat.ArmourValue(obj) = 512 rows sha256:7e52f164a10bb042 parts 448f 0ade ff99 a45a 7218 6b30 39c0 c6c9 e03c d172 56a3 68bb 630c bd01 bf50 2af4
+rule uw2 Underworld.playerdat.ArmourValue(obj) (0) = 0
+rule uw2 Underworld.playerdat.ArmourValue(obj) (32) = 3
+rule uw2 Underworld.playerdat.ArmourValue(obj) (33) = 25
+rule uw2 Underworld.playerdat.ArmourValue(obj) (34) = 36
+rule uw1 Underworld.motion.GetCoordinateInDirection(heading, distance, X0, Y0) = 10240 rows sha256:d612466cc585ab72 parts 2323 f748 9b76 14f8 3f70 099b c117 5516 47d3 5956 e3ec 5dea ff54 ea5d 03ed cbf5
+rule uw1 Underworld.motion.GetCoordinateInDirection(heading, distance, X0, Y0) (0,0,0,0) = X0=0 Y0=0
+rule uw1 Underworld.motion.GetCoordinateInDirection(heading, distance, X0, Y0) (0,0,0,1000) = X0=0 Y0=1000
+rule uw1 Underworld.motion.GetCoordinateInDirection(heading, distance, X0, Y0) (0,0,1000,0) = X0=1000 Y0=0
+rule uw1 Underworld.motion.GetCoordinateInDirection(heading, distance, X0, Y0) (0,0,1000,1000) = X0=1000 Y0=1000
+rule uw2 Underworld.motion.GetCoordinateInDirection(heading, distance, X0, Y0) = 10240 rows sha256:d612466cc585ab72 parts 2323 f748 9b76 14f8 3f70 099b c117 5516 47d3 5956 e3ec 5dea ff54 ea5d 03ed cbf5
+rule uw2 Underworld.motion.GetCoordinateInDirection(heading, distance, X0, Y0) (0,0,0,0) = X0=0 Y0=0
+rule uw2 Underworld.motion.GetCoordinateInDirection(heading, distance, X0, Y0) (0,0,0,1000) = X0=0 Y0=1000
+rule uw2 Underworld.motion.GetCoordinateInDirection(heading, distance, X0, Y0) (0,0,1000,0) = X0=1000 Y0=0
+rule uw2 Underworld.motion.GetCoordinateInDirection(heading, distance, X0, Y0) (0,0,1000,1000) = X0=1000 Y0=1000
+rule uw1 Underworld.motion.GetVectorForDirection(heading, X1, Y1) = 512 rows sha256:222cc739245b9718 parts 093f b5e4 276f fb94 810f a5b5 7df4 0b64 add7 5bcf 3841 0648 c358 95b5 42bc 191f
+rule uw1 Underworld.motion.GetVectorForDirection(heading, X1, Y1) (0,0,0) = X1=32767 Y1=0
+rule uw1 Underworld.motion.GetVectorForDirection(heading, X1, Y1) (256,0,0) = X1=32758 Y1=804
+rule uw1 Underworld.motion.GetVectorForDirection(heading, X1, Y1) (512,0,0) = X1=32729 Y1=1608
+rule uw1 Underworld.motion.GetVectorForDirection(heading, X1, Y1) (768,0,0) = X1=32679 Y1=2411
+rule uw2 Underworld.motion.GetVectorForDirection(heading, X1, Y1) = 512 rows sha256:222cc739245b9718 parts 093f b5e4 276f fb94 810f a5b5 7df4 0b64 add7 5bcf 3841 0648 c358 95b5 42bc 191f
+rule uw2 Underworld.motion.GetVectorForDirection(heading, X1, Y1) (0,0,0) = X1=32767 Y1=0
+rule uw2 Underworld.motion.GetVectorForDirection(heading, X1, Y1) (256,0,0) = X1=32758 Y1=804
+rule uw2 Underworld.motion.GetVectorForDirection(heading, X1, Y1) (512,0,0) = X1=32729 Y1=1608
+rule uw2 Underworld.motion.GetVectorForDirection(heading, X1, Y1) (768,0,0) = X1=32679 Y1=2411
+rule uw1 Underworld.motion.HeadingLookupCalc(bx, Result_AX, Result_BX) = 1009 rows sha256:b8f2067301c5acd2 parts d6ff 7487 6d2a b687 433e cf95 2583 8e64 295a f482 fc2d 16d6 f332 7398 2454 0ca0
+rule uw1 Underworld.motion.HeadingLookupCalc(bx, Result_AX, Result_BX) (0,0,0) = 0 Result_AX=0 Result_BX=32767
+rule uw1 Underworld.motion.HeadingLookupCalc(bx, Result_AX, Result_BX) (65,0,0) = 204 Result_AX=204 Result_BX=32764
+rule uw1 Underworld.motion.HeadingLookupCalc(bx, Result_AX, Result_BX) (130,0,0) = 408 Result_AX=408 Result_BX=32762
+rule uw1 Underworld.motion.HeadingLookupCalc(bx, Result_AX, Result_BX) (195,0,0) = 612 Result_AX=612 Result_BX=32760
+rule uw2 Underworld.motion.HeadingLookupCalc(bx, Result_AX, Result_BX) = 1009 rows sha256:b8f2067301c5acd2 parts d6ff 7487 6d2a b687 433e cf95 2583 8e64 295a f482 fc2d 16d6 f332 7398 2454 0ca0
+rule uw2 Underworld.motion.HeadingLookupCalc(bx, Result_AX, Result_BX) (0,0,0) = 0 Result_AX=0 Result_BX=32767
+rule uw2 Underworld.motion.HeadingLookupCalc(bx, Result_AX, Result_BX) (65,0,0) = 204 Result_AX=204 Result_BX=32764
+rule uw2 Underworld.motion.HeadingLookupCalc(bx, Result_AX, Result_BX) (130,0,0) = 408 Result_AX=408 Result_BX=32762
+rule uw2 Underworld.motion.HeadingLookupCalc(bx, Result_AX, Result_BX) (195,0,0) = 612 Result_AX=612 Result_BX=32760
+rule uw1 Underworld.motion.SomethingProjectileHeading_seg021_22FD_EAE(heading, Result_arg2, Result_arg4) = 512 rows sha256:5fa2d856b8c1aa39 parts 2675 95b6 29f0 000f b7c8 7ba3 196b c436 1ec0 2b40 1a22 4fc5 31a5 75f1 e06d 2d49
+rule uw1 Underworld.motion.SomethingProjectileHeading_seg021_22FD_EAE(heading, Result_arg2, Result_arg4) (0,0,0) = Result_arg2=0 Result_arg4=32767
+rule uw1 Underworld.motion.SomethingProjectileHeading_seg021_22FD_EAE(heading, Result_arg2, Result_arg4) (128,0,0) = Result_arg2=402 Result_arg4=32762
+rule uw1 Underworld.motion.SomethingProjectileHeading_seg021_22FD_EAE(heading, Result_arg2, Result_arg4) (256,0,0) = Result_arg2=804 Result_arg4=32758
+rule uw1 Underworld.motion.SomethingProjectileHeading_seg021_22FD_EAE(heading, Result_arg2, Result_arg4) (384,0,0) = Result_arg2=1206 Result_arg4=32743
+rule uw2 Underworld.motion.SomethingProjectileHeading_seg021_22FD_EAE(heading, Result_arg2, Result_arg4) = 512 rows sha256:5fa2d856b8c1aa39 parts 2675 95b6 29f0 000f b7c8 7ba3 196b c436 1ec0 2b40 1a22 4fc5 31a5 75f1 e06d 2d49
+rule uw2 Underworld.motion.SomethingProjectileHeading_seg021_22FD_EAE(heading, Result_arg2, Result_arg4) (0,0,0) = Result_arg2=0 Result_arg4=32767
+rule uw2 Underworld.motion.SomethingProjectileHeading_seg021_22FD_EAE(heading, Result_arg2, Result_arg4) (128,0,0) = Result_arg2=402 Result_arg4=32762
+rule uw2 Underworld.motion.SomethingProjectileHeading_seg021_22FD_EAE(heading, Result_arg2, Result_arg4) (256,0,0) = Result_arg2=804 Result_arg4=32758
+rule uw2 Underworld.motion.SomethingProjectileHeading_seg021_22FD_EAE(heading, Result_arg2, Result_arg4) (384,0,0) = Result_arg2=1206 Result_arg4=32743
+rule uw1 Underworld.motion.SatelliteOrDartVectoring(projectileX, projectileY, sourceX, sourceY) = 2401 rows sha256:231b4003337bd06f parts 4c0a 837a 9c42 4fbc 8ae5 988e c5c1 04c2 6601 c6aa ece9 00c5 4818 c215 4820 2cfc
+rule uw1 Underworld.motion.SatelliteOrDartVectoring(projectileX, projectileY, sourceX, sourceY) (-64,-64,-64,-64) = 0
+rule uw1 Underworld.motion.SatelliteOrDartVectoring(projectileX, projectileY, sourceX, sourceY) (-64,-64,-8,-64) = 16384
+rule uw1 Underworld.motion.SatelliteOrDartVectoring(projectileX, projectileY, sourceX, sourceY) (-64,-64,-8,-8) = 8165
+rule uw1 Underworld.motion.SatelliteOrDartVectoring(projectileX, projectileY, sourceX, sourceY) (-64,-64,-8,-1) = 7610
+rule uw2 Underworld.motion.SatelliteOrDartVectoring(projectileX, projectileY, sourceX, sourceY) = 2401 rows sha256:231b4003337bd06f parts 4c0a 837a 9c42 4fbc 8ae5 988e c5c1 04c2 6601 c6aa ece9 00c5 4818 c215 4820 2cfc
+rule uw2 Underworld.motion.SatelliteOrDartVectoring(projectileX, projectileY, sourceX, sourceY) (-64,-64,-64,-64) = 0
+rule uw2 Underworld.motion.SatelliteOrDartVectoring(projectileX, projectileY, sourceX, sourceY) (-64,-64,-8,-64) = 16384
+rule uw2 Underworld.motion.SatelliteOrDartVectoring(projectileX, projectileY, sourceX, sourceY) (-64,-64,-8,-8) = 8165
+rule uw2 Underworld.motion.SatelliteOrDartVectoring(projectileX, projectileY, sourceX, sourceY) (-64,-64,-8,-1) = 7610
+rule uw1 Underworld.motion.MaybeGetTangent_seg021_22FD_EFB(x, y) = 1089 rows sha256:15c9355dd4b52f2a, 4 throw parts 730f 3be6 f5fb 9fd3 ba66 d144 e45e 7147 de21 8635 9f8a 7489 f037 d74e b791 2a24
+rule uw1 Underworld.motion.MaybeGetTangent_seg021_22FD_EFB(x, y) (-32768,-32768) = throws IndexOutOfRangeException
+rule uw1 Underworld.motion.MaybeGetTangent_seg021_22FD_EFB(x, y) (-32768,-23043) = -24520
+rule uw1 Underworld.motion.MaybeGetTangent_seg021_22FD_EFB(x, y) (-32768,-23042) = -24519
+rule uw1 Underworld.motion.MaybeGetTangent_seg021_22FD_EFB(x, y) (-32768,-16384) = -21846
+rule uw2 Underworld.motion.MaybeGetTangent_seg021_22FD_EFB(x, y) = 1089 rows sha256:15c9355dd4b52f2a, 4 throw parts 730f 3be6 f5fb 9fd3 ba66 d144 e45e 7147 de21 8635 9f8a 7489 f037 d74e b791 2a24
+rule uw2 Underworld.motion.MaybeGetTangent_seg021_22FD_EFB(x, y) (-32768,-32768) = throws IndexOutOfRangeException
+rule uw2 Underworld.motion.MaybeGetTangent_seg021_22FD_EFB(x, y) (-32768,-23043) = -24520
+rule uw2 Underworld.motion.MaybeGetTangent_seg021_22FD_EFB(x, y) (-32768,-23042) = -24519
+rule uw2 Underworld.motion.MaybeGetTangent_seg021_22FD_EFB(x, y) (-32768,-16384) = -21846
+rule uw1 Underworld.motion.seg021_22FD_BA2_MaybeTangent(bx) = 676 rows sha256:c29f6c332b5ae7f8, 1 throw parts 8794 3d2b 2e94 11d0 0b1e 25f8 a018 0dab ab6b 6f55 8f01 4037 5458 6315 6ed1 3501
+rule uw1 Underworld.motion.seg021_22FD_BA2_MaybeTangent(bx) (-32768) = throws IndexOutOfRangeException
+rule uw1 Underworld.motion.seg021_22FD_BA2_MaybeTangent(bx) (-32671) = 31506
+rule uw1 Underworld.motion.seg021_22FD_BA2_MaybeTangent(bx) (-32574) = 31524
+rule uw1 Underworld.motion.seg021_22FD_BA2_MaybeTangent(bx) (-32477) = 30878
+rule uw2 Underworld.motion.seg021_22FD_BA2_MaybeTangent(bx) = 676 rows sha256:c29f6c332b5ae7f8, 1 throw parts 8794 3d2b 2e94 11d0 0b1e 25f8 a018 0dab ab6b 6f55 8f01 4037 5458 6315 6ed1 3501
+rule uw2 Underworld.motion.seg021_22FD_BA2_MaybeTangent(bx) (-32768) = throws IndexOutOfRangeException
+rule uw2 Underworld.motion.seg021_22FD_BA2_MaybeTangent(bx) (-32671) = 31506
+rule uw2 Underworld.motion.seg021_22FD_BA2_MaybeTangent(bx) (-32574) = 31524
+rule uw2 Underworld.motion.seg021_22FD_BA2_MaybeTangent(bx) (-32477) = 30878
+rule uw1 Underworld.motion.seg021_22FD_B78_maybetangent(ax) = 676 rows sha256:38960605e1e64229, 1 throw parts 8d6d f1de 0a1a 0e44 30df 9dda 25e3 2abe 4b9d c107 6ebc b4cf e49d c02e d5b1 c1d1
+rule uw1 Underworld.motion.seg021_22FD_B78_maybetangent(ax) (-32768) = throws IndexOutOfRangeException
+rule uw1 Underworld.motion.seg021_22FD_B78_maybetangent(ax) (-32671) = -15121
+rule uw1 Underworld.motion.seg021_22FD_B78_maybetangent(ax) (-32574) = -15139
+rule uw1 Underworld.motion.seg021_22FD_B78_maybetangent(ax) (-32477) = -14492
+rule uw2 Underworld.motion.seg021_22FD_B78_maybetangent(ax) = 676 rows sha256:38960605e1e64229, 1 throw parts 8d6d f1de 0a1a 0e44 30df 9dda 25e3 2abe 4b9d c107 6ebc b4cf e49d c02e d5b1 c1d1
+rule uw2 Underworld.motion.seg021_22FD_B78_maybetangent(ax) (-32768) = throws IndexOutOfRangeException
+rule uw2 Underworld.motion.seg021_22FD_B78_maybetangent(ax) (-32671) = -15121
+rule uw2 Underworld.motion.seg021_22FD_B78_maybetangent(ax) (-32574) = -15139
+rule uw2 Underworld.motion.seg021_22FD_B78_maybetangent(ax) (-32477) = -14492
+rule uw1 Underworld.motion.GetDefelectionMaybe(srcHeading, dstHeading, Magnitude) = 196 rows sha256:141016ffe4a41642 parts 8ef2 688f 5022 4103 2ca9 d924 b04f 0037 6f5a a99b 570a 8d14 dffb 4f72 558b df69
+rule uw1 Underworld.motion.GetDefelectionMaybe(srcHeading, dstHeading, Magnitude) (0,0,0) = 0
+rule uw1 Underworld.motion.GetDefelectionMaybe(srcHeading, dstHeading, Magnitude) (0,32,16) = 8
+rule uw1 Underworld.motion.GetDefelectionMaybe(srcHeading, dstHeading, Magnitude) (0,32,32) = 16
+rule uw1 Underworld.motion.GetDefelectionMaybe(srcHeading, dstHeading, Magnitude) (0,32,64) = 32
+rule uw2 Underworld.motion.GetDefelectionMaybe(srcHeading, dstHeading, Magnitude) = 196 rows sha256:141016ffe4a41642 parts 8ef2 688f 5022 4103 2ca9 d924 b04f 0037 6f5a a99b 570a 8d14 dffb 4f72 558b df69
+rule uw2 Underworld.motion.GetDefelectionMaybe(srcHeading, dstHeading, Magnitude) (0,0,0) = 0
+rule uw2 Underworld.motion.GetDefelectionMaybe(srcHeading, dstHeading, Magnitude) (0,32,16) = 8
+rule uw2 Underworld.motion.GetDefelectionMaybe(srcHeading, dstHeading, Magnitude) (0,32,32) = 16
+rule uw2 Underworld.motion.GetDefelectionMaybe(srcHeading, dstHeading, Magnitude) (0,32,64) = 32
+rule uw1 Underworld.motion.SBB(value) = 5 rows sha256:399cad8abc7edec7 parts e3b0 e3b0 e3b0 6c2f e3b0 e3b0 0733 e3b0 e3b0 9806 e3b0 e3b0 d1a6 e3b0 e3b0 2d5f
+rule uw1 Underworld.motion.SBB(value) (-1) = 0
+rule uw1 Underworld.motion.SBB(value) (0) = 1
+rule uw1 Underworld.motion.SBB(value) (1) = 0
+rule uw1 Underworld.motion.SBB(value) (255) = 0
+rule uw2 Underworld.motion.SBB(value) = 5 rows sha256:399cad8abc7edec7 parts e3b0 e3b0 e3b0 6c2f e3b0 e3b0 0733 e3b0 e3b0 9806 e3b0 e3b0 d1a6 e3b0 e3b0 2d5f
+rule uw2 Underworld.motion.SBB(value) (-1) = 0
+rule uw2 Underworld.motion.SBB(value) (0) = 1
+rule uw2 Underworld.motion.SBB(value) (1) = 0
+rule uw2 Underworld.motion.SBB(value) (255) = 0
+rule uw1 Underworld.motion.GetTileState(arg0) = 8192 rows sha256:6f88565154c192a3 parts 56a2 b8f6 4c55 434b 26b3 683b 69e3 4a85 bfad c1f0 00dd a3c1 5af6 111e 5c2d 07b1
+rule uw1 Underworld.motion.GetTileState(arg0) (0) = 8
+rule uw1 Underworld.motion.GetTileState(arg0) (4) = 1
+rule uw1 Underworld.motion.GetTileState(arg0) (5) = 2
+rule uw1 Underworld.motion.GetTileState(arg0) (6) = 4
+rule uw2 Underworld.motion.GetTileState(arg0) = 8192 rows sha256:6f88565154c192a3 parts 56a2 b8f6 4c55 434b 26b3 683b 69e3 4a85 bfad c1f0 00dd a3c1 5af6 111e 5c2d 07b1
+rule uw2 Underworld.motion.GetTileState(arg0) (0) = 8
+rule uw2 Underworld.motion.GetTileState(arg0) (4) = 1
+rule uw2 Underworld.motion.GetTileState(arg0) (5) = 2
+rule uw2 Underworld.motion.GetTileState(arg0) (6) = 4
+rule uw1 Underworld.motion.ApplyWaterCurrentIceSliding(TypeOfMotionArg0, HeadingArg2, arg4, HeadingArg6, INunk14_arg8, argA, newHeading1E_argC, newUnk14_argE, test) = 1024 rows sha256:0d6ddefeb88a5cdc parts 9f72 9c39 e0b8 3036 736e c994 e0a7 6665 d601 0950 4526 b0e0 2ad6 eb03 3559 cd83
+rule uw1 Underworld.motion.ApplyWaterCurrentIceSliding(TypeOfMotionArg0, HeadingArg2, arg4, HeadingArg6, INunk14_arg8, argA, newHeading1E_argC, newUnk14_argE, test) (0,0,0,0,0,0,0,0,0) = newHeading1E_argC=0 newUnk14_argE=0
+rule uw1 Underworld.motion.ApplyWaterCurrentIceSliding(TypeOfMotionArg0, HeadingArg2, arg4, HeadingArg6, INunk14_arg8, argA, newHeading1E_argC, newUnk14_argE, test) (0,0,10,0,0,0,0,0,0) = newHeading1E_argC=0 newUnk14_argE=10
+rule uw1 Underworld.motion.ApplyWaterCurrentIceSliding(TypeOfMotionArg0, HeadingArg2, arg4, HeadingArg6, INunk14_arg8, argA, newHeading1E_argC, newUnk14_argE, test) (0,64,0,0,0,0,0,0,0) = newHeading1E_argC=64 newUnk14_argE=0
+rule uw1 Underworld.motion.ApplyWaterCurrentIceSliding(TypeOfMotionArg0, HeadingArg2, arg4, HeadingArg6, INunk14_arg8, argA, newHeading1E_argC, newUnk14_argE, test) (0,64,10,0,0,0,0,0,0) = newHeading1E_argC=64 newUnk14_argE=10
+rule uw2 Underworld.motion.ApplyWaterCurrentIceSliding(TypeOfMotionArg0, HeadingArg2, arg4, HeadingArg6, INunk14_arg8, argA, newHeading1E_argC, newUnk14_argE, test) = 1024 rows sha256:0d6ddefeb88a5cdc parts 9f72 9c39 e0b8 3036 736e c994 e0a7 6665 d601 0950 4526 b0e0 2ad6 eb03 3559 cd83
+rule uw2 Underworld.motion.ApplyWaterCurrentIceSliding(TypeOfMotionArg0, HeadingArg2, arg4, HeadingArg6, INunk14_arg8, argA, newHeading1E_argC, newUnk14_argE, test) (0,0,0,0,0,0,0,0,0) = newHeading1E_argC=0 newUnk14_argE=0
+rule uw2 Underworld.motion.ApplyWaterCurrentIceSliding(TypeOfMotionArg0, HeadingArg2, arg4, HeadingArg6, INunk14_arg8, argA, newHeading1E_argC, newUnk14_argE, test) (0,0,10,0,0,0,0,0,0) = newHeading1E_argC=0 newUnk14_argE=10
+rule uw2 Underworld.motion.ApplyWaterCurrentIceSliding(TypeOfMotionArg0, HeadingArg2, arg4, HeadingArg6, INunk14_arg8, argA, newHeading1E_argC, newUnk14_argE, test) (0,64,0,0,0,0,0,0,0) = newHeading1E_argC=64 newUnk14_argE=0
+rule uw2 Underworld.motion.ApplyWaterCurrentIceSliding(TypeOfMotionArg0, HeadingArg2, arg4, HeadingArg6, INunk14_arg8, argA, newHeading1E_argC, newUnk14_argE, test) (0,64,10,0,0,0,0,0,0) = newHeading1E_argC=64 newUnk14_argE=10
+rule uw1 Underworld.UnderWorldSqrt.sqrt_vanilla(value) = 4167 rows sha256:6b58cee53db8075e parts 9e0e dbd2 b733 8e10 41ce 083a a853 3d24 ee21 4db1 42b3 d588 143c c003 edf3 3a35
+rule uw1 Underworld.UnderWorldSqrt.sqrt_vanilla(value) (0) = 0
+rule uw1 Underworld.UnderWorldSqrt.sqrt_vanilla(value) (63) = 7
+rule uw1 Underworld.UnderWorldSqrt.sqrt_vanilla(value) (126) = 11
+rule uw1 Underworld.UnderWorldSqrt.sqrt_vanilla(value) (189) = 13
+rule uw2 Underworld.UnderWorldSqrt.sqrt_vanilla(value) = 4167 rows sha256:6b58cee53db8075e parts 9e0e dbd2 b733 8e10 41ce 083a a853 3d24 ee21 4db1 42b3 d588 143c c003 edf3 3a35
+rule uw2 Underworld.UnderWorldSqrt.sqrt_vanilla(value) (0) = 0
+rule uw2 Underworld.UnderWorldSqrt.sqrt_vanilla(value) (63) = 7
+rule uw2 Underworld.UnderWorldSqrt.sqrt_vanilla(value) (126) = 11
+rule uw2 Underworld.UnderWorldSqrt.sqrt_vanilla(value) (189) = 13
+rule uw1 Underworld.UnderworldMath.RotateRightThroughCarry(value, count, carry) = 180 rows sha256:14c9cb9a0779fb0b parts 0aa5 b2d6 6700 52ab 9297 ac82 e765 b0ca 8893 8be4 09a4 f072 7678 20ae a14a dc83
+rule uw1 Underworld.UnderworldMath.RotateRightThroughCarry(value, count, carry) (0,0,0) = 0 carry=0
+rule uw1 Underworld.UnderworldMath.RotateRightThroughCarry(value, count, carry) (0,0,1) = 0 carry=1
+rule uw1 Underworld.UnderworldMath.RotateRightThroughCarry(value, count, carry) (1,0,0) = 1 carry=0
+rule uw1 Underworld.UnderworldMath.RotateRightThroughCarry(value, count, carry) (1,0,1) = 1 carry=1
+rule uw2 Underworld.UnderworldMath.RotateRightThroughCarry(value, count, carry) = 180 rows sha256:14c9cb9a0779fb0b parts 0aa5 b2d6 6700 52ab 9297 ac82 e765 b0ca 8893 8be4 09a4 f072 7678 20ae a14a dc83
+rule uw2 Underworld.UnderworldMath.RotateRightThroughCarry(value, count, carry) (0,0,0) = 0 carry=0
+rule uw2 Underworld.UnderworldMath.RotateRightThroughCarry(value, count, carry) (0,0,1) = 0 carry=1
+rule uw2 Underworld.UnderworldMath.RotateRightThroughCarry(value, count, carry) (1,0,0) = 1 carry=0
+rule uw2 Underworld.UnderworldMath.RotateRightThroughCarry(value, count, carry) (1,0,1) = 1 carry=1
+rule uw1 Underworld.Pathfind.GetVectorHeading(xVector, yVector) = 1089 rows sha256:031a9f77292b93a3 parts 2f82 6294 6f57 d99a f8fb 4eb0 3055 2b36 eb50 a128 84e3 203a a36d 299f 5795 219f
+rule uw1 Underworld.Pathfind.GetVectorHeading(xVector, yVector) (-16,-16) = 5
+rule uw1 Underworld.Pathfind.GetVectorHeading(xVector, yVector) (-16,-8) = 6
+rule uw1 Underworld.Pathfind.GetVectorHeading(xVector, yVector) (-16,9) = 7
+rule uw1 Underworld.Pathfind.GetVectorHeading(xVector, yVector) (-8,-16) = 4
+rule uw2 Underworld.Pathfind.GetVectorHeading(xVector, yVector) = 1089 rows sha256:031a9f77292b93a3 parts 2f82 6294 6f57 d99a f8fb 4eb0 3055 2b36 eb50 a128 84e3 203a a36d 299f 5795 219f
+rule uw2 Underworld.Pathfind.GetVectorHeading(xVector, yVector) (-16,-16) = 5
+rule uw2 Underworld.Pathfind.GetVectorHeading(xVector, yVector) (-16,-8) = 6
+rule uw2 Underworld.Pathfind.GetVectorHeading(xVector, yVector) (-16,9) = 7
+rule uw2 Underworld.Pathfind.GetVectorHeading(xVector, yVector) (-8,-16) = 4
+rule uw1 Underworld.Pathfind.ConvertVectorToHeading(xVector, yVector) = 1089 rows sha256:e127fc019c60c77d parts 0e92 600a 66dc a693 3325 e3dc 405f 92f6 11e4 62ac 7208 b102 79dc 0ddb ce96 9434
+rule uw1 Underworld.Pathfind.ConvertVectorToHeading(xVector, yVector) (-16,-16) = 4
+rule uw1 Underworld.Pathfind.ConvertVectorToHeading(xVector, yVector) (-16,-15) = 6
+rule uw1 Underworld.Pathfind.ConvertVectorToHeading(xVector, yVector) (-16,16) = 0
+rule uw1 Underworld.Pathfind.ConvertVectorToHeading(xVector, yVector) (-8,-16) = 5
+rule uw2 Underworld.Pathfind.ConvertVectorToHeading(xVector, yVector) = 1089 rows sha256:e127fc019c60c77d parts 0e92 600a 66dc a693 3325 e3dc 405f 92f6 11e4 62ac 7208 b102 79dc 0ddb ce96 9434
+rule uw2 Underworld.Pathfind.ConvertVectorToHeading(xVector, yVector) (-16,-16) = 4
+rule uw2 Underworld.Pathfind.ConvertVectorToHeading(xVector, yVector) (-16,-15) = 6
+rule uw2 Underworld.Pathfind.ConvertVectorToHeading(xVector, yVector) (-16,16) = 0
+rule uw2 Underworld.Pathfind.ConvertVectorToHeading(xVector, yVector) (-8,-16) = 5
+rule uw1 Underworld.Pathfind.ConvertTilePointsToHeading(srcX, srcY, dstX, dstY) = 625 rows sha256:33373866baa8e831 parts cb53 5b69 602d 1be8 4673 1b51 6496 7a89 aa82 d2cf bf91 4829 6cd6 ddcc 29d7 1239
+rule uw1 Underworld.Pathfind.ConvertTilePointsToHeading(srcX, srcY, dstX, dstY) (0,0,0,0) = 1
+rule uw1 Underworld.Pathfind.ConvertTilePointsToHeading(srcX, srcY, dstX, dstY) (0,0,0,31) = 3
+rule uw1 Underworld.Pathfind.ConvertTilePointsToHeading(srcX, srcY, dstX, dstY) (0,0,31,0) = 6
+rule uw1 Underworld.Pathfind.ConvertTilePointsToHeading(srcX, srcY, dstX, dstY) (0,0,31,31) = 4
+rule uw2 Underworld.Pathfind.ConvertTilePointsToHeading(srcX, srcY, dstX, dstY) = 625 rows sha256:33373866baa8e831 parts cb53 5b69 602d 1be8 4673 1b51 6496 7a89 aa82 d2cf bf91 4829 6cd6 ddcc 29d7 1239
+rule uw2 Underworld.Pathfind.ConvertTilePointsToHeading(srcX, srcY, dstX, dstY) (0,0,0,0) = 1
+rule uw2 Underworld.Pathfind.ConvertTilePointsToHeading(srcX, srcY, dstX, dstY) (0,0,0,31) = 3
+rule uw2 Underworld.Pathfind.ConvertTilePointsToHeading(srcX, srcY, dstX, dstY) (0,0,31,0) = 6
+rule uw2 Underworld.Pathfind.ConvertTilePointsToHeading(srcX, srcY, dstX, dstY) (0,0,31,31) = 4
+rule uw1 Underworld.UWTileMap.IsOpen(tileType) = 16 rows sha256:57157feec4c58446 parts e033 8853 d2f5 50ab 69d7 81bb f63b d697 4102 8b60 71de 194f 06a0 5d8b 2107 920d
+rule uw1 Underworld.UWTileMap.IsOpen(tileType) (0) = 0
+rule uw1 Underworld.UWTileMap.IsOpen(tileType) (1) = 1
+rule uw1 Underworld.UWTileMap.IsOpen(tileType) (5) = 1
+rule uw1 Underworld.UWTileMap.IsOpen(tileType) (10) = 0
+rule uw2 Underworld.UWTileMap.IsOpen(tileType) = 16 rows sha256:57157feec4c58446 parts e033 8853 d2f5 50ab 69d7 81bb f63b d697 4102 8b60 71de 194f 06a0 5d8b 2107 920d
+rule uw2 Underworld.UWTileMap.IsOpen(tileType) (0) = 0
+rule uw2 Underworld.UWTileMap.IsOpen(tileType) (1) = 1
+rule uw2 Underworld.UWTileMap.IsOpen(tileType) (5) = 1
+rule uw2 Underworld.UWTileMap.IsOpen(tileType) (10) = 0
+rule uw1 Underworld.UWTileMap.isTileOpen(TileType) = 16 rows sha256:33d8918988c2d89b parts e033 8853 d1a6 a399 64a7 216e f63b d697 4102 8b60 71de 194f 06a0 5d8b 2107 920d
+rule uw1 Underworld.UWTileMap.isTileOpen(TileType) (0) = 0
+rule uw1 Underworld.UWTileMap.isTileOpen(TileType) (1) = 1
+rule uw1 Underworld.UWTileMap.isTileOpen(TileType) (5) = 0
+rule uw1 Underworld.UWTileMap.isTileOpen(TileType) (10) = 0
+rule uw2 Underworld.UWTileMap.isTileOpen(TileType) = 16 rows sha256:33d8918988c2d89b parts e033 8853 d1a6 a399 64a7 216e f63b d697 4102 8b60 71de 194f 06a0 5d8b 2107 920d
+rule uw2 Underworld.UWTileMap.isTileOpen(TileType) (0) = 0
+rule uw2 Underworld.UWTileMap.isTileOpen(TileType) (1) = 1
+rule uw2 Underworld.UWTileMap.isTileOpen(TileType) (5) = 0
+rule uw2 Underworld.UWTileMap.isTileOpen(TileType) (10) = 0
+rule uw1 Underworld.UWTileMap.ValidTile(tileX, tileY) = 81 rows sha256:b4e087669a8d617f parts 5937 f235 49d4 6440 dfd4 9836 cf24 096d 5697 68e8 d264 d161 60a1 0693 2735 2337
+rule uw1 Underworld.UWTileMap.ValidTile(tileX, tileY) (-1,-1) = 0
+rule uw1 Underworld.UWTileMap.ValidTile(tileX, tileY) (0,0) = 1
+rule uw1 Underworld.UWTileMap.ValidTile(tileX, tileY) (1,64) = 0
+rule uw1 Underworld.UWTileMap.ValidTile(tileX, tileY) (32,64) = 0
+rule uw2 Underworld.UWTileMap.ValidTile(tileX, tileY) = 81 rows sha256:b4e087669a8d617f parts 5937 f235 49d4 6440 dfd4 9836 cf24 096d 5697 68e8 d264 d161 60a1 0693 2735 2337
+rule uw2 Underworld.UWTileMap.ValidTile(tileX, tileY) (-1,-1) = 0
+rule uw2 Underworld.UWTileMap.ValidTile(tileX, tileY) (0,0) = 1
+rule uw2 Underworld.UWTileMap.ValidTile(tileX, tileY) (1,64) = 0
+rule uw2 Underworld.UWTileMap.ValidTile(tileX, tileY) (32,64) = 0
+rule uw1 Underworld.UWTileMap.isTerrainWater(terraintype) = 256 rows sha256:426a17ff8df18eb9 parts b320 7430 565f 2a76 a859 d018 e1fb e13a 4fb4 5bd7 b1af a792 1379 4a7d cd71 1510
+rule uw1 Underworld.UWTileMap.isTerrainWater(terraintype) (0) = 0
+rule uw1 Underworld.UWTileMap.isTerrainWater(terraintype) (16) = 1
+rule uw1 Underworld.UWTileMap.isTerrainWater(terraintype) (85) = 0
+rule uw1 Underworld.UWTileMap.isTerrainWater(terraintype) (170) = 0
+rule uw2 Underworld.UWTileMap.isTerrainWater(terraintype) = 256 rows sha256:426a17ff8df18eb9 parts b320 7430 565f 2a76 a859 d018 e1fb e13a 4fb4 5bd7 b1af a792 1379 4a7d cd71 1510
+rule uw2 Underworld.UWTileMap.isTerrainWater(terraintype) (0) = 0
+rule uw2 Underworld.UWTileMap.isTerrainWater(terraintype) (16) = 1
+rule uw2 Underworld.UWTileMap.isTerrainWater(terraintype) (85) = 0
+rule uw2 Underworld.UWTileMap.isTerrainWater(terraintype) (170) = 0
+rule uw1 Underworld.UWTileMap.isTerrainLava(terraintype) = 256 rows sha256:fc09f806cc25e463 parts b320 295e e804 2a76 e42d be80 68f3 e13a 6d83 5bd7 b1af a792 1379 4a7d cd71 1510
+rule uw1 Underworld.UWTileMap.isTerrainLava(terraintype) (0) = 0
+rule uw1 Underworld.UWTileMap.isTerrainLava(terraintype) (32) = 1
+rule uw1 Underworld.UWTileMap.isTerrainLava(terraintype) (85) = 0
+rule uw1 Underworld.UWTileMap.isTerrainLava(terraintype) (170) = 0
+rule uw2 Underworld.UWTileMap.isTerrainLava(terraintype) = 256 rows sha256:fc09f806cc25e463 parts b320 295e e804 2a76 e42d be80 68f3 e13a 6d83 5bd7 b1af a792 1379 4a7d cd71 1510
+rule uw2 Underworld.UWTileMap.isTerrainLava(terraintype) (0) = 0
+rule uw2 Underworld.UWTileMap.isTerrainLava(terraintype) (32) = 1
+rule uw2 Underworld.UWTileMap.isTerrainLava(terraintype) (85) = 0
+rule uw2 Underworld.UWTileMap.isTerrainLava(terraintype) (170) = 0
+rule uw1 Underworld.UWTileMap.isTerrainIce(terraintype) = 256 rows sha256:e9f7905ecd1743ca parts b320 295e 565f 2a76 e42d be80 68f3 e13a 4fb4 5bd7 b1af a792 5403 4a7d 110d 4d2a
+rule uw1 Underworld.UWTileMap.isTerrainIce(terraintype) (0) = 0
+rule uw1 Underworld.UWTileMap.isTerrainIce(terraintype) (85) = 0
+rule uw1 Underworld.UWTileMap.isTerrainIce(terraintype) (170) = 0
+rule uw1 Underworld.UWTileMap.isTerrainIce(terraintype) (192) = 1
+rule uw2 Underworld.UWTileMap.isTerrainIce(terraintype) = 256 rows sha256:e9f7905ecd1743ca parts b320 295e 565f 2a76 e42d be80 68f3 e13a 4fb4 5bd7 b1af a792 5403 4a7d 110d 4d2a
+rule uw2 Underworld.UWTileMap.isTerrainIce(terraintype) (0) = 0
+rule uw2 Underworld.UWTileMap.isTerrainIce(terraintype) (85) = 0
+rule uw2 Underworld.UWTileMap.isTerrainIce(terraintype) (170) = 0
+rule uw2 Underworld.UWTileMap.isTerrainIce(terraintype) (192) = 1
+rule uw1 Underworld.tmap.IsDiagonalTile(tileType) = 16 rows sha256:ae142469345ec9df parts e033 9806 d2f5 50ab 69d7 81bb 9551 3717 882e 7135 71de 194f 06a0 5d8b 2107 920d
+rule uw1 Underworld.tmap.IsDiagonalTile(tileType) (0) = 0
+rule uw1 Underworld.tmap.IsDiagonalTile(tileType) (2) = 1
+rule uw1 Underworld.tmap.IsDiagonalTile(tileType) (5) = 1
+rule uw1 Underworld.tmap.IsDiagonalTile(tileType) (10) = 0
+rule uw2 Underworld.tmap.IsDiagonalTile(tileType) = 16 rows sha256:ae142469345ec9df parts e033 9806 d2f5 50ab 69d7 81bb 9551 3717 882e 7135 71de 194f 06a0 5d8b 2107 920d
+rule uw2 Underworld.tmap.IsDiagonalTile(tileType) (0) = 0
+rule uw2 Underworld.tmap.IsDiagonalTile(tileType) (2) = 1
+rule uw2 Underworld.tmap.IsDiagonalTile(tileType) (5) = 1
+rule uw2 Underworld.tmap.IsDiagonalTile(tileType) (10) = 0
+rule uw1 Underworld.worlds.GetWorldNo(dungeonlevel) = 81 rows sha256:66e8adfbf190a23d parts 19bc f6cd 5993 3a98 bbef e797 d232 0f79 f729 d0cb 4a08 e92c e6f8 67fa 2fc7 130d
+rule uw1 Underworld.worlds.GetWorldNo(dungeonlevel) (0) = 0
+rule uw1 Underworld.worlds.GetWorldNo(dungeonlevel) (1) = 1
+rule uw1 Underworld.worlds.GetWorldNo(dungeonlevel) (2) = 2
+rule uw1 Underworld.worlds.GetWorldNo(dungeonlevel) (3) = 3
+rule uw2 Underworld.worlds.GetWorldNo(dungeonlevel) = 81 rows sha256:1678873f60d62ad6 parts c51c 3ceb 99fe 547c 6c27 bccd a83c 837c e3c3 285c 778b 5d52 acfa ecf8 3792 9c00
+rule uw2 Underworld.worlds.GetWorldNo(dungeonlevel) (0) = 0
+rule uw2 Underworld.worlds.GetWorldNo(dungeonlevel) (9) = 1
+rule uw2 Underworld.worlds.GetWorldNo(dungeonlevel) (17) = 2
+rule uw2 Underworld.worlds.GetWorldNo(dungeonlevel) (25) = 3
+rule uw1 Underworld.automap.CanMap(dungeon) = 81 rows sha256:25c36f2ec81f3326 parts a9ba 8e89 99fe 309b 301c fe76 7abc 30f9 095d f300 0898 b92c 460c 15ec 58a0 9a57
+rule uw1 Underworld.automap.CanMap(dungeon) (0) = 1
+rule uw1 Underworld.automap.CanMap(dungeon) (9) = 0
+rule uw1 Underworld.automap.CanMap(dungeon) (26) = 1
+rule uw1 Underworld.automap.CanMap(dungeon) (53) = 1
+rule uw2 Underworld.automap.CanMap(dungeon) = 81 rows sha256:703d6682dc828318 parts a9ba 4297 99fe 309b 301c fe76 7abc 30f9 095d f300 0898 b92c 460c ffa0 c455 9a57
+rule uw2 Underworld.automap.CanMap(dungeon) (0) = 1
+rule uw2 Underworld.automap.CanMap(dungeon) (26) = 1
+rule uw2 Underworld.automap.CanMap(dungeon) (53) = 1
+rule uw2 Underworld.automap.CanMap(dungeon) (65) = 0
+rule uw2 Underworld.pitsofcarnage.InArena(x, y) = 4096 rows sha256:9a7b9829552ac5aa parts 7e57 55ff 0dbc b25b 45ed 95ea 3423 36e6 2f08 b33c 5f48 cb96 57f9 66db f894 a5c5
+rule uw2 Underworld.pitsofcarnage.InArena(x, y) (0,0) = 0
+rule uw2 Underworld.pitsofcarnage.InArena(x, y) (16,25) = 1
+rule uw2 Underworld.pitsofcarnage.InArena(x, y) (21,21) = 1
+rule uw2 Underworld.pitsofcarnage.InArena(x, y) (42,42) = 1
+rule uw2 Underworld.pitsofcarnage.Mpos(x, y) = 4096 rows sha256:befa10eb16717ad2 parts effd 69c0 08a9 d99e 04ef fa8f f44c 2455 63fa a7c7 0913 1deb 19d6 69fe 8879 bd32
+rule uw2 Underworld.pitsofcarnage.Mpos(x, y) (0,0) = 1
+rule uw2 Underworld.pitsofcarnage.Mpos(x, y) (0,2) = 0
+rule uw2 Underworld.pitsofcarnage.Mpos(x, y) (2,0) = 2
+rule uw2 Underworld.pitsofcarnage.Mpos(x, y) (21,21) = 1
+rule uw2 Underworld.a_hack_trap_teleportpitwarriors.GetPitWarriorPositionOffset(XCoord, YCoord) = 4096 rows sha256:52701c1b04c9a728 parts 21c5 8fdf f72a a78b ff09 1c61 04a3 b136 bbaa a880 d229 3802 a511 5069 42ca 8b71
+rule uw2 Underworld.a_hack_trap_teleportpitwarriors.GetPitWarriorPositionOffset(XCoord, YCoord) (0,0) = 7
+rule uw2 Underworld.a_hack_trap_teleportpitwarriors.GetPitWarriorPositionOffset(XCoord, YCoord) (0,1) = 1
+rule uw2 Underworld.a_hack_trap_teleportpitwarriors.GetPitWarriorPositionOffset(XCoord, YCoord) (1,0) = 4
+rule uw2 Underworld.a_hack_trap_teleportpitwarriors.GetPitWarriorPositionOffset(XCoord, YCoord) (1,1) = 0
+rule uw2 Underworld.a_hack_trap_qbert.QbertSeq(i) = 32 rows sha256:9d971dedcbe02ce0 parts 5919 f33e 4d5e 235a cc7f 11e9 8214 db40 d37c 1fad 45e6 31be 1bd9 1dc3 82ed 6352
+rule uw2 Underworld.a_hack_trap_qbert.QbertSeq(i) (0) = 7938
+rule uw2 Underworld.a_hack_trap_qbert.QbertSeq(i) (1) = 22844
+rule uw2 Underworld.a_hack_trap_qbert.QbertSeq(i) (2) = -27786
+rule uw2 Underworld.a_hack_trap_qbert.QbertSeq(i) (3) = -12880
+rule uw2 Underworld.a_bit_of_a_map.GetMapPieceSegmentNo(arg0, arg2) = 256 rows sha256:49a806cfadf08365 parts c725 68fe 9c14 a351 ab7c 27f9 2537 939f 97dd 1fe4 8054 3813 934b 03b2 7ebb 393e
+rule uw2 Underworld.a_bit_of_a_map.GetMapPieceSegmentNo(arg0, arg2) (0,0) = 0
+rule uw2 Underworld.a_bit_of_a_map.GetMapPieceSegmentNo(arg0, arg2) (0,9) = 2
+rule uw2 Underworld.a_bit_of_a_map.GetMapPieceSegmentNo(arg0, arg2) (5,5) = 0
+rule uw2 Underworld.a_bit_of_a_map.GetMapPieceSegmentNo(arg0, arg2) (7,6) = 1
+rule uw1 Underworld.a_set_variable_trap.VariableOperationUW1(LeftOperator, Operation, RightOperator) = 640 rows sha256:06a8679df8f4f3ae parts 2a55 3c12 4eed fab4 c8b4 3231 b8d2 b737 4c17 02ff 84e7 3966 72ad 1068 cefa 28d9
+rule uw1 Underworld.a_set_variable_trap.VariableOperationUW1(LeftOperator, Operation, RightOperator) (0,0,0) = -
+rule uw1 Underworld.a_set_variable_trap.VariableOperationUW1(LeftOperator, Operation, RightOperator) (0,0,1) = pdat[66:97]
+rule uw1 Underworld.a_set_variable_trap.VariableOperationUW1(LeftOperator, Operation, RightOperator) (0,0,5) = pdat[66:b5]
+rule uw1 Underworld.a_set_variable_trap.VariableOperationUW1(LeftOperator, Operation, RightOperator) (0,1,0) = pdat[66:94]
+rule uw2 Underworld.a_set_variable_trap.VariableOperationUW2(LeftVariable, Operation, RightVariable) = 576 rows sha256:5007e8e90d045165 parts 0643 817e 472c 6f5d 53b3 da4d 354f fe3c 162f 835e 5e0b 705f 28f6 a943 993a e159
+rule uw2 Underworld.a_set_variable_trap.VariableOperationUW2(LeftVariable, Operation, RightVariable) (0,0,0) = -
+rule uw2 Underworld.a_set_variable_trap.VariableOperationUW2(LeftVariable, Operation, RightVariable) (0,0,1) = pdat[fa:5a]
+rule uw2 Underworld.a_set_variable_trap.VariableOperationUW2(LeftVariable, Operation, RightVariable) (0,0,2) = pdat[fa:5b]
+rule uw2 Underworld.a_set_variable_trap.VariableOperationUW2(LeftVariable, Operation, RightVariable) (0,0,5) = pdat[fa:5e]
+rule uw2 Underworld.a_set_variable_trap.VariableTransformUW2(LeftOperator, Operation, RightOperator) = 180 rows sha256:61f196515f6d218d parts 222e 3c60 e058 acaa 2456 185f b788 706e 7f74 a147 3e9b f2dd c008 6d71 4e9e 2fae
+rule uw2 Underworld.a_set_variable_trap.VariableTransformUW2(LeftOperator, Operation, RightOperator) (0,0,0) = 0
+rule uw2 Underworld.a_set_variable_trap.VariableTransformUW2(LeftOperator, Operation, RightOperator) (0,0,1) = 1
+rule uw2 Underworld.a_set_variable_trap.VariableTransformUW2(LeftOperator, Operation, RightOperator) (0,0,3) = 3
+rule uw2 Underworld.a_set_variable_trap.VariableTransformUW2(LeftOperator, Operation, RightOperator) (0,0,100) = 100
+rule uw1 Underworld.button.IsOn(obj) = 512 rows sha256:af01bce231ac3258 parts 2a92 63f9 fe50 5a74 9998 b59e 7371 5ead bedb 483f b82a c3e8 846a ca17 e4c7 ce73
+rule uw1 Underworld.button.IsOn(obj) (0) = 0
+rule uw1 Underworld.button.IsOn(obj) (8) = 1
+rule uw1 Underworld.button.IsOn(obj) (170) = 1
+rule uw1 Underworld.button.IsOn(obj) (340) = 0
+rule uw2 Underworld.button.IsOn(obj) = 512 rows sha256:af01bce231ac3258 parts 2a92 63f9 fe50 5a74 9998 b59e 7371 5ead bedb 483f b82a c3e8 846a ca17 e4c7 ce73
+rule uw2 Underworld.button.IsOn(obj) (0) = 0
+rule uw2 Underworld.button.IsOn(obj) (8) = 1
+rule uw2 Underworld.button.IsOn(obj) (170) = 1
+rule uw2 Underworld.button.IsOn(obj) (340) = 0
+rule uw1 Underworld.Food.IsFood(obj) = 512 rows sha256:dcdd9ca10a6cd11a parts 448f 88f7 d74b 26cc 3db3 b93e cd21 38b7 9d41 8feb 0d59 ee17 f311 200e 0fa5 9bd5
+rule uw1 Underworld.Food.IsFood(obj) (0) = 0
+rule uw1 Underworld.Food.IsFood(obj) (128) = 1
+rule uw1 Underworld.Food.IsFood(obj) (170) = 1
+rule uw1 Underworld.Food.IsFood(obj) (340) = 0
+rule uw2 Underworld.Food.IsFood(obj) = 512 rows sha256:fba7c98b864bc123 parts 448f 88f7 d74b 26cc 3db3 b93e e33e 38b7 a3f1 8feb 0d59 ee17 f311 200e 0fa5 9bd5
+rule uw2 Underworld.Food.IsFood(obj) (0) = 0
+rule uw2 Underworld.Food.IsFood(obj) (128) = 1
+rule uw2 Underworld.Food.IsFood(obj) (170) = 1
+rule uw2 Underworld.Food.IsFood(obj) (340) = 0
+rule uw1 Underworld.light.IsUsedUp(obj) = 512 rows sha256:16d93fe14980cb34 parts 448f e98c d74b 96bb 25d6 3dfa 8e07 dfc6 b43d 392b 0d59 8ca1 f311 6858 0fa5 d7ad
+rule uw1 Underworld.light.IsUsedUp(obj) (0) = 0
+rule uw1 Underworld.light.IsUsedUp(obj) (51) = 1
+rule uw1 Underworld.light.IsUsedUp(obj) (170) = 0
+rule uw1 Underworld.light.IsUsedUp(obj) (340) = 0
+rule uw2 Underworld.light.IsUsedUp(obj) = 512 rows sha256:53ed9e8cd9ba87b9 parts 448f 2e2c d74b fafc 25d6 f7d7 8e07 2da5 b43d 09ff 0d59 e34b f311 85cc 0fa5 ce23
+rule uw2 Underworld.light.IsUsedUp(obj) (0) = 0
+rule uw2 Underworld.light.IsUsedUp(obj) (32) = 1
+rule uw2 Underworld.light.IsUsedUp(obj) (170) = 0
+rule uw2 Underworld.light.IsUsedUp(obj) (340) = 0
+rule uw1 Underworld.look.CanBeIdentified(obj) = 512 rows sha256:da6ed6a51dffc70e parts 797a e19e d14f 40bb 2ca9 2ff5 bcca 20c0 14aa b1e6 0d59 ee17 f311 200e 8cc0 cdcf
+rule uw1 Underworld.look.CanBeIdentified(obj) (0) = 0
+rule uw1 Underworld.look.CanBeIdentified(obj) (1) = 1
+rule uw1 Underworld.look.CanBeIdentified(obj) (170) = 1
+rule uw1 Underworld.look.CanBeIdentified(obj) (340) = 0
+rule uw2 Underworld.look.CanBeIdentified(obj) = 512 rows sha256:da6ed6a51dffc70e parts 797a e19e d14f 40bb 2ca9 2ff5 bcca 20c0 14aa b1e6 0d59 ee17 f311 200e 8cc0 cdcf
+rule uw2 Underworld.look.CanBeIdentified(obj) (0) = 0
+rule uw2 Underworld.look.CanBeIdentified(obj) (1) = 1
+rule uw2 Underworld.look.CanBeIdentified(obj) (170) = 1
+rule uw2 Underworld.look.CanBeIdentified(obj) (340) = 0
+rule uw1 Underworld.MagicEnchantment.IsPotion(obj, UW2Only) = 1024 rows sha256:57b190f07af9e392 parts 6376 c8be 0e66 486e 19b4 55b8 e97f c2b1 675f 2c8a 0960 e038 45b6 9222 5489 3f87
+rule uw1 Underworld.MagicEnchantment.IsPotion(obj, UW2Only) (0,0) = 0
+rule uw1 Underworld.MagicEnchantment.IsPotion(obj, UW2Only) (170,1) = 0
+rule uw1 Underworld.MagicEnchantment.IsPotion(obj, UW2Only) (187,0) = 1
+rule uw1 Underworld.MagicEnchantment.IsPotion(obj, UW2Only) (341,0) = 0
+rule uw2 Underworld.MagicEnchantment.IsPotion(obj, UW2Only) = 1024 rows sha256:5137b0253599bbc6 parts 6376 c8be 0e66 486e 19b4 24df e97f 1735 675f 2c8a 0960 e038 45b6 9222 5489 3f87
+rule uw2 Underworld.MagicEnchantment.IsPotion(obj, UW2Only) (0,0) = 0
+rule uw2 Underworld.MagicEnchantment.IsPotion(obj, UW2Only) (170,1) = 0
+rule uw2 Underworld.MagicEnchantment.IsPotion(obj, UW2Only) (224,0) = 1
+rule uw2 Underworld.MagicEnchantment.IsPotion(obj, UW2Only) (341,0) = 0
+rule uw1 Underworld.enchanting.CanObjectBeEnchanted(obj, spellmajorclass, spellminorclass) = 21888 rows sha256:34a56df116753bc6 parts 3daf 9e66 54a3 9033 2b8f c3dd 7181 8317 afb4 bd18 f98c 84b6 7e2a 65fd 73ce d6e4
+rule uw1 Underworld.enchanting.CanObjectBeEnchanted(obj, spellmajorclass, spellminorclass) (0,0,0) = 1
+rule uw1 Underworld.enchanting.CanObjectBeEnchanted(obj, spellmajorclass, spellminorclass) (0,13,15) = 0
+rule uw1 Underworld.enchanting.CanObjectBeEnchanted(obj, spellmajorclass, spellminorclass) (168,15,63) = 1
+rule uw1 Underworld.enchanting.CanObjectBeEnchanted(obj, spellmajorclass, spellminorclass) (339,15,63) = 1
+rule uw2 Underworld.enchanting.CanObjectBeEnchanted(obj, spellmajorclass, spellminorclass) = 21888 rows sha256:34a56df116753bc6 parts 3daf 9e66 54a3 9033 2b8f c3dd 7181 8317 afb4 bd18 f98c 84b6 7e2a 65fd 73ce d6e4
+rule uw2 Underworld.enchanting.CanObjectBeEnchanted(obj, spellmajorclass, spellminorclass) (0,0,0) = 1
+rule uw2 Underworld.enchanting.CanObjectBeEnchanted(obj, spellmajorclass, spellminorclass) (0,13,15) = 0
+rule uw2 Underworld.enchanting.CanObjectBeEnchanted(obj, spellmajorclass, spellminorclass) (168,15,63) = 1
+rule uw2 Underworld.enchanting.CanObjectBeEnchanted(obj, spellmajorclass, spellminorclass) (339,15,63) = 1
+rule uw1 Underworld.repair.CanObjectBeMagicallyRepaired(obj) = 512 rows sha256:d78038156dbbc84f parts 0701 5638 d74b 26cc 29e2 36e8 8e07 38b7 b43d 97e4 3649 ee17 f311 200e 0fa5 9bd5
+rule uw1 Underworld.repair.CanObjectBeMagicallyRepaired(obj) (0) = 1
+rule uw1 Underworld.repair.CanObjectBeMagicallyRepaired(obj) (64) = 0
+rule uw1 Underworld.repair.CanObjectBeMagicallyRepaired(obj) (170) = 0
+rule uw1 Underworld.repair.CanObjectBeMagicallyRepaired(obj) (340) = 0
+rule uw2 Underworld.repair.CanObjectBeMagicallyRepaired(obj) = 512 rows sha256:d78038156dbbc84f parts 0701 5638 d74b 26cc 29e2 36e8 8e07 38b7 b43d 97e4 3649 ee17 f311 200e 0fa5 9bd5
+rule uw2 Underworld.repair.CanObjectBeMagicallyRepaired(obj) (0) = 1
+rule uw2 Underworld.repair.CanObjectBeMagicallyRepaired(obj) (64) = 0
+rule uw2 Underworld.repair.CanObjectBeMagicallyRepaired(obj) (170) = 0
+rule uw2 Underworld.repair.CanObjectBeMagicallyRepaired(obj) (340) = 0
+rule uw1 Underworld.playerdat.CanCarryWeight(obj) = 512 rows sha256:9b95d1a1571beb1f parts 3d18 199c eec7 126e 0740 87aa e916 7757 2805 9833 2787 decb 8b50 87cb a286 446c
+rule uw1 Underworld.playerdat.CanCarryWeight(obj) (0) = 1
+rule uw1 Underworld.playerdat.CanCarryWeight(obj) (2) = 0
+rule uw1 Underworld.playerdat.CanCarryWeight(obj) (170) = 1
+rule uw1 Underworld.playerdat.CanCarryWeight(obj) (340) = 1
+rule uw2 Underworld.playerdat.CanCarryWeight(obj) = 512 rows sha256:9b95d1a1571beb1f parts 3d18 199c eec7 126e 0740 87aa e916 7757 2805 9833 2787 decb 8b50 87cb a286 446c
+rule uw2 Underworld.playerdat.CanCarryWeight(obj) (0) = 1
+rule uw2 Underworld.playerdat.CanCarryWeight(obj) (2) = 0
+rule uw2 Underworld.playerdat.CanCarryWeight(obj) (170) = 1
+rule uw2 Underworld.playerdat.CanCarryWeight(obj) (340) = 1
+rule uw1 Underworld.boots.GetSpriteIndex(obj) = 512 rows sha256:4c01fb1c026e5e71 parts a255 9aab a11c de6b 1bd3 4643 bcd3 e786 bfb5 e12c 9608 9b0f 20e8 f9f9 0b16 8a90
+rule uw1 Underworld.boots.GetSpriteIndex(obj) (0) = 30
+rule uw1 Underworld.boots.GetSpriteIndex(obj) (1) = 1
+rule uw1 Underworld.boots.GetSpriteIndex(obj) (2) = 32
+rule uw1 Underworld.boots.GetSpriteIndex(obj) (3) = 18
+rule uw2 Underworld.boots.GetSpriteIndex(obj) = 512 rows sha256:4c01fb1c026e5e71 parts a255 9aab a11c de6b 1bd3 4643 bcd3 e786 bfb5 e12c 9608 9b0f 20e8 f9f9 0b16 8a90
+rule uw2 Underworld.boots.GetSpriteIndex(obj) (0) = 30
+rule uw2 Underworld.boots.GetSpriteIndex(obj) (1) = 1
+rule uw2 Underworld.boots.GetSpriteIndex(obj) (2) = 32
+rule uw2 Underworld.boots.GetSpriteIndex(obj) (3) = 18
+rule uw1 Underworld.ring.GetSpriteIndex(obj) = 512 rows sha256:3feb4a758bef30e0 parts b8dd 9deb 3df5 63bb 0c36 4c21 3b23 68d6 5120 67ea 1107 5759 5d8a a137 682b d412
+rule uw1 Underworld.ring.GetSpriteIndex(obj) (0) = 0
+rule uw1 Underworld.ring.GetSpriteIndex(obj) (1) = 1
+rule uw1 Underworld.ring.GetSpriteIndex(obj) (2) = 2
+rule uw1 Underworld.ring.GetSpriteIndex(obj) (3) = 3
+rule uw2 Underworld.ring.GetSpriteIndex(obj) = 512 rows sha256:3feb4a758bef30e0 parts b8dd 9deb 3df5 63bb 0c36 4c21 3b23 68d6 5120 67ea 1107 5759 5d8a a137 682b d412
+rule uw2 Underworld.ring.GetSpriteIndex(obj) (0) = 0
+rule uw2 Underworld.ring.GetSpriteIndex(obj) (1) = 1
+rule uw2 Underworld.ring.GetSpriteIndex(obj) (2) = 2
+rule uw2 Underworld.ring.GetSpriteIndex(obj) (3) = 3
+rule uw1 Underworld.wearable.GetSpriteIndex(obj) = 512 rows sha256:bdc714c134139125 parts dbca b1af 46f7 ebfd b60c e79c 0f8d 17f7 c240 05ba 558b a461 6fd4 c248 bc23 a196
+rule uw1 Underworld.wearable.GetSpriteIndex(obj) (0) = 30
+rule uw1 Underworld.wearable.GetSpriteIndex(obj) (1) = 1
+rule uw1 Underworld.wearable.GetSpriteIndex(obj) (2) = 32
+rule uw1 Underworld.wearable.GetSpriteIndex(obj) (3) = 18
+rule uw2 Underworld.wearable.GetSpriteIndex(obj) = 512 rows sha256:bdc714c134139125 parts dbca b1af 46f7 ebfd b60c e79c 0f8d 17f7 c240 05ba 558b a461 6fd4 c248 bc23 a196
+rule uw2 Underworld.wearable.GetSpriteIndex(obj) (0) = 30
+rule uw2 Underworld.wearable.GetSpriteIndex(obj) (1) = 1
+rule uw2 Underworld.wearable.GetSpriteIndex(obj) (2) = 32
+rule uw2 Underworld.wearable.GetSpriteIndex(obj) (3) = 18
+rule uw1 Underworld.uwObject.GetObjectSprite(obj) = 512 rows sha256:3feb4a758bef30e0 parts b8dd 9deb 3df5 63bb 0c36 4c21 3b23 68d6 5120 67ea 1107 5759 5d8a a137 682b d412
+rule uw1 Underworld.uwObject.GetObjectSprite(obj) (0) = 0
+rule uw1 Underworld.uwObject.GetObjectSprite(obj) (1) = 1
+rule uw1 Underworld.uwObject.GetObjectSprite(obj) (2) = 2
+rule uw1 Underworld.uwObject.GetObjectSprite(obj) (3) = 3
+rule uw2 Underworld.uwObject.GetObjectSprite(obj) = 512 rows sha256:3feb4a758bef30e0 parts b8dd 9deb 3df5 63bb 0c36 4c21 3b23 68d6 5120 67ea 1107 5759 5d8a a137 682b d412
+rule uw2 Underworld.uwObject.GetObjectSprite(obj) (0) = 0
+rule uw2 Underworld.uwObject.GetObjectSprite(obj) (1) = 1
+rule uw2 Underworld.uwObject.GetObjectSprite(obj) (2) = 2
+rule uw2 Underworld.uwObject.GetObjectSprite(obj) (3) = 3
+rule uw1 Underworld.uwObject.GetObjectQuantity(obj) = 512 rows sha256:d73c83ca89002fd6 parts 1fbd 7dcc 0eec 99d4 1aee 5b45 baa9 0499 a73c dd1f c62c 3eab 3cb7 f838 61eb 24dd
+rule uw1 Underworld.uwObject.GetObjectQuantity(obj) (0) = 1
+rule uw1 Underworld.uwObject.GetObjectQuantity(obj) (2) = 106
+rule uw1 Underworld.uwObject.GetObjectQuantity(obj) (3) = 255
+rule uw1 Underworld.uwObject.GetObjectQuantity(obj) (9) = 118
+rule uw2 Underworld.uwObject.GetObjectQuantity(obj) = 512 rows sha256:d73c83ca89002fd6 parts 1fbd 7dcc 0eec 99d4 1aee 5b45 baa9 0499 a73c dd1f c62c 3eab 3cb7 f838 61eb 24dd
+rule uw2 Underworld.uwObject.GetObjectQuantity(obj) (0) = 1
+rule uw2 Underworld.uwObject.GetObjectQuantity(obj) (2) = 106
+rule uw2 Underworld.uwObject.GetObjectQuantity(obj) (3) = 255
+rule uw2 Underworld.uwObject.GetObjectQuantity(obj) (9) = 118
+rule uw1 Underworld.uwObject.CheckIfObjectInValidSlot(obj, slot) = 10240 rows sha256:d688acc089510893 parts cbfc ef73 2b42 ae17 3726 0d17 bca2 28f3 64d4 4a24 f510 ba17 d11b 044e 0800 236e
+rule uw1 Underworld.uwObject.CheckIfObjectInValidSlot(obj, slot) (0,0) = 1
+rule uw1 Underworld.uwObject.CheckIfObjectInValidSlot(obj, slot) (0,5) = 0
+rule uw1 Underworld.uwObject.CheckIfObjectInValidSlot(obj, slot) (170,13) = 0
+rule uw1 Underworld.uwObject.CheckIfObjectInValidSlot(obj, slot) (341,6) = 0
+rule uw2 Underworld.uwObject.CheckIfObjectInValidSlot(obj, slot) = 10240 rows sha256:dfa04a094adf8f42 parts cbfc 8810 2b42 ae17 3726 0d17 bca2 28f3 64d4 4a24 f510 ba17 d11b 044e 0800 236e
+rule uw2 Underworld.uwObject.CheckIfObjectInValidSlot(obj, slot) (0,0) = 1
+rule uw2 Underworld.uwObject.CheckIfObjectInValidSlot(obj, slot) (0,5) = 0
+rule uw2 Underworld.uwObject.CheckIfObjectInValidSlot(obj, slot) (170,13) = 0
+rule uw2 Underworld.uwObject.CheckIfObjectInValidSlot(obj, slot) (341,6) = 0
+rule uw1 Underworld.uwObject.ResetIdentification(obj) = 512 rows sha256:702baa4f856d9f16 parts b5b8 3392 9663 3a5f 8670 9df8 0560 492c 7e43 9c45 0d59 ee17 f311 200e d007 a790
+rule uw1 Underworld.uwObject.ResetIdentification(obj) (0) = 0
+rule uw1 Underworld.uwObject.ResetIdentification(obj) (3) = 0 obj[3:a9]
+rule uw1 Underworld.uwObject.ResetIdentification(obj) (7) = 0 obj[3:3d]
+rule uw1 Underworld.uwObject.ResetIdentification(obj) (11) = 0 obj[3:d1]
+rule uw2 Underworld.uwObject.ResetIdentification(obj) = 512 rows sha256:702baa4f856d9f16 parts b5b8 3392 9663 3a5f 8670 9df8 0560 492c 7e43 9c45 0d59 ee17 f311 200e d007 a790
+rule uw2 Underworld.uwObject.ResetIdentification(obj) (0) = 0
+rule uw2 Underworld.uwObject.ResetIdentification(obj) (3) = 0 obj[3:a9]
+rule uw2 Underworld.uwObject.ResetIdentification(obj) (7) = 0 obj[3:3d]
+rule uw2 Underworld.uwObject.ResetIdentification(obj) (11) = 0 obj[3:d1]
+rule uw1 Underworld.thief.ClearOwnership(obj) = 512 rows sha256:ef8330e18e176325 parts e265 200f 6927 6e7f c232 5667 7263 27b9 c6f1 3ede 1cb7 704d 18d7 b66e b5c3 62da
+rule uw1 Underworld.thief.ClearOwnership(obj) (0) = 0 obj[6:40]
+rule uw1 Underworld.thief.ClearOwnership(obj) (1) = 0
+rule uw1 Underworld.thief.ClearOwnership(obj) (3) = 0 obj[6:c0]
+rule uw1 Underworld.thief.ClearOwnership(obj) (11) = 0 obj[6:00]
+rule uw2 Underworld.thief.ClearOwnership(obj) = 512 rows sha256:ef8330e18e176325 parts e265 200f 6927 6e7f c232 5667 7263 27b9 c6f1 3ede 1cb7 704d 18d7 b66e b5c3 62da
+rule uw2 Underworld.thief.ClearOwnership(obj) (0) = 0 obj[6:40]
+rule uw2 Underworld.thief.ClearOwnership(obj) (1) = 0
+rule uw2 Underworld.thief.ClearOwnership(obj) (3) = 0 obj[6:c0]
+rule uw2 Underworld.thief.ClearOwnership(obj) (11) = 0 obj[6:00]
+rule uw1 Underworld.runestone.IsRunestone(item_id) = 512 rows sha256:1f6b9fd2e7a6e2ae parts 448f 88f7 d74b 26cc 25d6 7c50 8e07 5bcc b43d 97e4 0d59 ee17 f311 200e 0fa5 9bd5
+rule uw1 Underworld.runestone.IsRunestone(item_id) (0) = 0
+rule uw1 Underworld.runestone.IsRunestone(item_id) (170) = 0
+rule uw1 Underworld.runestone.IsRunestone(item_id) (232) = 1
+rule uw1 Underworld.runestone.IsRunestone(item_id) (340) = 0
+rule uw2 Underworld.runestone.IsRunestone(item_id) = 512 rows sha256:1f6b9fd2e7a6e2ae parts 448f 88f7 d74b 26cc 25d6 7c50 8e07 5bcc b43d 97e4 0d59 ee17 f311 200e 0fa5 9bd5
+rule uw2 Underworld.runestone.IsRunestone(item_id) (0) = 0
+rule uw2 Underworld.runestone.IsRunestone(item_id) (170) = 0
+rule uw2 Underworld.runestone.IsRunestone(item_id) (232) = 1
+rule uw2 Underworld.runestone.IsRunestone(item_id) (340) = 0
+rule uw1 Underworld.pickup.CanBePickedUpOverrides(item_id) = 512 rows sha256:480e586bcba50615 parts 448f 88f7 d74b 26cc 25d6 7c50 8e07 38b7 b43d 97e4 0d59 ee17 f311 200e e850 9bd5
+rule uw1 Underworld.pickup.CanBePickedUpOverrides(item_id) (0) = 0
+rule uw1 Underworld.pickup.CanBePickedUpOverrides(item_id) (170) = 0
+rule uw1 Underworld.pickup.CanBePickedUpOverrides(item_id) (340) = 0
+rule uw1 Underworld.pickup.CanBePickedUpOverrides(item_id) (458) = 1
+rule uw1 Underworld.ConversationVM.GetConversationNumber(talker) = 512 rows sha256:dc043cca27dfd707 parts 4702 8fda 6ce9 bb78 7287 0e3e 0fd7 98e2 e903 7067 796d 5b45 ddb9 fae3 c23d 620d
+rule uw1 Underworld.ConversationVM.GetConversationNumber(talker) (0) = 79
+rule uw1 Underworld.ConversationVM.GetConversationNumber(talker) (1) = 257
+rule uw1 Underworld.ConversationVM.GetConversationNumber(talker) (2) = 153
+rule uw1 Underworld.ConversationVM.GetConversationNumber(talker) (3) = 259
+rule uw2 Underworld.ConversationVM.GetConversationNumber(talker) = 512 rows sha256:4cfb66be69f7634c parts 55fc 2236 d2b5 73ab ca71 be58 03de 9d81 03bb eb86 7fee 61f0 0f23 fd55 7a2d e472
+rule uw2 Underworld.ConversationVM.GetConversationNumber(talker) (0) = 80
+rule uw2 Underworld.ConversationVM.GetConversationNumber(talker) (1) = 257
+rule uw2 Underworld.ConversationVM.GetConversationNumber(talker) (2) = 154
+rule uw2 Underworld.ConversationVM.GetConversationNumber(talker) (3) = 259
+rule uw1 Underworld.playerdat.DeathExperienceChange() () = -170296063
+rule uw2 Underworld.playerdat.DeathExperienceChange() () = -151374278
+rule uw1 Underworld.sleep.UpdateIntoxication(amount) = 14 rows sha256:e4c13d8f57c6b2db parts e3b0 4a29 beba d224 1b38 b7ff 15ad 1cd0 e3b0 e2f2 694c d781 ddf5 c89e a4be 5ddf
+rule uw1 Underworld.sleep.UpdateIntoxication(amount) (-100) = pdat[62:61,63:3c]
+rule uw1 Underworld.sleep.UpdateIntoxication(amount) (-10) = pdat[62:c1]
+rule uw1 Underworld.sleep.UpdateIntoxication(amount) (-1) = pdat[62:31]
+rule uw1 Underworld.sleep.UpdateIntoxication(amount) (0) = -
+rule uw2 Underworld.sleep.UpdateIntoxication(amount) = 14 rows sha256:874e4d13b0b4af1c parts e3b0 9305 c499 186c 1b38 2e95 03bf 97a5 e3b0 ba4a 3f29 61a9 ce43 ad02 2f4a 1bd4
+rule uw2 Underworld.sleep.UpdateIntoxication(amount) (-100) = pdat[63:37]
+rule uw2 Underworld.sleep.UpdateIntoxication(amount) (-10) = pdat[62:a1,63:30]
+rule uw2 Underworld.sleep.UpdateIntoxication(amount) (-1) = pdat[62:61]
+rule uw2 Underworld.sleep.UpdateIntoxication(amount) (0) = -
+rule uw1 Underworld.a_check_variable_trap.GetVarQuestOrClockValue(index) = 171 rows sha256:5c6cb7d93f2ca6a8 parts 94cb eb74 a870 3f30 c9fa b99d 260d a926 7fd1 1db7 4388 2443 6fe1 4b17 6e6c e159
+rule uw1 Underworld.a_check_variable_trap.GetVarQuestOrClockValue(index) (0) = 212
+rule uw1 Underworld.a_check_variable_trap.GetVarQuestOrClockValue(index) (3) = 43
+rule uw1 Underworld.a_check_variable_trap.GetVarQuestOrClockValue(index) (6) = 130
+rule uw1 Underworld.a_check_variable_trap.GetVarQuestOrClockValue(index) (9) = 217
+rule uw2 Underworld.a_check_variable_trap.GetVarQuestOrClockValue(index) = 171 rows sha256:53396bc26d0e4335 parts 195f 8249 1758 4cf5 1050 4eee 5e94 e929 4956 62bc 745d 0a60 395d 4b17 6e6c e159
+rule uw2 Underworld.a_check_variable_trap.GetVarQuestOrClockValue(index) (0) = 89
+rule uw2 Underworld.a_check_variable_trap.GetVarQuestOrClockValue(index) (3) = 8
+rule uw2 Underworld.a_check_variable_trap.GetVarQuestOrClockValue(index) (6) = 182
+rule uw2 Underworld.a_check_variable_trap.GetVarQuestOrClockValue(index) (9) = 100
+rule uw2 Underworld.Teleportation.ChangeUW2Quests() () = pdat[e3:bf]
+rule uw2 Underworld.pitsofcarnage.IsDuelingAgainstCritter(index) = 147 rows sha256:31125f212361b5ec parts a977 fcd3 b2d9 8439 7186 29d2 3df8 f247 0028 707b ca15 0238 7b8d 63fb 2e80 3306
+rule uw2 Underworld.pitsofcarnage.IsDuelingAgainstCritter(index) (0) = 0
+rule uw2 Underworld.pitsofcarnage.IsDuelingAgainstCritter(index) (7) = 1
+rule uw2 Underworld.pitsofcarnage.IsDuelingAgainstCritter(index) (336) = 0
+rule uw2 Underworld.pitsofcarnage.IsDuelingAgainstCritter(index) (679) = 0
+rule uw1 Underworld.light.LightOff(obj) = 512 rows sha256:df9e3592aef00d40 parts d0ef 1585 290e fa05 48a0 e666 e1cd 3bb2 6a86 3943 e4b2 cf55 79ce 1dd7 1400 824c
+rule uw1 Underworld.light.LightOff(obj) (0) = -
+rule uw1 Underworld.light.LightOff(obj) (4) = obj[0:00]
+rule uw1 Underworld.light.LightOff(obj) (5) = obj[0:01]
+rule uw1 Underworld.light.LightOff(obj) (6) = obj[0:02]
+rule uw2 Underworld.light.LightOff(obj) = 512 rows sha256:df9e3592aef00d40 parts d0ef 1585 290e fa05 48a0 e666 e1cd 3bb2 6a86 3943 e4b2 cf55 79ce 1dd7 1400 824c
+rule uw2 Underworld.light.LightOff(obj) (0) = -
+rule uw2 Underworld.light.LightOff(obj) (4) = obj[0:00]
+rule uw2 Underworld.light.LightOff(obj) (5) = obj[0:01]
+rule uw2 Underworld.light.LightOff(obj) (6) = obj[0:02]
+rule uw1 Underworld.button.ToggleItemID(obj) = 512 rows sha256:af8865c334ab83af parts e243 0f05 6c1d d560 b7d7 f142 0441 2825 cc2d 7c4f 8fdc 89b2 ebf3 c07c b74a 6a35
+rule uw1 Underworld.button.ToggleItemID(obj) (0) = obj[0:08]
+rule uw1 Underworld.button.ToggleItemID(obj) (1) = obj[0:09]
+rule uw1 Underworld.button.ToggleItemID(obj) (2) = obj[0:0a]
+rule uw1 Underworld.button.ToggleItemID(obj) (3) = obj[0:0b]
+rule uw2 Underworld.button.ToggleItemID(obj) = 512 rows sha256:af8865c334ab83af parts e243 0f05 6c1d d560 b7d7 f142 0441 2825 cc2d 7c4f 8fdc 89b2 ebf3 c07c b74a 6a35
+rule uw2 Underworld.button.ToggleItemID(obj) (0) = obj[0:08]
+rule uw2 Underworld.button.ToggleItemID(obj) (1) = obj[0:09]
+rule uw2 Underworld.button.ToggleItemID(obj) (2) = obj[0:0a]
+rule uw2 Underworld.button.ToggleItemID(obj) (3) = obj[0:0b]
+rule uw1 Underworld.a_hack_trap_rechargelightsphere.RechargeLightSphere(obj) = 512 rows sha256:f56d3de87e5f3d45 parts 448f 88f7 d74b 26cc bfbe 7c50 8e07 38b7 b43d 97e4 0d59 ee17 f311 200e 0fa5 9bd5
+rule uw1 Underworld.a_hack_trap_rechargelightsphere.RechargeLightSphere(obj) (0) = 0
+rule uw1 Underworld.a_hack_trap_rechargelightsphere.RechargeLightSphere(obj) (147) = 0 obj[4:ff]
+rule uw1 Underworld.a_hack_trap_rechargelightsphere.RechargeLightSphere(obj) (170) = 0
+rule uw1 Underworld.a_hack_trap_rechargelightsphere.RechargeLightSphere(obj) (340) = 0
+rule uw2 Underworld.a_hack_trap_rechargelightsphere.RechargeLightSphere(obj) = 512 rows sha256:f56d3de87e5f3d45 parts 448f 88f7 d74b 26cc bfbe 7c50 8e07 38b7 b43d 97e4 0d59 ee17 f311 200e 0fa5 9bd5
+rule uw2 Underworld.a_hack_trap_rechargelightsphere.RechargeLightSphere(obj) (0) = 0
+rule uw2 Underworld.a_hack_trap_rechargelightsphere.RechargeLightSphere(obj) (147) = 0 obj[4:ff]
+rule uw2 Underworld.a_hack_trap_rechargelightsphere.RechargeLightSphere(obj) (170) = 0
+rule uw2 Underworld.a_hack_trap_rechargelightsphere.RechargeLightSphere(obj) (340) = 0
+rule uw1 Underworld.ObjectCreator.InitialiseCritter(critter) = 512 rows sha256:874d3d3915569789 parts 4ba6 8036 b2db 206c f721 49e8 f892 1bb2 0079 77e7 718b a89a 56f6 c651 fc4b 1dc4
+rule uw1 Underworld.ObjectCreator.InitialiseCritter(critter) (0) = critter[4:a0,6:60,8:8a,9:20,a:00,b:08,c:00,d:0e,e:80,f:00,10:00,11:00,12:00,13:00,14:54,15:00,16:00,17:82,18:05,19:02,1a:00] seed=015a4e36
+rule uw1 Underworld.ObjectCreator.InitialiseCritter(critter) (1) = critter[4:e0,6:a0,14:54,15:40,18:0a,19:02,1a:00] seed=02b49c6b
+rule uw1 Underworld.ObjectCreator.InitialiseCritter(critter) (2) = critter[4:e0,6:a0,8:06,9:80,a:00,b:08,c:00,d:08,e:80,f:00,10:00,11:00,12:00,13:00,14:54,15:80,16:00,17:82,18:0f,19:00,1a:00] seed=040eeaa0
+rule uw1 Underworld.ObjectCreator.InitialiseCritter(critter) (3) = critter[4:20,6:e0,14:54,15:c0,18:14,19:00,1a:00] seed=056938d5
+rule uw2 Underworld.ObjectCreator.InitialiseCritter(critter) = 512 rows sha256:874d3d3915569789 parts 4ba6 8036 b2db 206c f721 49e8 f892 1bb2 0079 77e7 718b a89a 56f6 c651 fc4b 1dc4
+rule uw2 Underworld.ObjectCreator.InitialiseCritter(critter) (0) = critter[4:a0,6:60,8:8a,9:20,a:00,b:08,c:00,d:0e,e:80,f:00,10:00,11:00,12:00,13:00,14:54,15:00,16:00,17:82,18:05,19:02,1a:00] seed=015a4e36
+rule uw2 Underworld.ObjectCreator.InitialiseCritter(critter) (1) = critter[4:e0,6:a0,14:54,15:40,18:0a,19:02,1a:00] seed=02b49c6b
+rule uw2 Underworld.ObjectCreator.InitialiseCritter(critter) (2) = critter[4:e0,6:a0,8:06,9:80,a:00,b:08,c:00,d:08,e:80,f:00,10:00,11:00,12:00,13:00,14:54,15:80,16:00,17:82,18:0f,19:00,1a:00] seed=040eeaa0
+rule uw2 Underworld.ObjectCreator.InitialiseCritter(critter) (3) = critter[4:20,6:e0,14:54,15:c0,18:14,19:00,1a:00] seed=056938d5
+rule uw2 Underworld.a_hack_trap_castleschedule.GetCastleDestination(critter, NewTileX, NewTileY) = 512 rows sha256:c96fb8c302db0230, 53 throw parts de5b eb65 22cb 7635 2684 3d95 fddf 5c20 8a1c aa7a 4ed1 326f 2cdc d76c ac34 ee78
+rule uw2 Underworld.a_hack_trap_castleschedule.GetCastleDestination(critter, NewTileX, NewTileY) (0,0,0) = NewTileX=99 NewTileY=99 seed=8082a52f
+rule uw2 Underworld.a_hack_trap_castleschedule.GetCastleDestination(critter, NewTileX, NewTileY) (1,0,0) = NewTileX=99 NewTileY=99 seed=ffaafc28
+rule uw2 Underworld.a_hack_trap_castleschedule.GetCastleDestination(critter, NewTileX, NewTileY) (2,0,0) = throws IndexOutOfRangeException
+rule uw2 Underworld.a_hack_trap_castleschedule.GetCastleDestination(critter, NewTileX, NewTileY) (3,0,0) = NewTileX=16 NewTileY=26 seed=fdfbaa1a
+rule uw1 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) = 4464 rows sha256:74a12d919e15fbfa parts 9ee5 f88d e081 a1c5 71d0 c2db 93e1 949f 4f9d 354a c1d2 dade 16fd 0080 e4fc 174f
+rule uw1 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) (0,0,0,0,0,0,0) = 1
+rule uw1 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) (0,0,0,0,0,0,323) = 0
+rule uw1 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) (0,5,0,5,0,16,510) = 1
+rule uw1 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) (5,0,5,0,8,16,510) = 1
+rule uw2 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) = 4464 rows sha256:74a12d919e15fbfa parts 9ee5 f88d e081 a1c5 71d0 c2db 93e1 949f 4f9d 354a c1d2 dade 16fd 0080 e4fc 174f
+rule uw2 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) (0,0,0,0,0,0,0) = 1
+rule uw2 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) (0,0,0,0,0,0,323) = 0
+rule uw2 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) (0,5,0,5,0,16,510) = 1
+rule uw2 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) (5,0,5,0,8,16,510) = 1
+rule uw2 Underworld.RunicMagic.GetSpellSFX(majorclass, minorclass) = 256 rows sha256:6bfd2f5d5de7b03d parts 9d76 63d7 3454 77f3 7e65 9eee 2325 a82b 0fbc 5dad fe85 c279 1e73 c733 77c7 2a12
+rule uw2 Underworld.RunicMagic.GetSpellSFX(majorclass, minorclass) (0,0) = 42
+rule uw2 Underworld.RunicMagic.GetSpellSFX(majorclass, minorclass) (1,0) = 16
+rule uw2 Underworld.RunicMagic.GetSpellSFX(majorclass, minorclass) (1,9) = 40
+rule uw2 Underworld.RunicMagic.GetSpellSFX(majorclass, minorclass) (1,12) = 41
+rule uw1 Underworld.tracking.get_DirectionOffset() () = 36
+rule uw2 Underworld.tracking.get_DirectionOffset() () = 40
+rule uw1 Underworld.tracking.get_Heightoffset() () = 51
+rule uw2 Underworld.tracking.get_Heightoffset() () = 55
+rule uw1 Underworld.tracking.get_DetectionsOffset() () = 59
+rule uw2 Underworld.tracking.get_DetectionsOffset() () = 63
+rule uw1 Underworld.triggerObjectDat.get_OPEN_TRIGGER_TYPE() () = 7
+rule uw2 Underworld.triggerObjectDat.get_OPEN_TRIGGER_TYPE() () = 8
+rule uw1 Underworld.triggerObjectDat.get_UNLOCK_TRIGGER_TYPE() () = 6
+rule uw2 Underworld.triggerObjectDat.get_UNLOCK_TRIGGER_TYPE() () = 11
+rule uw1 Underworld.UWTileMap.get_NO_OF_LEVELS() () = 9
+rule uw2 Underworld.UWTileMap.get_NO_OF_LEVELS() () = 80
+rule uw1 Underworld.automaptileinfo.get_bridgedisplaytype() () = 9
+rule uw2 Underworld.automaptileinfo.get_bridgedisplaytype() () = 6
+rule uw1 Underworld.automaptileinfo.get_stairdisplaytype() () = 12
+rule uw2 Underworld.automaptileinfo.get_stairdisplaytype() () = 3
+rule uw1 Underworld.automaptileinfo.get_doordisplaytype() () = 4
+rule uw2 Underworld.automaptileinfo.get_doordisplaytype() () = 1
