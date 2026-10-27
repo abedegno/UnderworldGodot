@@ -488,7 +488,7 @@ namespace Underworld
                 var result = playerdat.SkillCheck(skillValue: AttackScore + AttackScoreFlankingBonus, targetValue: critterObjectDat.defence(DefendingCharacter.item_id));
                 if ((playerdat.PoisonedWeapon))
                 {
-                    if (checkforPoisonableWeapon(currentweapon))
+                    if (checkforPoisonableWeapon(playerdat.PrimaryHandObject))//the hand now, AskInventory(8 - lefty) (uw2 COMBAT.C:321-323)
                     {
                         if (critterObjectDat.bleed(DefendingCharacter.item_id) != 0) //this value is 0 for the player.
                         {
@@ -689,6 +689,8 @@ namespace Underworld
                 {
                     if (BodyPartHit >= 4)
                     {
+                        //a missile's location: the blood goes at the blow's height (uw1 COMBAT.C:384-387, uw2 COMBAT.C:421-424)
+                        BodyHitZ[4] = (short)-AttackHitZ_dseg_67d6_24CE;
                         BodyPartHit = 4;
                     }
                     if (DefendingCharacter.index != 1)

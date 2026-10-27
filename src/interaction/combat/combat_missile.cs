@@ -93,11 +93,14 @@ namespace Underworld
             CombatHitTileX = X; CombatHitTileY = Y;
             AttackWasACrit = false;
             AttackScoreFlankingBonus = 0;
+            //as missile_thwack: the blow's height is the missile's middle, and its location is from
+            //the missile's bottom and top, plus 4 (uw1 COMBAT.C:768-773, uw2 COMBAT.C:868-873)
+            AttackHitZ_dseg_67d6_24CE = Projectile.zpos + commonObjDat.height(Projectile.item_id) / 2;
             BodyPartHit = PickBodyHitPoint(
                 defenderZ: objectHit.zpos, 
                 defenderTop: commonObjDat.height(objectHit.item_id) + objectHit.zpos, 
                 attackerZ: Projectile.zpos, 
-                attackerTop: commonObjDat.height(Projectile.item_id));
+                attackerTop: Projectile.zpos + commonObjDat.height(Projectile.item_id)) + 4;
 
             AttackDamage = damage;
             if (projectileSource == 1)
