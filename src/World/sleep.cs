@@ -114,7 +114,7 @@ namespace Underworld
             }
 
 
-            playerdat.UpdateLightStability(si_hourstosleep * 0x180);
+            playerdat.DegradeLights(amount: si_hourstosleep * 180, counter: 0);//burns hours * 180 off the lights (uw2 SKILLS.C:472, uw1 SKILLS.C:549)
 
             if (playerdat.play_poison > 0)
             {
@@ -160,10 +160,10 @@ namespace Underworld
                         si_hourstosleep = si_hourstosleep + 1 + Rng.r.Next(2);
                     }
                     playerdat.AdvanceTime(si_hourstosleep * 0xE10);
-                    playerdat.UpdateLightStability(si_hourstosleep * 0xB4);
+                    playerdat.DegradeLights(amount: si_hourstosleep * 180, counter: 0);//uw2 SKILLS.C:511, uw1 SKILLS.C:584
 
                     int foodregenfactor_var2;
-                    if ((playerdat.play_hunger < 0x40) || (sleepmethod <= 0))
+                    if ((playerdat.play_hunger <= 0x40) || (sleepmethod <= 0))//comfort needs hunger above 0x40 (uw2 SKILLS.C:512, uw1 SKILLS.C:585)
                     {
                         foodregenfactor_var2 = 0;
                     }
@@ -188,14 +188,15 @@ namespace Underworld
                     }
                     else
                     {
-                        var regen = fatigueregenfactor_var4 * foodregenfactor_var2;
+                        //restore_hp(regen + regen * comfort - 1) (uw2 SKILLS.C:519, uw1 SKILLS.C:592)
+                        var regen = fatigueregenfactor_var4 + (fatigueregenfactor_var4 * foodregenfactor_var2) - 1;
                         playerdat.HPRegenerationChange(regen);
                         playerdat.ManaRegenChange(-6);
                         playerdat.ManaRegenChange(((fatigueregenfactor_var4 + 1) * foodregenfactor_var2) + fatigueregenfactor_var4 - 1);
                     }
 
-                    playerdat.ChangeHunger(-2 - Rng.r.Next(0x1F));
-                    UpdateIntoxication();
+                    playerdat.ChangeHunger(-24 - Rng.r.Next(0x20));//player_eat(-24 - (rand() & 0x1F)) (uw2 SKILLS.C:528, uw1 SKILLS.C:601)
+                    UpdateIntoxication(0x20);//a full night takes 32 off drunkenness (uw2 SKILLS.C:529-532, uw1 SKILLS.C:602-605)
 
                     if (playerdat.play_hp == 0 && sleepmethod >= 0)
                     {
@@ -239,14 +240,14 @@ namespace Underworld
             }
             uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x15));//your sleep is interrupted
             playerdat.ChangeHunger(-12 - Rng.r.Next(16));
-            UpdateIntoxication();
+            UpdateIntoxication(0x10);
         }
 
-        private static void UpdateIntoxication()
+        private static void UpdateIntoxication(int amount)
         {
-            if (playerdat.intoxication >= 0x10)
+            if (playerdat.intoxication >= amount)
             {
-                playerdat.intoxication -= 0x10;
+                playerdat.intoxication -= amount;
             }
             else
             {
