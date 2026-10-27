@@ -442,6 +442,7 @@ namespace Underworld
                             {
                                 critter.npc_animation = ANIMATION_COMBAT_IDLE;
                                 critter.AnimationFrame = 0;
+                                critter.SwingChargeIndex = 0;//the blow uses up the charge. uw1 AI.C:1159, uw2 AI.C:1133
                             }
                             else
                             {
@@ -476,6 +477,18 @@ namespace Underworld
 
                                 if (critter.AnimationFrame >= MaxAnimFrame)
                                 {
+                                    if (_RES == GAME_UW2)
+                                    {//uw2 AI.C:1150-1151, a cast or a shot clears both
+                                        critter.npc_spellindex = 0;
+                                        critter.SwingChargeIndex = 0;
+                                    }
+                                    else
+                                    {
+                                        if (critter.npc_animation == ANIMATION_MAGICATTACK)
+                                        {//uw1 AI.C:1168, only a cast clears the cast slot
+                                            critter.npc_spellindex = 0;
+                                        }
+                                    }
                                     critter.npc_animation = ANIMATION_COMBAT_IDLE;
                                     critter.AnimationFrame = 0;
                                 }
