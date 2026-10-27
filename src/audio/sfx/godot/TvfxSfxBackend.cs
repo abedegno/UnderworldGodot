@@ -40,12 +40,13 @@ public sealed class TvfxSfxBackend : ISfxBackend
         //     0x10=16 Hz; seg020_94D + seg020_5D5 compute 1,000,000/16 = 62500
         //     µs period). Sends All-Notes-Off when the counter hits 0.
         //
-        // The signed divide is load-bearing: raw values with bit 15 set
-        // (0x8000, 0x8001 — 14 of UW1's 24 sounds) become large negative
-        // quotients (e.g. 0x8000 / 16 signed = -2048 = 0xF800 unsigned). The
-        // decrement loop from 0xF800 at 16 Hz takes ~66 minutes to reach 0 —
-        // effectively infinite. Those sounds rely on game-side logic (trap
-        // handlers etc.) to terminate, not the voice-lifetime timer.
+        // The signed divide matters only for raw values with bit 15 set, which
+        // become large negative quotients (e.g. 0x8000 / 16 signed = -2048 =
+        // 0xF800 unsigned); the decrement loop from 0xF800 at 16 Hz takes ~66
+        // minutes to reach 0, effectively infinite. Read high byte first, as
+        // both games' read_fx_data does (uw1 SOUND.C:703-708, uw2 SOUND.C:1308),
+        // none of UW1's 24 shipped effects has bit 15 set: each has a finite
+        // length, between a quarter of a second and 25 seconds.
         //
         // Our ServiceTick runs at 60 Hz. For positive quotients:
         //   game_lifetime_s = (raw/16) / 16 = raw / 256
