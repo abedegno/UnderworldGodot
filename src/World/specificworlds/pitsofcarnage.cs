@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 namespace Underworld
 {
@@ -93,7 +94,8 @@ namespace Underworld
         }
 
         /// <summary>
-        /// When avatar flees combat in the pit.
+        /// When avatar flees combat in the pit (arena_player_runs, uw2 WORLDEV.C:2029-2056): the pit fighters stop, the
+        /// first one talks to him, and his pit record and fight are cleared.
         /// </summary>
         /// <param name="skipConversation"></param>
         public static void AvatarIsACoward(bool skipConversation = false)
@@ -129,10 +131,59 @@ namespace Underworld
                         talk.Talk(firstfighter, true);
                     }                    
                     playerdat.SetPitFighter(firstFighterIndex, 0);
-                    playerdat.IsFightingInPit = false;
-                    playerdat.SetQuest(129,0); //win loss record
-                    playerdat.SetQuest(133,0);  //jospurs debt.
                 }
+                //the fight and record end whether or not a fighter was left (uw2 WORLDEV.C:2052-2054)
+                playerdat.IsFightingInPit = false;
+                playerdat.SetQuest(129,0); //win loss record
+                playerdat.SetQuest(133,0);  //jospurs debt.
+            }
+        }
+
+        /// <summary>
+        /// Whether the square x, y is inside the arena of the Pits of Carnage, a ring round 0x1F, 0x1F: at least 3 squares
+        /// from the centre on both axes, and within the limit of its quarter on both (in_arena, uw2 WORLDEV.C:963-976).
+        /// </summary>
+        public static bool InArena(int x, int y)
+        {
+            int[] limits = { 0xF, 0x10, 0xE, 0xF };
+            x -= 0x1F;
+            y -= 0x1F;
+            var quarter = Mpos(x, y) >> 1;
+            x = Math.Abs(x);
+            y = Math.Abs(y);
+            if (x < 3 || y < 3)
+            {
+                return false;
+            }
+            if (limits[quarter] < x || limits[quarter] < y)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// The direction of the vector x, y, 0 to 7: 0 is +y, 2 +x, 4 -y, 6 -x, the odd values the diagonals between; a
+        /// component counts as zero when it is less than half the other (mpos, uw2 MISCUTIL.C:62-75, which takes chars).
+        /// </summary>
+        public static int Mpos(int x, int y)
+        {
+            x = (sbyte)x; y = (sbyte)y;
+            if (Math.Abs(x) / 2 > Math.Abs(y))
+            {
+                return x > 0 ? 2 : 6;
+            }
+            else if (Math.Abs(y) / 2 > Math.Abs(x))
+            {
+                return y > 0 ? 0 : 4;
+            }
+            else if (x < 0)
+            {
+                return (y > 0 ? 2 : 0) + 5;
+            }
+            else
+            {
+                return (y < 0 ? 2 : 0) + 1;
             }
         }
 
