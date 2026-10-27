@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <None Include="vectors\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="pins\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
