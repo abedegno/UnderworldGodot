@@ -663,6 +663,20 @@ namespace Underworld
 
 
 		/// <summary>
+		/// The menu theme on coming to the main menu. In UW2 the menu asks for theme 1 on every pass
+		/// (set_new_music(1), change_music_maybe: uw2 MAINMENU.C:147-148), which starts it again if it
+		/// is the current theme but has ended; change_music_maybe loads it with the start flag
+		/// (uw2 SOUND.C:1581-1620).
+		/// </summary>
+		public static void StartMainMenuMusic()
+		{
+			if (MusicStreamPlayer.Instance?.IsPlaying != true || XMIMusic.CurrentlyPlayingThemeNo != 1)
+			{
+				XMIMusic.LoadXMI(1, restartIfSame: UWClass._RES == UWClass.GAME_UW2);
+			}
+		}
+
+		/// <summary>
 		/// Returns to main menu from the game (eg on player death)
 		/// </summary>
 		public static void ReturnToMainMenu()
@@ -671,10 +685,7 @@ namespace Underworld
 			Palette.CurrentPalette = 2; //supposed to ensure no graphical glitching when returning from skulls animaiton, but does not suceed
 			uimanager.CurrentGameMode = uimanager.GameModes.MAIN;
 			//Still some weirdness with enabling the main menu again. eg palette switch in UW1
-			if (MusicStreamPlayer.Instance?.IsPlaying != true || XMIMusic.CurrentlyPlayingThemeNo != 1)
-			{
-				XMIMusic.LoadXMI(1);
-			}
+			StartMainMenuMusic();
 			EnableDisable(instance.PanelMainMenu, true);
 			instance.ToggleMainMenuButtons(true);
 			instance.ToggleSaves(false); 
