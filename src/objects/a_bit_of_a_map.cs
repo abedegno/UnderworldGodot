@@ -42,6 +42,7 @@ namespace Underworld
                     {
                         //display the automap of the target level
                         var worldno = worlds.GetWorldNo(obj.owner);
+                        uimanager.AutomapOpenMusic();
                         uimanager.DrawAutoMap(obj.owner - 1, worldno);
                     }
                 }

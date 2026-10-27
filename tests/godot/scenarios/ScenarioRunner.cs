@@ -131,6 +131,7 @@ public partial class ScenarioRunner : Node
         (() => new DoCollisionEntry(), true),
         // issue #207
         (() => new CulledContainerContents(), true),
+        (() => new MusicThemeChoice(), true),
         (() => new HarnessFails(), false),
     };
 

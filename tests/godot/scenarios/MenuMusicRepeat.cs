@@ -36,6 +36,14 @@ namespace Underworld.Scenarios;
 /// 5. a theme that cannot be loaded (a theme number with no XMI file) turns the music off for the
 ///    session: the current theme stays as it was, and nothing is loaded afterwards, by the menu
 ///    loop or by LoadXMI (load_new_music's fail path, uw1 SOUND.C:351-354, uw2 SOUND.C:903-906).
+/// 6. XMIMusic.RefreshMusic, which the sleep, conversation and automap code call directly, does
+///    nothing when there is no music player (MusicStreamPlayer.Instance null) instead of throwing;
+/// 7. a theme that is read but never plays (the player's XmiPlayer is taken away, as when no synth
+///    could be made, so IsPlaying stays false) turns the music off after one load, at the menu and
+///    in play, rather than being read again on every frame (XMIMusic.LoadObserver counts the loads);
+/// 8. main.StartGame puts the music back on after it went off: music_ok is 1 when the program
+///    starts and nothing sets it again (uw1 SOUND.C:139, uw2 SOUND.C:170), so a new game start in
+///    the same process must not inherit the last one's failure.
 /// The game is put back in GAME mode, and the music back on, afterwards.
 ///
 /// The port once ran its music refresh only in game (playerdatloop.cs PlayerTimedLoop), so at
@@ -47,7 +55,7 @@ public sealed class MenuMusicRepeat : Scenario
     const byte MissingTheme = 0x3F;
 
     public override string Name => "menu-music-repeat";
-    public override string Cites => "underworld-exhumed uw1/src/sound/SOUND.C:351-354, 928-938, uw1/src/ui/MAINMENU.C:174, 320-323; uw2/src/sound/SOUND.C:903-906, 1556-1620, uw2/src/ui/MAINMENU.C:147-148, 296-297";
+    public override string Cites => "underworld-exhumed uw1/src/sound/SOUND.C:139, 351-354, 928-938, uw1/src/ui/MAINMENU.C:174, 320-323; uw2/src/sound/SOUND.C:170, 903-906, 1556-1620, uw2/src/ui/MAINMENU.C:147-148, 296-297";
 
     static readonly MethodInfo CutsceneMusicStep = typeof(cutsplayer).GetMethod("RefreshCutsceneMusic", BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -55,6 +63,10 @@ public sealed class MenuMusicRepeat : Scenario
     readonly List<(string where, int expected, int after, bool playing, string cite)> _runs = new();
     int _failedBefore, _failedAfter, _failedAfterLoad;
     bool _failedMusicOk, _failedPlaying;
+    readonly List<string> _noPlayerThrows = new();
+    readonly List<(string mode, int loads, bool musicOk)> _silentRuns = new();
+    bool _startMusicOk, _startPlaying;
+    int _startTheme;
 
     static byte[] MenuThemes(string game) => game == "uw2" ? new byte[] { 1, 10, 6, 7, 9 } : new byte[] { 1, 4, 3, 0xA };
 
@@ -162,6 +174,69 @@ public sealed class MenuMusicRepeat : Scenario
             _failedAfterLoad = XMIMusic.CurrentlyPlayingThemeNo;
             _failedPlaying = music.IsPlaying;
             c.Note($"after theme 0x3F failed to load: music on {_failedMusicOk}, current theme {_failedBefore} -> {_failedAfter} after {WaitFrames} menu frames, {_failedAfterLoad} after LoadXMI(1), playing {_failedPlaying}");
+
+            // 6. the music refresh with no music player
+            XMIMusic.MusicOk = true;
+            uimanager.CurrentGameMode = uimanager.GameModes.GAME;
+            var instanceProp = typeof(MusicStreamPlayer).GetProperty(nameof(MusicStreamPlayer.Instance));
+            byte walkingTheme = g == "uw2" ? (byte)8 : (byte)2;
+            instanceProp.SetValue(null, null);
+            try
+            {
+                foreach (var (what, current) in new[] { ("the fanfare", XMIMusic.Fanfare), ("an ended walking theme", walkingTheme) })
+                {
+                    XMIMusic.CurrentlyPlayingThemeNo = current;
+                    XMIMusic.NewThemeToPlay = 0;
+                    try { XMIMusic.RefreshMusic(); }
+                    catch (System.Exception ex) { _noPlayerThrows.Add($"{what}: {ex.GetType().Name}"); }
+                }
+            }
+            finally { instanceProp.SetValue(null, music); }
+            c.Note($"RefreshMusic with no music player: {(_noPlayerThrows.Count == 0 ? "no exception" : string.Join(", ", _noPlayerThrows))}");
+
+            // 7. a theme that loads but never plays (the player has no synth, as when none could
+            //    be made, so IsPlaying stays false): the music goes off after one load, at the
+            //    menu and in play, instead of the file being read again on every frame.
+            var xmiField = typeof(MusicStreamPlayer).GetField("_xmiPlayer", BindingFlags.NonPublic | BindingFlags.Instance);
+            var savedXmi = xmiField.GetValue(music);
+            int loads = 0;
+            music.Stop();
+            xmiField.SetValue(music, null);
+            XMIMusic.LoadObserver = _ => loads++;
+            try
+            {
+                foreach (var (mode, theme) in new[] { (uimanager.GameModes.MAIN, (byte)3), (uimanager.GameModes.GAME, walkingTheme) })
+                {
+                    XMIMusic.MusicOk = true;
+                    uimanager.CurrentGameMode = mode;
+                    loads = 0;
+                    XMIMusic.LoadXMI(theme, restartIfSame: true);
+                    await c.Frames(WaitFrames);
+                    _silentRuns.Add((mode.ToString(), loads, XMIMusic.MusicOk));
+                    c.Note($"in mode {mode}, theme {theme} never playing: {loads} loads over {WaitFrames} frames, music on {XMIMusic.MusicOk}");
+                }
+            }
+            finally
+            {
+                XMIMusic.LoadObserver = null;
+                xmiField.SetValue(music, savedXmi);
+            }
+
+            // 8. starting the game again after the music went off: music_ok is set once, when the
+            //    program starts (uw1 SOUND.C:139, uw2 SOUND.C:170), so the port's game start puts
+            //    it back and the intro theme plays.
+            XMIMusic.MusicOk = false;
+            uimanager.CurrentGameMode = uimanager.GameModes.CUTSCENE;
+            main.StartGame();
+            _startMusicOk = XMIMusic.MusicOk;
+            await c.Frames(1);
+            _startTheme = XMIMusic.CurrentlyPlayingThemeNo;
+            _startPlaying = music.IsPlaying;
+            c.Note($"after main.StartGame with the music off: music on {_startMusicOk}, current theme {_startTheme}, playing {_startPlaying}");
+            cutsplayer.StopCutscene();
+            ulong deadline = Time.GetTicksMsec() + 10000;
+            while ((cutsplayer.IsPlaying || uimanager.CurrentGameMode != uimanager.GameModes.MAIN) && Time.GetTicksMsec() < deadline)
+                await c.Frames(1);
         }
         finally
         {
@@ -184,6 +259,17 @@ public sealed class MenuMusicRepeat : Scenario
         k.Equal("current theme after a theme failed to load and 10 menu frames", _failedBefore, _failedAfter, fail);
         k.Equal("current theme after LoadXMI(1) with the music off", _failedBefore, _failedAfterLoad, fail);
         k.True(!_failedPlaying, $"music after a theme failed to load expected silent, got playing ({fail})");
+        k.True(_noPlayerThrows.Count == 0, $"RefreshMusic with no music player threw ({string.Join(", ", _noPlayerThrows)})");
+        k.Equal("silent-theme runs", 2, _silentRuns.Count, fail);
+        foreach (var r in _silentRuns)
+        {
+            k.Equal($"loads in mode {r.mode} of a theme that never plays, over {WaitFrames} frames", 1, r.loads, fail);
+            k.True(!r.musicOk, $"music in mode {r.mode} after a theme that never plays expected off, got on ({fail})");
+        }
+        string start = c.Game == "uw2" ? "uw2 SOUND.C:170" : "uw1 SOUND.C:139";
+        k.True(_startMusicOk, $"music after the game starts again expected on, got off (music_ok starts at 1, {start})");
+        k.Equal("current theme after the game starts again", XMIMusic.IntroTheme, _startTheme, start);
+        k.True(_startPlaying, $"music after the game starts again expected playing, got silent ({start})");
         return k.Result;
     }
 }
