@@ -238,6 +238,17 @@ public partial class ScenarioRunner : Node
         (() => new OptionsKeys(), true),
         (() => new OptionShortcuts(), true),
         (() => new OptionsMouseRelease(), true),
+        // facts Underworld Revisited observed in DOS
+        (() => new ReachEighths(), true),
+        (() => new FishingWaterHeight(), true),
+        (() => new StackMerge(), true),
+        (() => new LitLightPlaces(), true),
+        (() => new ContainerWeightFirst(), true),
+        (() => new VoidNoExploreExperience(), true),
+        (() => new TremorHarmless(), true),
+        (() => new CastSlotsFull(), true),
+        (() => new NoAmmoMessage(), true),
+        (() => new FlutterNeverDies(), true),
         (() => new HarnessFails(), false),
     };
 
