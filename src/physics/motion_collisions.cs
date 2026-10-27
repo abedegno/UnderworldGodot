@@ -811,7 +811,10 @@ namespace Underworld
                     var di = var11_maybeX + (var12_maybeY << 6);
                     var tilePtr = (int)(tile_var4.Ptr + (di << 2));
                     var tileAtPTR = UWTileMap.GetTileByPTR(tilePtr);
-                    int next = tileAtPTR.indexObjectList;
+                    //DOS walks tile[off].objects with no bounds check (uw1 COLLIDE.C:505-509, uw2 COLLIDE.C:491-495), so
+                    //past row 0 or 63 it reads memory outside the map, whose contents are not defined (uw1 level.h:17-29).
+                    //GetTileByPTR gives null there; take it as a tile with no objects.
+                    int next = tileAtPTR == null ? 0 : tileAtPTR.indexObjectList;
                     //seg028_2941_E36:
                     //loop the object list on the tile.
                     //var indexByte = tileAtPTR.indexObjectList;
