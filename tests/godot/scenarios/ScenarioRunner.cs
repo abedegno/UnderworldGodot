@@ -119,6 +119,8 @@ public partial class ScenarioRunner : Node
         (() => new GuardMelee(), true),
         // issue #69
         (() => new Uw2AutomapSaved(), true),
+        // issue #120
+        (() => new ObjectCastCooldown(), true),
         (() => new HarnessFails(), false),
     };
 

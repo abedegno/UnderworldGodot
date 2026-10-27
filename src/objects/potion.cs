@@ -34,7 +34,20 @@ namespace Underworld
 
             if (spell != null)
             {
-                MagicEnchantment.CastObjectSpell(potion, spell);
+                if (_RES == GAME_UW2)
+                {
+                    // UW2's UseFood clears nextSpellTime either side of checkSpell, so a
+                    // potion casts with no wait and leaves none (uw2 USEITEMS.C:349-351).
+                    // UW1's UseFood calls checkSpell with how 1 and keeps the wait, and the
+                    // potion is drunk either way (uw1 USEITEMS.C:714-716).
+                    SpellCasting.ClearObjectSpellWait();
+                    MagicEnchantment.CastObjectSpell(potion, spell);
+                    SpellCasting.ClearObjectSpellWait();
+                }
+                else
+                {
+                    MagicEnchantment.CastObjectSpell(potion, spell);
+                }
             }
             else
             {//no spell was attached. See if a damage trap is present.
