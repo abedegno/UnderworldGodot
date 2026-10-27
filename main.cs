@@ -54,6 +54,7 @@ public partial class main : Node3D
 	static double testclock = 0;
 
 	double cycletime = 0;
+	const double MenuPaletteCycleInterval = 14.0 / 256.0;
 
 	public static double playingnotetimer = 0;
 
@@ -286,7 +287,16 @@ public partial class main : Node3D
 		{
 			PitTimer += delta;
 			cycletime += delta;
-			if (cycletime > 0.2)
+			if ((UWClass._RES != UWClass.GAME_UW2) && ((uimanager.CurrentGameMode == uimanager.GameModes.MAIN) || (uimanager.CurrentGameMode == uimanager.GameModes.JOURNEY)))
+			{//UW1's menu and saved-game list step the flames every 14 ticks of the 256 Hz clock (ovr138_94, uw1 MAINMENU.C:84-91; SOUND.C:179)
+				if (cycletime >= MenuPaletteCycleInterval)
+				{
+					//carry the remainder so the steps average 14 ticks at any frame rate; after a stall step once, as the original does
+					cycletime = (cycletime >= 2 * MenuPaletteCycleInterval) ? 0 : cycletime - MenuPaletteCycleInterval;
+					PaletteLoader.UpdatePaletteCycles();
+				}
+			}
+			else if (cycletime > 0.2)
 			{
 				cycletime = 0;
 				PaletteLoader.UpdatePaletteCycles();
@@ -541,6 +551,8 @@ public partial class main : Node3D
 
 		//Position player object now after all possible calcs have been completed
 		playerdat.PositionPlayerCamera();
+
+		uimanager.SwayWeapon();
 	}
 
 	static void ProcessMotionInputs()
