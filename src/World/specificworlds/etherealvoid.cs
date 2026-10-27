@@ -13,7 +13,7 @@ namespace Underworld
     {
 
         /// <summary>
-        /// Codes runs on a random chance every no of frames
+        /// Runs on a one in 32 random test every player update (uw1 INTERACT.C:256-257)
         /// Causes light flashes and drains player health during the finale of UW1.
         /// </summary>
         public static void EtherealVoidEndGameSpecialEffects()
@@ -36,7 +36,7 @@ namespace Underworld
                     if (
                         (playerdat.play_hp > 0x14)
                         &&
-                        (Rng.r.Next(3) < 1)
+                        ((Rng.Source.Rand() & 3) < 1)//uw1 PHYSICS.C:170
                         )
                     {
                         playerdat.play_hp -= (byte)Rng.r.Next(3);
@@ -54,11 +54,14 @@ namespace Underworld
                 }
             }
 
-            //shake screen
-            motion.SetScreenShake(TypeOfShake: 0x40, duration: (byte)(0xF + Rng.r.Next(0x1E)));
+            //shake screen, skipped when rand() % 12 is 0: uw1 PHYSICS.C:175-176
+            if (Rng.RandMod(12) != 0)
+            {
+                motion.SetScreenShake(TypeOfShake: 0x40, duration: (byte)(0xF + Rng.r.Next(0x1E)));
+            }
 
-            //randomise compass
-            uimanager.PointCompassInDirection(Rng.r.Next(0x7FFF) & 0xF);
+            //randomise compass: uw1 PHYSICS.C:177
+            uimanager.PointCompassInDirection(Rng.Source.Rand() & 0xF);
         }
 
         /// <summary>
