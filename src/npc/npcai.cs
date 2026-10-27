@@ -618,8 +618,8 @@ namespace Underworld
                 {
                     //seg007_17A2_29B8:
                     if (critter.IsAlly != 0)
-                    {
-                        goto seg007_17A2_2AEA;
+                    {//an ally always tests whether to join the player's fight. uw1 AI.C:1227, uw2 AI.C:1218
+                        goto Seg007_17A2_2A0D;
                     }
                     if (critter.index == playerdat.LastDamagedNPCIndex)
                     {
@@ -648,7 +648,7 @@ namespace Underworld
 
                 Seg007_17A2_2A0D:
 
-                    if (playerdat.LastDamagedNPCTime + 512 >= playerdat.ClockValue)
+                    if (playerdat.LastDamagedNPCTime + 512 > playerdat.ClockValue)//strictly within 0x200. uw1 AI.C:1228, uw2 AI.C:1219
                     {
                         //seg007_17A2_2A0D:
                         //do detection
