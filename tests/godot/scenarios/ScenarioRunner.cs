@@ -112,6 +112,7 @@ public partial class ScenarioRunner : Node
         (() => new EnchantRechargeWand(), true),
         (() => new GivePtrNpc(), true),
         (() => new GiveMergeCoins(), true),
+        (() => new GiveToNpcAllOrNone(), true),
         (() => new EndBarter(), true),
         (() => new BarterNearPut(), true),
         (() => new TrapChainFlow(), true),
