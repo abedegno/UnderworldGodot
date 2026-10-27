@@ -653,14 +653,14 @@ namespace Underworld
             }
             int[] LevelUpAt = new int[] { 0, 1, 2, 3, 4, 6, 8, 0xC, 0x10, 0x18, 0x20, 0x30, 0x40, 0x60, 0x80, 0xC0 };
             if ((newEXP > 0) && (_RES == GAME_UW2))
-            {//UW2 halves every gain, rounding at random (player_get_exp, uw2 SKILLCHK.C:72-73); UW1 does not
+            {//UW2 halves every gain, rounding at random (uw2 SKILLCHK.C:69-70); UW1 does not
                 newEXP = (newEXP + Rng.r.Next(0, 2)) / 2;
             }
 
             if (newEXP >= 0)
             {
                 if ((_RES != GAME_UW2) && (Exp > 0x17700))
-                {//UW1 adds nothing once experience is above 0x17700, checked first (uw1 SKILLCHK.C:85-87)
+                {//UW1 ignores a gain once experience is above 0x17700, before any skill points (uw1 SKILLCHK.C:85-86)
                     return;
                 }
                 if (_RES == GAME_UW2)
@@ -687,18 +687,21 @@ namespace Underworld
                     SkillPoints = SkillPoints + (newTotalSkillPoints - SkillPointsTotal);// calculate new level of skill points available to spend.
                     SkillPointsTotal = newTotalSkillPoints; //store total earned.
                 }
-                //there is possibly a cap of 524272 
-                Exp = Math.Min(Exp + newEXP, 0x7FFF0);//experience cap
-                if (Exp <= 0x17700) //level up cap
+                if ((_RES == GAME_UW2) && (Exp + newEXP > 0x7FFF0))
+                {//UW2 makes no change at all to a gain that would take experience past 0x7FFF0 (uw2 SKILLCHK.C:88-89)
+                    return;
+                }
+                Exp = Exp + newEXP;
+                if ((_RES != GAME_UW2) || (Exp <= 0x17700)) //UW2 stops levelling above 0x17700 (uw2 SKILLCHK.C:91-92); UW1 checks after every gain (uw1 SKILLCHK.C:97-105)
                 {
                     var si_newlevelincrease = 0;
                     var newlevelpoints = Exp / 500;
                     while (true)
                     {
-                        if (
-                            (LevelUpAt[play_level + si_newlevelincrease] <= newlevelpoints)
-                            &&
+                        if (//the level 16 stop is tested first, as LevelUpAt has no entry beyond level 16
                             (play_level + si_newlevelincrease < 0x10)
+                            &&
+                            (LevelUpAt[play_level + si_newlevelincrease] <= newlevelpoints)
                         )
                         {
                             si_newlevelincrease++;
