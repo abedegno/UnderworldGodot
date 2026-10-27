@@ -269,6 +269,24 @@ namespace Underworld
         {
             switch (ObjectUsed.minorclass)
             {
+                case 0:
+                    {
+                        if (_RES != GAME_UW2)
+                        {
+                            switch (ObjectUsed.classindex)
+                            {
+                                case >= 2 and <= 6://skulls and bones (0xC2..0xC6) ask for a target, only when used from the inventory (UseUtil, uw1 USEITEMS.C:396-399)
+                                    if (!WorldObject)
+                                    {
+                                        useon.CurrentItemBeingUsed = new useon(ObjectUsed, WorldObject);
+                                        uimanager.AddToMessageScroll(useon.CurrentItemBeingUsed.GeneralUseOnString);
+                                        return true;
+                                    }
+                                    break;
+                            }
+                        }
+                        break;
+                    }
                 case 1:
                     {//some misc items                    
                         switch (ObjectUsed.classindex)
