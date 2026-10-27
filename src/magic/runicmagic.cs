@@ -473,10 +473,10 @@ namespace Underworld
             {
                 if (worlds.GetWorldNo(playerdat.dungeon_level) == 0)
                 {//check if spell is allowed in britannia
-                    if (SpellLevel >= 3)
-                    {
+                    if (SpellLevel > 3)
+                    {//uw2 RUNES.C:232, fail_spell(3)
                         Sfx.SoundEffects.Play(UWsoundeffects.SoundEffectSpellFailure, 0x40,0);
-                        uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_the_incantation_failed_));//incantation failed
+                        uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_casting_was_not_successful_));//casting was not successful
                         return false;
                     }
                 }
