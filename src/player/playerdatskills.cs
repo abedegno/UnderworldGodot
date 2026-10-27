@@ -510,7 +510,16 @@ namespace Underworld
         /// <returns>1 if skill increases, 0 if no increase</returns>
         public static int IncreaseSkill(int skillno)
         {
-            int[] governingRngRanges = new int[] { 0x19, 0x28, 0xA };
+            //skill_rng, the divisor for the random third point by governing attribute (uw2 SKILLS.C:149, uw1 SKILLS.C:179)
+            int[] governingRngRanges;
+            if (_RES == GAME_UW2)
+            {
+                governingRngRanges = new int[] { 25, 30, 15 };
+            }
+            else
+            {
+                governingRngRanges = new int[] { 25, 40, 10 };
+            }
             var governingAttribute = GetGoverningAttribute(skillno);
 
             int skillvalue = GetSkillValue(skillno);
@@ -526,26 +535,24 @@ namespace Underworld
             }
             //increment by 1
             skillvalue++;
-            SetSkillValue(skillNo: skillno, value: skillvalue);
 
-            if (governingAttribute != 0)
-            {
-                if (governingAttribute / 2 > skillvalue)
-                {//gain another point when skill is less than half the attribute
+            //the extra points compare the skill with the attribute's value, not its index (uw2 SKILLS.C:168-180, uw1 SKILLS.C:200-212)
+            if ((governingAttribute != 0) && (attributeValue / 2 > skillvalue))
+            {//gain another point when skill is less than half the attribute, except for strength skills
+                skillvalue++;
+            }
+            if (skillvalue < attributeValue)
+            {//if skill is still less than attribute, add another point based on rng. This applies to strength skills too.
+                if (Rng.r.Next(governingRngRanges[governingAttribute]) < attributeValue - skillvalue)
+                {
                     skillvalue++;
-                    SetSkillValue(skillNo: skillno, value: skillvalue);
-                }
-                if (skillvalue < governingAttribute)
-                {//if skill is still less than attribute. add another point based on rng
-                    var r = Rng.r.Next(governingRngRanges[governingAttribute]);
-                    if (r < governingAttribute - skillvalue)
-                    {
-                        skillvalue++;
-                        GetSkillValue(skillno);
-                        SetSkillValue(skillNo: skillno, value: skillvalue);
-                    }
                 }
             }
+            if (skillvalue > 30)
+            {
+                skillvalue = 30;
+            }
+            SetSkillValue(skillNo: skillno, value: skillvalue);
 
             if (skillno == 8)
             {
