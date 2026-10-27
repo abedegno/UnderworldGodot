@@ -40,7 +40,7 @@ namespace Underworld
         /// </summary>
         /// <param name="item_id"></param>
         /// <returns></returns>
-        public int slot (int item_id)
+        public static int slot (int item_id)
         {
             return buffer[offset + 3 + ((item_id-32) & 0x3f) * 4];
         }
