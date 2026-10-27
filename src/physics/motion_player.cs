@@ -1264,6 +1264,139 @@ namespace Underworld
         }
 
         /// <summary>
+        /// The step-and-turn move (simple_fizix, uw1 PHYSICS.C:188-283, uw2 PHYSICS.C:195-288).
+        /// turn -1 or 1 turns 45 degrees; 0 steps half a tile forward but refuses a step into
+        /// a different terrain or off a ledge; 2 takes the same step without those checks; -2 steps
+        /// a quarter tile back. The step is tested with the can_place check and made directly,
+        /// without the motion code, then fires any move trigger the player now overlaps.
+        /// Only while not falling and moving slower than the acceleration step.
+        /// </summary>
+        /// <returns>True if the player moved or turned.</returns>
+        public static bool SimpleFizix(int turn)
+        {
+            var player = playerdat.playerObject;
+            if ((playerMotionParams.gravity_10_Z != 0) || (playerMotionParams.momentum_14 >= MotionWeightRelated_dseg_67d6_C8))
+            {
+                return false;
+            }
+            var backwards = 0;
+            var flying = 0;
+            int heading;
+            int dist;
+            switch (turn)
+            {
+                case 2:
+                    backwards = 1;
+                    dist = 0x80;
+                    heading = playerdat.PlayerCameraYaw_dseg_8294 / 256;
+                    break;
+                case 0:
+                    dist = 0x80;
+                    heading = playerdat.PlayerCameraYaw_dseg_8294 / 256;
+                    break;
+                case -2:
+                    dist = 0x40;
+                    heading = (ushort)(playerdat.PlayerCameraYaw_dseg_8294 + 0x8000) >> 8;
+                    break;
+                default:
+                    //a turn: to the next eighth of a circle, or by an eighth when already on one
+                    if ((playerdat.PlayerCameraYaw_dseg_8294 & 0x1FFF) != 0)
+                    {
+                        playerdat.PlayerCameraYaw_dseg_8294 = (short)((playerdat.PlayerCameraYaw_dseg_8294 & 0xE000) + ((turn > 0 ? 1 : 0) << 13));
+                    }
+                    else
+                    {
+                        playerdat.PlayerCameraYaw_dseg_8294 = (short)(playerdat.PlayerCameraYaw_dseg_8294 + (turn << 13));
+                    }
+                    player.heading = (short)((playerdat.PlayerCameraYaw_dseg_8294 >> 13) & 0x7);
+                    player.npc_heading = (short)((playerdat.PlayerCameraYaw_dseg_8294 >> 8) & 0x1F);
+                    return true;
+            }
+            if (_RES == GAME_UW2)
+            {
+                if ((playerdat.TileState & 0x4) != 0)
+                {//on ice the step is a sixteenth (uw2 PHYSICS.C:234-235, not in UW1)
+                    dist /= 16;
+                }
+            }
+            if ((playerdat.MagicalMotionAbilities & 0x14) != 0)
+            {
+                flying = 1;
+            }
+            int x = playerMotionParams.x_0;
+            int y = playerMotionParams.y_2;
+            GetCoordinateInDirection(heading, dist, ref x, ref y);
+            if (!TestIfObjectFitsInTile(0x7F, 1, x / 32, y / 32, player.zpos, backwards | flying, 8))
+            {
+                return false;
+            }
+            var newHeight = UWMotionParamArray.Z_dseg_67d6_2582;
+            var newTerrain = UWMotionParamArray.dseg_67d6_2586;
+            if ((backwards == 0) && (newTerrain != 1) && (newTerrain != PreviousTileState_dseg_67d6_22B4)
+                && ((newTerrain != 0x10) || (flying == 0)))
+            {
+                return false;
+            }
+            playerMotionParams.x_0 = (short)x;
+            playerMotionParams.y_2 = (short)y;
+            var newTileX = playerMotionParams.x_0 >> 8;
+            var newTileY = playerMotionParams.y_2 >> 8;
+            if ((newTileX != player.tileX) || (newTileY != player.tileY))
+            {
+                //UW2's change_GrSq arrives at the new height, UW1 just moves the player between the tile lists
+                playerdat.PlacePlayerInTile(
+                    newTileX: newTileX, newTileY: newTileY,
+                    previousTileX: player.tileX, previousTileY: player.tileY,
+                    enterZ: (_RES == GAME_UW2) ? newHeight : -1);
+                player.npc_xhome = (short)newTileX;
+                player.npc_yhome = (short)newTileY;
+                playerdat.PlayerStatusUpdate();//as ApplyPlayerMotion does on a change of tile, for the lighting
+            }
+            player.xpos = (short)((playerMotionParams.x_0 >> 5) & 0x7);
+            player.ypos = (short)((playerMotionParams.y_2 >> 5) & 0x7);
+            if (((backwards | flying) == 0) || ((playerMotionParams.z_4 >> 3) - 8 <= newHeight))
+            {
+                player.zpos = (short)newHeight;
+                playerMotionParams.z_4 = (short)(newHeight << 3);
+            }
+            else if ((playerMotionParams.gravity_10_Z == 0) && (flying == 0))
+            {//stepped off a ledge: starts falling
+                playerMotionParams.gravity_10_Z = -4;
+            }
+            ProcessPlayerTileState((short)newTerrain, 0);
+            player.AnimationFrame = (byte)((main.GlobalPITTimer & 0xFF) >> 6);
+
+            //fire the move triggers the player now stands in
+            var OldCalcArray = MotionCalcArray.PtrToMotionCalc;
+            MotionCalcArray.PtrToMotionCalc = new byte[0x20];
+            MotionCalcArray.MotionArrayObjectIndexA = 1;
+            MotionCalcArray.Radius8 = (byte)commonObjDat.radius(0x7F);
+            MotionCalcArray.Height9 = (byte)commonObjDat.height(0x7F);
+            MotionCalcArray.x0 = (ushort)(x / 32);
+            MotionCalcArray.y2 = (ushort)(y / 32);
+            MotionCalcArray.z4 = (ushort)player.zpos;
+            ScanForCollisions(0, 0);
+            SortCollisions();
+            var first = MotionCalcArray.Unk16_collisionindex;
+            var count = MotionCalcArray.Unk15;
+            for (int i = first; i < first + count; i++)
+            {
+                var obj = UWTileMap.current_tilemap.LevelObjects[collisionTable[i].link];
+                if (obj.item_id == 0x1A0)
+                {
+                    trigger.RunTrigger(
+                        character: 1,
+                        ObjectUsed: null,
+                        TriggerObject: obj,
+                        triggerType: (int)triggerObjectDat.triggertypes.MOVE,
+                        objList: UWTileMap.current_tilemap.LevelObjects);
+                }
+            }
+            MotionCalcArray.PtrToMotionCalc = OldCalcArray;
+            return true;
+        }
+
+        /// <summary>
         /// Runs all player motions until globals come to zero, Used by a sleep update that occurs due to drunkeness
         /// </summary>
         public static void RunPlayerMotions()

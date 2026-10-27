@@ -66,6 +66,14 @@ public partial class main : Node3D
 	static uint LastGlobalPitTimer = 0;
 	static byte EasyMoveFrameIncrement = 0;
 
+	/// <summary>When the last step move started; the next waits until 0x18 ticks have passed (player_simple_move).</summary>
+	static uint StepMoveStart = 0;
+	/// <summary>When the last step key was taken; a held key repeats every 30 ticks (do_keyarray_input).</summary>
+	static uint StepKeyTime = 0;
+	/// <summary>The mouse buttons held and where the pointer is, for the arrows below the 3D view.</summary>
+	static int StepArrowButtons = 0;
+	static Vector2 StepArrowMousePosition;
+
 	public static byte ThisFrameDelta = 0;
 	static byte PreviousFrameDelta = 0;
 
@@ -324,6 +332,11 @@ public partial class main : Node3D
 
 		//UGH
 
+		if ((uimanager.InGame) && (!uimanager.blockinput))
+		{
+			ProcessStepMoveInputs();
+		}
+
 		testclock += delta;
 
 		if ((uimanager.InGame) && (testclock >= 0.097659) && (!uimanager.blockinput))
@@ -413,6 +426,73 @@ public partial class main : Node3D
 		}
 	}
 
+	/// <summary>
+	/// A step move (player_simple_move, uw1 PLAYMOVE.C:288-320, uw2 PLAYMOVE.C:281-313): makes
+	/// the step or turn, then runs one 0x40-unit round of the world with it, the player's own
+	/// physics left out. The original then waits until 0x18 ticks have passed since it began;
+	/// here the next step move waits instead (ProcessStepMoveInputs).
+	/// </summary>
+	/// <param name="dir">-1 turn left, 1 turn right, 0 step forward, 2 step forward without the terrain checks, -2 step back.</param>
+	public static void PlayerSimpleMove(int dir)
+	{
+		StepMoveStart = GlobalPITTimer;
+		if (motion.SimpleFizix(dir))
+		{
+			EasyMoveFrameIncrement += 4;
+			motion.playerMotionParams.momentum_14 = 0;
+			AnimationOverlay.UpdateAnimationOverlays();
+			playerdat.ClockValue += 0x40;
+			LastGlobalPitTimer = GlobalPITTimer;
+			byte frames = EasyMoveFrameIncrement;
+			if (playerdat.SpeedEnchantment)
+			{
+				frames >>= 1;
+				EasyMoveFrameIncrement &= 1;
+			}
+			else
+			{
+				EasyMoveFrameIncrement = 0;
+			}
+			GameObjectLoop(
+				ClockIncrement: 0x40,
+				AnimationFrameDelta: frames,
+				EasyMove: true);
+		}
+	}
+
+	/// <summary>
+	/// The step moves' inputs, once a frame: a mouse button held on one of the three arrows
+	/// below the 3D view, or a step key held. The original reads the keys in the 3D view from
+	/// the held-key array, a held key again no sooner than 30 ticks after the last
+	/// (do_keyarray_input, uw1 ui/MOUSE.C:392-398, uw2 ui/MOUSE.C:360-366), and the step keys are the capital letters
+	/// (game/PLAYER.C: uw1 175-179, uw2 169-173). Only Shift+X is bound here: Godot's own
+	/// keys already use W, A, S and D, with Shift+W to walk.
+	/// </summary>
+	static void ProcessStepMoveInputs()
+	{
+		if (GlobalPITTimer - StepMoveStart < 0x18)
+		{
+			return;//still in the previous step's wait
+		}
+		if (StepArrowButtons != 0)
+		{
+			var dir = uimanager.StepArrowAt(StepArrowMousePosition);
+			if (dir != null)
+			{
+				PlayerSimpleMove((int)dir);
+				return;
+			}
+		}
+		if (Input.IsKeyPressed(Key.Shift) && Input.IsKeyPressed(Key.X))
+		{
+			if (GlobalPITTimer - StepKeyTime >= 30)
+			{
+				StepKeyTime = GlobalPITTimer;
+				PlayerSimpleMove(-2);
+			}
+		}
+	}
+
 	static void GameObjectLoop(byte ClockIncrement, byte AnimationFrameDelta, bool EasyMove)
 	{
 		//playerdat.play_hp = playerdat.max_hp;
@@ -457,7 +537,7 @@ public partial class main : Node3D
 
 		playerdat.ApplyPlayerSneakScore(EasyMove);
 
-		playerdat.FootSteps();
+		playerdat.FootSteps(EasyMove);
 
 		//Position player object now after all possible calcs have been completed
 		playerdat.PositionPlayerCamera();
@@ -791,6 +871,30 @@ public partial class main : Node3D
 			}
 		}
 
+
+		//The mouse for the step arrows below the 3D view (ProcessStepMoveInputs). Either button works,
+		//as for any mouse region in the original (input_dispatch, uw2 ui/INPUT.C:179-200).
+		if (@event is InputEventMouseButton stepButton)
+		{
+			var bit = (stepButton.ButtonIndex == MouseButton.Left) ? 1 : (stepButton.ButtonIndex == MouseButton.Right) ? 2 : 0;
+			StepArrowMousePosition = stepButton.Position;
+			if (stepButton.Pressed)
+			{
+				StepArrowButtons |= bit;
+				if ((bit != 0) && (!uimanager.blockinput) && (uimanager.InGame) && (uimanager.StepArrowAt(stepButton.Position) != null))
+				{
+					GetViewport().SetInputAsHandled();//the arrow takes the click, not the compass beside it
+				}
+			}
+			else
+			{
+				StepArrowButtons &= ~bit;
+			}
+		}
+		else if (@event is InputEventMouseMotion stepMotion)
+		{
+			StepArrowMousePosition = stepMotion.Position;
+		}
 
 		if ((!uimanager.blockinput) && (uimanager.InGame))
 		{
