@@ -33,7 +33,40 @@ Saves are not in the user data folder: the game writes them to `SAVE1` to `SAVE4
 
 For each scenario the runner points the game at the data the way `LaunchMenu.OnLaunchInput` does, installs `Rng.Source = new BorlandRandSource(scenario.Seed)`, adds `Underworld.tscn` to the tree (its `uimanager._Ready` calls `main.StartGame`, which queues the title cutscene), stops that cutscene and the introduction that follows it when there is no saved game (as there never is in the temporary game folder), and waits for the main menu, then makes the calls `main.LaunchUWDemo` makes: `playerdat.InitEmptyPlayer()`, the demo's stand-in stats (30 hit points, 20 in each attribute) and the recompute of the maxima, mana and carrying limit from them, and `uimanager.instance.JourneyOnwards("DATA")`. It checks the game is then in game, on level 1, with the Avatar alive. Without the stand-in stats the Avatar has 0 hit points and dies on the first frame. The character creation screens are skipped, so anything they would roll is not there. The runner then installs a fresh `BorlandRandSource(scenario.Seed)` again, so `Setup` starts from exactly the scenario's seed (the first one makes the new game's own draws repeatable).
 
-After the scenario the runner restores `Rng.Source`, lets the audio server release the game's music and sound (as the game's own quit path does, or Godot hangs on exit, issue #78), and frees the scene. The next scenario starts a fresh new game. Static game state that a new game does not reset can still carry over between scenarios in one process, so a scenario must not rely on anything it did not set up.
+After the scenario the runner restores `Rng.Source`, lets the audio server release the game's music and sound (as the game's own quit path does, or Godot hangs on exit, issue #78), and frees the scene. The next scenario starts a fresh new game.
+
+## Static state between scenarios
+
+All the scenarios for one game run in one process, and a new game does not reset every static field the game keeps. So before each scenario the runner puts the game's statics back to the values the process had before its first scenario (`StaticStateGuard.cs`; the idea comes from the `StateGuard` of Underworld Revisited, PQMarine, MIT). The snapshot is taken once, after the runner has pointed the game at its data and before the game scene exists.
+
+- Fields holding values are copied back: numbers, bools, enums, strings, structs made only of those, arrays of them (copied deeply), and objects of classes that hold only such values, such as `motion.playerMotionParams`.
+- Fields holding references are reset without copying any object. One that was null is set to null again, so no object of an earlier game (such as `playerdat.CameraReference`) or freed node is reachable through it. An empty .NET collection is emptied again. An array of objects (such as `playerdat.InventoryObjects`) has its elements pointed back at what they held, usually null. Any other object that is not a Godot one is pointed back at the object the field held, but what is inside that object is not put back.
+- A field holding a Godot object, or a collection or object that was not empty in a fresh process (loaded data and caches such as `GameStrings.StringTable` or `animo.grAnimo`), keeps what it has.
+
+The runner's own fields (`BasePath`, `_RES`, `uwsettings`, `Rng.Source`) are excluded. The list, with the reason for each, is `Exclusions` in `StaticStateGuard.cs`. The runner also empties the temporary game folder's save slots before each scenario, because a saved game there changes how the next new game starts (the title without the introduction, and another main menu). One hand reset is still needed: `MessageDisplay.WaitingForMore` is cleared again after the new game has started, because a conversation an earlier scenario started can still be running and set it while the new game starts.
+
+So a scenario still must not rely on anything it did not set up, but a leftover value or object from an earlier scenario should no longer reach it. To see what does carry over, set `SCENARIO_STATE_REPORT=1`:
+
+```
+SCENARIO_STATE_REPORT=1 tests/scenarios.sh --game uw1
+```
+
+The script then also prints the runner's `STATE` lines:
+
+- `STATE <game>/<name> left <cover> <field>: ...` for each static that differs from the snapshot after the scenario has finished and its scene has been freed.
+- `STATE <game>/<name> start-differs <cover> <field>: ...` for each static that, just after the new game has started and before `Setup`, differs from what the first scenario of the run saw at the same point. That is a leftover that reached the scenario.
+- `STATE-SUMMARY <game> <field> <cover>: ...` at the end, for each field: how many scenarios left it changed and how many found it changed at their start, with the first of each.
+
+The cover is `restored` (copied back), `reset` (set to null, emptied or pointed back) or `watched` (kept). A field that is not copied is compared by a fingerprint of everything it reaches (fields, array elements, collection entries; a Godot object only as live or freed), so a change inside an object shows. Some `start-differs` lines are expected in every run because they follow real time rather than the game: the clocks counted while the intro cutscene is being stopped (`main.testclock`, `main.GlobalPITTimer`, `cutsplayer`'s timers), `uimanager.TimeLastReset` and `EyeTimer`, `tileMapRender.guid` (a new GUID per level build) and `Rng.Seed`, which the game seeds from the time of day. `SCENARIO_STATE_GUARD=0` turns the restore off (and leaves the save slots alone), to see what the guard is covering; with it off, scenarios may fail.
+
+To show that no scenario depends on the ones run before it, run them in another order:
+
+```
+tests/scenarios.sh --reverse          # last first
+tests/scenarios.sh --shuffle 42       # shuffled; the same seed gives the same order
+```
+
+The script prints `scenarios: <game> order ...` with the order used, so a failure can be run again in the same order.
 
 ## Writing a scenario
 
