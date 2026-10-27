@@ -201,19 +201,16 @@ namespace Underworld
         /// <param name="IncreasePlayMana"></param>
         public static void UpdateHPManaMax(bool IncreasePlayMana = true)
         {
-            if ((_RES != GAME_UW2) && (dungeon_level == 7) && (isOrbDestroyed == false))
-            {
-                backup_mana = ((ManaSkill + 1) * INT) >> 3; //handles case where player increases mana while subject to Tybals mana drain effect.
-            }
-            else
-            {
-                max_mana = ((ManaSkill + 1) * INT) >> 3;    
-            }            
+            SetComputedMaxMana();//on level 7 in UW1 whether or not the orb is destroyed, as player_compute does (uw1 SKILLS.C:108)
             max_hp = (30 + (STR * play_level) / 5);
             if (IncreasePlayMana)
             {
                 play_mana = max_mana;
-            }     
+            }
+            if (_RES == GAME_UW2)
+            {
+                ManaRegenChange(0);//restore_mana(ThePlayer, 0) (uw2 SKILLS.C:84)
+            }
         }
 
         public static void SetLevelLore(int levelno, int newLore)
