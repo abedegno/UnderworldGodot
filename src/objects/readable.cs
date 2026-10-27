@@ -12,6 +12,14 @@ namespace Underworld
         /// <returns></returns>
         public static bool Use(uwObject ObjectUsed, bool WorldObject)
         {
+            if (WorldObject)
+            {
+                // The player's use of an object in the world passes how 0, UseBook returns at once, and UseObj
+                // does not go on to checkSpell after a book: nothing is read, cast or printed
+                // (uw1 INTERACT.C:552, USEITEMS.C:134-138, 925-926; uw2 INTERACT.C:452, USEITEMS.C:460-461, OBJUSE.C:113-114).
+                use.SpellHasBeenCast = true;
+                return true;
+            }
             uwObject[] objList;
             if (WorldObject)
             {

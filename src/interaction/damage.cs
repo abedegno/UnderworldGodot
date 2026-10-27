@@ -732,14 +732,14 @@ namespace Underworld
                     }
                     ObjectCreator.Consume(obj, true);//removes from inventory     
                     playerdat.PlayerStatusUpdate();
-                    distring = " destroyed";
+                    distring = " destroyed.";
                     si = 1;
                 }
                 else
                 {//taken damage and not destroyed
                     if (obj.quality != originalquality)
                     {
-                        distring = " damaged";
+                        distring = " damaged.";
                         si = 0;
                     }
                     else
@@ -747,7 +747,9 @@ namespace Underworld
                         return -1;
                     }
                 }
-                uimanager.AddToMessageScroll($"Your {GameStrings.GetObjectNounUW(obj.item_id)} was{distring}");
+                //were when the name ends in s. uw1 INVDATA.C:446-460, uw2 INVDATA.C:427-441
+                var name = GameStrings.GetObjectNounUW(obj.item_id);
+                uimanager.AddToMessageScroll($"Your {name} {(name.EndsWith('s') ? "were" : "was")}{distring}");
                 return si;
             }
             else
