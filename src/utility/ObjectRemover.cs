@@ -60,6 +60,44 @@ namespace Underworld
         }
 
 
+        /// <summary>
+        /// Removes obj and everything inside it from the object chain of its square, as DOS's
+        /// Obj_Punt and Obj_FreeLinkChain do (uw1 and uw2 OBJECTS.C). An object that cannot be
+        /// found in that chain is left as it is, contents and all, rather than having its contents
+        /// freed out from under it.
+        /// </summary>
+        /// <returns>Null when removed, else obj.</returns>
+        public static uwObject RemoveObjectAndContentsFromTile(uwObject obj)
+        {
+            if (!UWTileMap.ValidTile(obj.tileX, obj.tileY))
+            {
+                return obj;
+            }
+            var tile = UWTileMap.current_tilemap.Tiles[obj.tileX, obj.tileY];
+            var inTile = false;
+            var next = tile.indexObjectList;
+            for (int guard = 0; next != 0 && guard < 1024; guard++)
+            {
+                if (next == obj.index)
+                {
+                    inTile = true;
+                    break;
+                }
+                next = UWTileMap.current_tilemap.LevelObjects[next].next;
+            }
+            if (!inTile)
+            {
+                Debug.Print($"Was unable to find {obj.index} to delete it in {obj.tileX},{obj.tileY}");
+                return obj;
+            }
+            return RemoveObject_experimental(
+                objectlist: UWTileMap.current_tilemap.LevelObjects,
+                buffer: UWTileMap.current_tilemap.lev_ark_block.Data,
+                ListHeadPTR: (int)(tile.Ptr + 2),
+                objToRemove: obj,
+                ForceCull: true);
+        }
+
         static void RemoveObjectAndChainFromLists(uwObject[]objectlist, byte[]objectdata, byte[]listheaddata, long ptrListHead, uwObject toDelete)
         {
             if (toDelete.is_quant == 0)

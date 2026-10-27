@@ -550,7 +550,10 @@ namespace Underworld
             else
             {
                 //remove temporary spawned npcs
-                ObjectRemover_OLD.DeleteObjectFromTile_DEPRECIATED(tileX: obj.tileX, tileY: obj.tileY, indexToDelete: obj.index);
+                // DOS frees the critter and everything it carries, Obj_FreeLinkChain (uw1
+                // CRITTIME.C:149-150, uw2 CRITTIME.C:147-148). Freeing the critter alone left
+                // its inventory allocated and in no list.
+                ObjectRemover.RemoveObjectAndContentsFromTile(obj);
             }
         }
 
