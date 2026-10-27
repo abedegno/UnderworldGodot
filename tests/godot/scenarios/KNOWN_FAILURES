@@ -9,8 +9,6 @@
 # fixes it. Original sources: https://github.com/abedegno/underworld-exhumed (uw1/src, uw2/src).
 
 # batch A: combat and critters
-uw1/fleeing-critter-steers  ~steering round the player differs from crit_avoid_player  # steers when far, measures from the target, keeps every heading: src/npc/npcai.cs:2808, 2816; uw1 AI.C:685-713
-uw2/fleeing-critter-steers  ~steering round the player differs from crit_avoid_player  # same as UW1: src/npc/npcai.cs:2808, 2816; uw2 AI.C:652-686
 # batch B: player and magic rules
 uw2/sleep-killorn-crash  ~quest 50 set and 54 clear (Killorn crashes) expected 0  # needs world 2 and quest 54 set, the reverse (src/World/sleep.cs:105); uw2 SKILLS.C:467-471
 uw1/sleep-in-void  ~fatigue after trying to sleep in the Void  # no level 9 test (src/World/sleep.cs:25); uw1 SKILLS.C:525-528 refuses
