@@ -158,6 +158,7 @@ public partial class ScenarioRunner : Node
         (() => new DragonChoice(), true),
         (() => new AltarasWandCutLine(), true),
         (() => new RepelUndeadSquare(), true),
+        (() => new RepairDebrisAndCastMessages(), true),
         // batch D: guards
         (() => new GuardEat(), true),
         (() => new GuardLight(), true),
