@@ -145,13 +145,13 @@ namespace Underworld
 
 
         /// <summary>
-        /// X86 Unsigned Divide.
+        /// X86 Unsigned Divide. (div r16: DX:AX / divisor, quotient to AX, remainder to DX)
         /// </summary>
         /// <param name="divisor"></param>
         public static void div(ushort divisor)
         {
             var tmpaxdx = axdx;
-            var temp = (uint)(ax / divisor);  //might need to be axdx
+            var temp = (uint)(tmpaxdx / divisor);
             if (temp > 0xFFFF)
             {
 
@@ -160,6 +160,21 @@ namespace Underworld
             {
                 ax = (ushort)temp;
                 dx = (ushort)(tmpaxdx % divisor);
+            }
+        }
+
+        /// <summary>
+        /// X86 Unsigned Divide of AX by a byte. (div r8: AX / divisor, quotient to AL, remainder to AH)
+        /// </summary>
+        /// <param name="divisor"></param>
+        public static void div8(ushort divisor)
+        {
+            var tmpax = ax;
+            var temp = (uint)(tmpax / divisor);
+            if (temp <= 0xFF)
+            {
+                al = (ushort)temp;
+                ah = (ushort)(tmpax % divisor);
             }
         }
 
@@ -195,7 +210,7 @@ namespace Underworld
                             for (byte i = 0; i < 5; i++)
                             {
                                 ax = bx;
-                                div(cl);
+                                div8(cl);
                                 cl += al;
                                 cl = (ushort)(cl >> 1); //RotateRightThroughCarry(cl, 1, ref cf);
                             }
@@ -229,8 +244,7 @@ namespace Underworld
                         dx = cx;
                         ax = bx;
                         div(di);
-                        di += ax;
-                        di = (ushort)(di >> 1);
+                        di = (ushort)(((uint)di + ax) >> 1);//add di,ax then rcr di,1: the add's carry goes into bit 15
                         //RotateRightThroughCarry(di, 1, ref cf);
                     }
                     return di;
@@ -249,10 +263,8 @@ namespace Underworld
                 {
                     dx = cx;
                     ax = bx;
-                    ax = (ushort)(ax / di);
                     div(di);
-                    di += ax;
-                    di = (ushort)(di >> 1);//RotateRightThroughCarry(di, 1, ref cf);
+                    di = (ushort)(((uint)di + ax) >> 1);//add di,ax then rcr di,1: the add's carry goes into bit 15. RotateRightThroughCarry(di, 1, ref cf);
                 }
                 return di;
             }
