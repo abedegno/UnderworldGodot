@@ -109,8 +109,9 @@ namespace Underworld
         /// <summary>
         /// npc_inv_add: adds an object to the NPC's inventory, adding it to a coin pile the NPC already has when the total stays under 999.
         /// The coin merged is ITEM_GOLD_COIN 0xA1 in uw1 (uw1 BARTER.C:874-894), ITEM_COIN 0xA0 in uw2 (uw2 BARTER.C:854-874).
+        /// AddAtEnd adds anything else at the end of the inventory, as uw2's accepted offer does (Obj_AddEnd, uw2 BARTER.C:556).
         /// </summary>
-        static void NpcInvAdd(uwObject talker, uwObject obj)
+        static void NpcInvAdd(uwObject talker, uwObject obj, bool AddAtEnd = false)
         {
             var objList = UWTileMap.current_tilemap.LevelObjects;
             var coin = _RES == GAME_UW2 ? 0xA0 : 0xA1;
@@ -128,6 +129,17 @@ namespace Underworld
                     }
                     next = other.next;
                 }
+            }
+            if (AddAtEnd && talker.link != 0)
+            {
+                var last = objList[talker.link];
+                while (last.next != 0)
+                {
+                    last = objList[last.next];
+                }
+                obj.next = 0;
+                last.next = obj.index;
+                return;
             }
             obj.next = talker.link;
             talker.link = obj.index;
