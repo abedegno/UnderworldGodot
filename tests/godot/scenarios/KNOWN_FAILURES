@@ -28,8 +28,6 @@ uw2/critter-line-of-sight  ~line of sight differs from DOS  # same as UW1: src/n
 uw1/paths-freed-on-level-change  ~free paths after entering level  # free-path mask never reset on entering a level: src/npc/npcai.cs:185, src/utility/teleportation.cs:567; uw1 PATHFIND.C:945-954, CRITTIME.C:406
 uw2/paths-freed-on-level-change  ~free paths after entering level  # free-path mask never reset on entering a level: src/npc/npcai.cs:185; uw2 CRITTIME.C:445-463
 # batch B: player and magic rules
-uw1/sleep-night  ~hit points after the night  # heals HPRegenerationChange(regen * comfort), 2..32 hunger, 16 drunkenness, lights as a counter (src/World/sleep.cs:117, 163, 192, 197); uw1 SKILLS.C:549, 584-605
-uw2/sleep-night  ~hit points after the night  # same (sleep.cs:117, 163, 192, 197); uw2 SKILLS.C:472, 511-532
 uw2/sleep-killorn-crash  ~quest 50 set and 54 clear (Killorn crashes) expected 0  # needs world 2 and quest 54 set, the reverse (src/World/sleep.cs:105); uw2 SKILLS.C:467-471
 uw1/sleep-in-void  ~fatigue after trying to sleep in the Void  # no level 9 test (src/World/sleep.cs:25); uw1 SKILLS.C:525-528 refuses
 uw2/map-area-radius  ~open squares mapped within the radius 7 circle at Casting 20  # radius Max(Casting - 13, 0) / 5 + 2, flood-filled square (src/magic/spellcasting_class_13.cs:71); uw2 SPELLS.C:996-1002 circle
