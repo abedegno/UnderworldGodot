@@ -20,8 +20,8 @@ namespace Underworld
     // Blocks 0-15 are all present and uncompressed; sizes range from 324 to 1668 bytes.
     //
     // In-memory representation: scd.scd_data is UWBlock[] of length 16.
-    // Blocks are loaded lazily per-demand in ProcessSCDArk; after processing, unmodified blocks
-    // are set back to null (scd.cs:67). There is NO persistent "source byte array" like
+    // Blocks are loaded lazily per-demand in ProcessSCDArk; after processing, a block no row changed
+    // goes back to what it was before (null if it was never written back). There is NO persistent "source byte array" like
     // LevArkLoader.lev_ark_file_data — each call re-reads from disk.
     //
     // Writer strategy: read the source SCD.ARK bytes from disk (BasePath + folder + "/SCD.ARK"),
