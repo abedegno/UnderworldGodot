@@ -12,6 +12,7 @@ namespace Underworld.Scenarios;
 ///
 ///   Godot --headless --fixed-fps 60 --path . res://tests/godot/scenarios/scenario_runner.tscn \
 ///     -- --game uw1|uw2 --scenarios a,b|--all --temp-home TMP [--uw1-dir D] [--uw2-dir D]
+///        [--order reverse|shuffle:SEED]
 ///
 /// Run it through tests/scenarios.sh, which gives Godot a temporary HOME and passes it as
 /// --temp-home. The runner refuses to run unless Godot's user data folder is inside --temp-home,
@@ -23,6 +24,14 @@ namespace Underworld.Scenarios;
 /// cutscene that main.StartGame queues, start a new game the way main.LaunchUWDemo does
 /// (playerdat.InitEmptyPlayer, the demo's stand-in stats, uimanager.JourneyOnwards("DATA")),
 /// then Setup, Act, Assert.
+///
+/// Before each scenario StaticStateGuard puts the game's static fields back to the values this
+/// process had before its first scenario, so a scenario cannot depend on what an earlier one
+/// left (see StaticStateGuard and the README). Environment: SCENARIO_STATE_REPORT=1 prints
+/// "STATE" lines naming the statics each scenario left changed and those that differ at the
+/// start of a scenario from the first one's start; SCENARIO_STATE_GUARD=0 turns the restore off,
+/// to see which of those the guard is covering. --order runs the scenarios in reverse, or
+/// shuffled by a seed, to show they do not depend on their order.
 /// Prints "SCENARIO game/name PASS|FAIL reason|SKIP reason" per scenario and a final
 /// "GODOT-TEST-VERDICT PASS|FAIL|SKIP". Godot's exit status is not to be trusted; the lines are
 /// the result.
@@ -367,9 +376,78 @@ public partial class ScenarioRunner : Node
             return;
         }
 
+        string order = args.GetValueOrDefault("--order", "");
+        if (order == "reverse") applicable.Reverse();
+        else if (order.StartsWith("shuffle:") && int.TryParse(order["shuffle:".Length..], out int orderSeed))
+        {
+            var r = new Random(orderSeed);   // Fisher-Yates; System.Random with a seed repeats
+            for (int i = applicable.Count - 1; i > 0; i--)
+            {
+                int j = r.Next(i + 1);
+                (applicable[i], applicable[j]) = (applicable[j], applicable[i]);
+            }
+        }
+        else if (order != "")
+        {
+            foreach (var s in applicable) Line(game, s.Name, $"FAIL unknown --order '{order}' (reverse or shuffle:SEED)");
+            return;
+        }
+        if (order != "") GD.Print($"SCENARIO-ORDER {order} " + string.Join(",", applicable.Select(s => s.Name)));
+
+        StaticStateGuard.DeepFingerprints = ReportOn;
+        // The fresh values, taken now: BasePath and _RES are set and the game scene does not exist yet.
+        GD.Print("STATE-GUARD " + StaticStateGuard.Snapshot(typeof(UWClass).Assembly)
+            + (GuardOn ? "" : "; restore off (SCENARIO_STATE_GUARD=0)"));
+
         foreach (var s in applicable)
         {
             Line(game, s.Name, await RunOne(s, game, packed));
+        }
+        if (ReportOn) PrintStateSummary(game);
+    }
+
+    static bool GuardOn => OS.GetEnvironment("SCENARIO_STATE_GUARD") != "0";
+    static bool ReportOn => OS.GetEnvironment("SCENARIO_STATE_REPORT") == "1";
+
+    /// <summary>The first scenario's state just after its new game started, for SCENARIO_STATE_REPORT.</summary>
+    StaticStateGuard.State _firstStart;
+    string _firstName;
+
+    /// <summary>Per field, for the summary: its cover, and the scenarios that left it changed or found it changed at their start.</summary>
+    readonly SortedDictionary<string, (string Cover, List<string> Left, List<string> AtStart)> _seen = new(StringComparer.Ordinal);
+
+    void Seen(string field, string cover, string scenario, bool atStart)
+    {
+        if (!_seen.TryGetValue(field, out var e)) _seen[field] = e = (cover, new List<string>(), new List<string>());
+        (atStart ? e.AtStart : e.Left).Add(scenario);
+    }
+
+    void ReportStart(string game, Scenario s)
+    {
+        var now = StaticStateGuard.Capture();
+        if (_firstStart == null) { _firstStart = now; _firstName = s.Name; return; }
+        foreach (var (field, cover, what) in StaticStateGuard.Differences(_firstStart, now))
+        {
+            GD.Print($"STATE {game}/{s.Name} start-differs {cover} {field}: {what} (against {_firstName})");
+            Seen(field, cover, s.Name, atStart: true);
+        }
+    }
+
+    void ReportLeft(string game, Scenario s)
+    {
+        foreach (var (field, cover, what) in StaticStateGuard.Differences(StaticStateGuard.Fresh(), StaticStateGuard.Capture()))
+        {
+            GD.Print($"STATE {game}/{s.Name} left {cover} {field}: {what}");
+            Seen(field, cover, s.Name, atStart: false);
+        }
+    }
+
+    void PrintStateSummary(string game)
+    {
+        foreach (var (field, e) in _seen)
+        {
+            string first(List<string> l) => l.Count == 0 ? "" : $" (first {l[0]})";
+            GD.Print($"STATE-SUMMARY {game} {field} {e.Cover}: left changed by {e.Left.Count}{first(e.Left)}, differs at the start of {e.AtStart.Count}{first(e.AtStart)}");
         }
     }
 
@@ -381,11 +459,11 @@ public partial class ScenarioRunner : Node
         try
         {
             Rng.Source = new BorlandRandSource(s.Seed);
-            ResetProcessStatics();
-
-            // The value a fresh process starts with. A previous scenario left it at GAME, and
-            // the intro cutscene restores whatever mode it found when it ends.
-            uimanager.CurrentGameMode = uimanager.GameModes.CUTSCENE;
+            if (GuardOn)
+            {
+                StaticStateGuard.Restore();
+                EmptySaveSlots(UWClass.BasePath);
+            }
 
             root = packed.Instantiate();
             root.Name = "Underworld";   // the game looks itself up at /root/Underworld
@@ -401,15 +479,17 @@ public partial class ScenarioRunner : Node
 
             // A "more" prompt left open keeps uimanager.blockinput true, and with it the player's
             // update (PlayerTimedLoop) does nothing. The flag is static (MessageDisplay.cs:46) and a
-            // new game does not clear it. It is cleared here, after the new game has started, not
-            // in ResetProcessStatics: a conversation an earlier scenario started keeps running
-            // across the scene change and its pause() (conversation_functions/pause.cs:10) can set
-            // the flag again while this new game starts.
+            // new game does not clear it. StaticStateGuard restores it before the game starts, but
+            // that is not enough: a conversation an earlier scenario started keeps running across
+            // the scene change (its async task is not a static the guard can reset), and its
+            // pause() (conversation_functions/pause.cs:10) can set the flag again while this new
+            // game starts. So it is cleared again here, after the new game has started.
             MessageDisplay.WaitingForMore = false;
 
             // Seeded again, so Setup starts from exactly Seed: the seeding above makes the new
             // game's own draws repeatable, and they have moved the generator on since.
             Rng.Source = new BorlandRandSource(s.Seed);
+            if (ReportOn) ReportStart(game, s);
 
             var c = new ScenarioContext(this, game, root);
             await s.Setup(c);
@@ -434,41 +514,8 @@ public partial class ScenarioRunner : Node
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             }
+            if (ReportOn) ReportLeft(game, s);
         }
-    }
-
-    /// <summary>
-    /// Puts back the statics a fresh process starts with that a new game does not reset and a
-    /// scenario may have moved: the player loop's tick counters (playerdatloop.cs:13-17; only
-    /// Load resets one of them) and the critters' free-path mask (npcai.cs:185, set only at
-    /// start-up), and the clock of the last spell cast (runicmagic.cs, reset by DOS only on a
-    /// restore or a death). Without this a scenario's 20-second and 5-minute ticks fall where earlier
-    /// scenarios left them, pathfinding runs with the paths an earlier scenario took, and a cast can
-    /// be refused as too soon after an earlier scenario's.
-    /// start-up). Without this a scenario's 20-second and 5-minute ticks fall where earlier
-    /// scenarios left them, and pathfinding runs with the paths an earlier scenario took.
-    /// Also the palette number (palette.cs) and its colour-cycle steps (paletteloader.cs:36-37): a scenario that ends
-    /// the game or goes to the main menu leaves palette 2 and a step of its longer menu cycle, and main.StartGame's
-    /// switch back to palette 0 then indexes past palette 0's cycle (paletteloader.cs:431) and stops the next game
-    /// starting. The field is set directly, so the reset does not touch the shader.
-    /// </summary>
-    static void ResetProcessStatics()
-    {
-        SetStatic(typeof(Palette), "_currentpalette", 0);
-        SetStatic(typeof(playerdat), "playertimer", 0.0);
-        SetStatic(typeof(playerdat), "playerUpdateCounter", 0);
-        SetStatic(typeof(playerdat), "secondcounter", 0);
-        SetStatic(typeof(npc), "BitFieldForPathing_dseg_67d6_B4", 0xFFFF);
-        SetStatic(typeof(RunicMagic), "LastSpellCastClock_dseg_5c99_16E3", 0);
-        PaletteLoader.NextPaletteCycle_GAME = -1;
-        PaletteLoader.NextPaletteCycle_UI = -1;
-    }
-
-    static void SetStatic(Type type, string name, object value)
-    {
-        var field = type.GetField(name, System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)
-            ?? throw new MissingFieldException(type.Name, name);
-        field.SetValue(null, value);
     }
 
     /// <summary>The cutscenes the game played at start-up, in order, before the new game.</summary>
@@ -598,6 +645,34 @@ public partial class ScenarioRunner : Node
         }
         for (int n = 0; n <= 4; n++) Directory.CreateDirectory(Path.Combine(dir, $"SAVE{n}"));
         return dir;
+    }
+
+    /// <summary>
+    /// Empties the temporary game folder's save slots, as they were when the process started. A
+    /// scenario that saves (guard-save-load, uw2-automap-saved) otherwise leaves its slot, and
+    /// every later new game then starts the way it does with a saved game there: the title
+    /// without the introduction after it (uimanager.TitleFinished), and another main menu.
+    /// </summary>
+    static void EmptySaveSlots(string gameDir)
+    {
+        foreach (var entry in Directory.EnumerateFileSystemEntries(gameDir, "SAVE*"))
+        {
+            var info = new FileInfo(entry);
+            if (info.LinkTarget != null) continue;   // never follow a link out of the temporary folder
+            bool dir = Directory.Exists(entry);
+            if (dir && !Path.GetFileName(entry).Contains('.'))
+            {
+                // A slot (TempGameFolder made it): empty it.
+                foreach (var f in Directory.EnumerateFileSystemEntries(entry))
+                {
+                    if (Directory.Exists(f) && new FileInfo(f).LinkTarget == null) Directory.Delete(f, recursive: true);
+                    else File.Delete(f);
+                }
+            }
+            // SAVEn.txn, SAVEn.tmp-id, SAVEn.old-id: SlotTransaction's files beside the slots.
+            else if (dir) Directory.Delete(entry, recursive: true);
+            else File.Delete(entry);
+        }
     }
 
     /// <summary>Whether path is inside dir, comparing separators and case loosely (Windows, macOS).</summary>
