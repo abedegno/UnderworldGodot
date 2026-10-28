@@ -641,7 +641,9 @@ namespace Underworld
 			TemporaryTalker = false;
 			for (int i = 0; i < uimanager.NoOfTradeSlots; i++)
 			{//move remaining objects in the trade area to the players tile.
-				var objindex = uimanager.GetPlayerTradeSlot(i, true);
+				// Every item still in a slot goes back, selected or not (uw1 BARTER.C:217-221,
+				// uw2 BARTER.C:178-182); a deselected item is in no other list.
+				var objindex = uimanager.GetPlayerTradeSlot(i, false);
 				if (objindex != -1)
 				{
 					var tile = UWTileMap.current_tilemap.Tiles[playerdat.playerObject.tileX, playerdat.playerObject.tileY];
