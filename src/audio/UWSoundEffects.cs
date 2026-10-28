@@ -76,6 +76,17 @@ namespace Underworld
             PlaySoundEffectAtCoordinate(effectNo, packedX, packedY, volDelta);
         }
 
+#if DEBUG
+        /// <summary>
+        /// Test seam. Invoked with the effect number at the start of every positional request
+        /// (PlaySoundEffectAtCoordinate, and so PlaySoundEffectAtObject), before the sound
+        /// switch and the distance cull, so a headless test can see which sound the game asked
+        /// for. Nothing in the game assigns it, and it is internal because the Godot tests
+        /// compile into this same assembly.
+        /// </summary>
+        internal static System.Action<byte> PositionalRequestObserver;
+#endif
+
         /// <summary>
         /// Positional emit by packed coord. Source: UW1 seg014_8AE
         /// (UW1_asm.asm:64454-64921), UW2 PlaySoundEffect_1C50
@@ -89,6 +100,9 @@ namespace Underworld
         /// </summary>
         public static void PlaySoundEffectAtCoordinate(byte effectNo, int packedX, int packedY, int volDelta)
         {
+#if DEBUG
+            PositionalRequestObserver?.Invoke(effectNo);
+#endif
             if (!playerdat.SoundEffectsEnabled) return;
 
             // Guardian laughter bypasses distance attenuation entirely.
