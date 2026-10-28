@@ -237,10 +237,9 @@ namespace Underworld
 
                                 foodhealthbonus = (byte)Math.Min(foodhealthbonus + 1, 0xFF);
 
-                                var hpskillcheck = (int)SkillCheck(STR, 10);
-                                if (hpskillcheck > 0)
-                                {//regular health regen
-                                    HPRegenerationChange(hpskillcheck);
+                                if ((int)SkillCheck(STR, 15) > 0)
+                                {//regular health regen, exactly one hit point: uw1 PLAYTIME.C:139-140, uw2 PLAYTIME.C:148-149 restore_hp(ThePlayer, -1)
+                                    HPRegenerationChange(-1);
                                 }
                             }//end every 5 mins update
                             if ((playerUpdateCounter % 60) == 0)//every 20 mins
