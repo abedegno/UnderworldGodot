@@ -6,4 +6,3 @@ uw1/sqrt              # values >= 0x10000 wrong: div divides AX not DX:AX, the C
 uw2/sqrt              # values >= 0x10000 wrong: div divides AX not DX:AX, the CH branch divides twice, rcr's carry is lost (uwMath.cs:154, 252, 255)
 uw1/compute_hitangle  # returns 0 when the defender is not a creature (majorclass != 1); the original computes the angle for any object: combat.cs:1033
 uw2/compute_hitangle  # returns 0 when the defender is not a creature (majorclass != 1); the original computes the angle for any object: combat.cs:1033
-uw2/check_res         # fire/cold doubling capped at 127 (Math.Min(127, d << 1)); the original doubles below 0x7F and gives 0xFF otherwise: damage.cs:615
