@@ -35,7 +35,7 @@ public static class Seams
     /// test host, so Path.Combine throws before a buffer can be replaced. Run them once against a
     /// folder with no game data: ReadStreamFile then leaves the buffer null without throwing.
     /// </summary>
-    static void RunStaticConstructor(Type t)
+    public static void RunStaticConstructor(Type t)
     {
         var saved = UWClass.BasePath;
         try
