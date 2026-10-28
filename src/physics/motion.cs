@@ -551,7 +551,20 @@ namespace Underworld
                     varE = projectile.ProjectileSourceID;
                 }
             }
-            ObjectRemover_OLD.DeleteObjectFromTile_DEPRECIATED(projectile.tileX, projectile.tileY, projectile.index, true);
+            if (haltedObject != null)
+            {
+                // The static copy took the contents (the 8 copied bytes include the link),
+                // as DOS clears obj->ol.f.link before Obj_Punt(head, obj, 1).
+                ObjectRemover_OLD.DeleteObjectFromTile_DEPRECIATED(projectile.tileX, projectile.tileY, projectile.index, true);
+            }
+            else
+            {
+                // Culled, or no static slot: DOS's Obj_Punt(head, obj, 1) frees the object and
+                // everything inside it (uw1 OBJPHYS.C:477, uw2 OBJPHYS.C:468). Freeing the
+                // object alone left a container's contents allocated and in no list (#207).
+                // One not found in the tile's chain is left alone, contents and all.
+                ObjectRemover.RemoveObjectAndContentsFromTile(projectile);
+            }
             if (haltedObject != null)
             {//is this a bit hairy under the circumstances?
                 haltedObject.next = tile.indexObjectList;
