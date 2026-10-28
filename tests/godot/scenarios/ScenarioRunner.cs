@@ -52,6 +52,7 @@ public partial class ScenarioRunner : Node
         (() => new CombatEquipmentWear(), true),
         (() => new CritterLineOfSight(), true),
         (() => new PathsFreedOnLevelChange(), true),
+        (() => new Uw1NpcSequences(), true),
         // batch B: player and magic rules
         (() => new SmiteUndeadRule(), true),
         (() => new KillExperience(), true),
