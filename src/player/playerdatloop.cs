@@ -805,10 +805,10 @@ namespace Underworld
         public static int BrightestNonMagicalLight()
         {
             int lightlevel = 0; //darkness
-            //5,6,7,8
-            for (int i = 5; i <= 8; i++)
+            //5,6,7,8, then the object on the cursor (uw1 PLAYDATA.C:426-440, uw2 PLAYDATA.C:389-399)
+            for (int i = 5; i <= 9; i++)
             {
-                var obj = GetInventorySlotObject(i);
+                var obj = (i <= 8) ? GetInventorySlotObject(i) : (ObjectInHand > 0 ? UWTileMap.current_tilemap.LevelObjects[ObjectInHand] : null);
                 if (obj != null)
                 {
                     if ((obj.majorclass == 2) && (obj.minorclass == 1) && (obj.classindex >= 4) && (obj.classindex <= 7))
