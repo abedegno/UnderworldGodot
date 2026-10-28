@@ -10,13 +10,14 @@ namespace Underworld.Scenarios;
 /// (uw1/src/event/TRIGGER.C:426-436, uw2/src/event/TRIGGER.C:702-712). A trigger reached with
 /// type -1 skips every check on who set it off (uw1 TRIGGER.C:116, uw2 TRIGGER.C:98). A ward trap
 /// always ends the chain (uw1 TRIGGER.C:403-416, also the tell trap; uw2 TRIGGER.C:681-693), and in
-/// UW1 so does a door trap (uw1 TRIGGER.C:339-340). A hack trap goes on (uw1 TRIGGER.C:288-290,
+/// UW1 so does a door trap (uw1 TRIGGER.C:339-340). UW2's door trap ends it when the square has a door
+/// and the trap's owner is not 0, the case where its link is a lock to put on the door (uw2 TRIGGER.C:633-636). A hack trap goes on (uw1 TRIGGER.C:288-290,
 /// uw2 TRIGGER.C:514-516); UW2's hack 37 brings the schedules up to date (TRIGGER.C:872-873) and
 /// UW1's hack 0x32 makes a waiting 0xD8 critter talk (TRIGGER.C:526-527), neither ending it.
 ///
 /// The port: a chained trigger still needs the player flag (src/triggers/trigger.cs:51-55); the
-/// ward trap passes the chain on (src/traps/a_ward_trap.cs:29); UW1's door trap passes it on
-/// (src/traps/trap.cs, case 8); a hack trap it does not handle stops the chain
+/// ward trap passes the chain on (src/traps/a_ward_trap.cs:29); UW1's door trap passes it on, and
+/// UW2's always does (src/traps/trap.cs, case 8); a hack trap it does not handle stops the chain
 /// (src/traps/hack_trap.cs:456, trap.cs's "implemented" test).
 ///
 /// Each case fires a chain through trap.ActivateTrap with the player (index 1) as the one who set
@@ -31,7 +32,7 @@ public sealed class TrapChainFlow : Scenario
     const int HackTrap = 0x183, DoorTrap = 0x188, WardTrap = 0x189, SetVariable = 0x18D, UseTrigger = 0x1A2;   // include/items.h
 
     public override string Name => "trap-chain-flow";
-    public override string Cites => "underworld-exhumed uw1/src/event/TRIGGER.C:104-136, 339-340, 403-436; uw2/src/event/TRIGGER.C:86-128, 681-712";
+    public override string Cites => "underworld-exhumed uw1/src/event/TRIGGER.C:104-136, 339-340, 403-436; uw2/src/event/TRIGGER.C:86-128, 633-636, 681-712";
 
     record Case(string Name, bool Continues, string Cite) { public int Got; }
 
@@ -60,10 +61,12 @@ public sealed class TrapChainFlow : Scenario
         return t;
     }
 
-    int Fire(uwObject first)
+    int Fire(uwObject first) => Fire(first, _px, _py);
+
+    int Fire(uwObject first, int x, int y)
     {
         playerdat.SetGameVariable(Var, 0);
-        trap.ActivateTrap(character: 1, trapObj: first, ObjectUsed: null, triggerX: _px, triggerY: _py, objList: UWTileMap.current_tilemap.LevelObjects);
+        trap.ActivateTrap(character: 1, trapObj: first, ObjectUsed: null, triggerX: x, triggerY: y, objList: UWTileMap.current_tilemap.LevelObjects);
         return playerdat.GetGameVariable(Var);
     }
 
@@ -112,12 +115,44 @@ public sealed class TrapChainFlow : Scenario
             door.quality = 1; door.link = (short)v4.index;
             Run(c, new Case("door trap -> set variable", false, "continue_chain = 0: uw1 TRIGGER.C:339-340"), door);
         }
+        else
+        {
+            // UW2's door trap in a square with a door: owner 0 goes on, owner != 0 swaps the lock and ends the chain.
+            var (dx, dy) = FindDoorSquare();
+            if (dx < 0) { _problem ??= "no square with a door on the level"; return Task.CompletedTask; }
+            foreach (int owner in new[] { 0, 1 })
+            {
+                var door = Make(DoorTrap); var v4 = AddVariable(uw2);
+                if (door == null || v4 == null) return Task.CompletedTask;
+                door.quality = 0;   // no open, close or toggle
+                door.owner = (short)owner; door.link = (short)v4.index;
+                Run(c, new Case($"door trap with owner {owner} at a door -> set variable", owner == 0,
+                    owner == 0 ? "the chain goes on: uw2 TRIGGER.C:633, 702-711" : "continue_chain = 0 with a door and owner != 0: uw2 TRIGGER.C:633-636"), door, dx, dy);
+            }
+        }
         return Task.CompletedTask;
     }
 
-    void Run(ScenarioContext c, Case k, uwObject first)
+    /// <summary>The first square holding a door (major class 5, minor class 0), or (-1, -1).</summary>
+    static (int x, int y) FindDoorSquare()
     {
-        k.Got = Fire(first);
+        var map = UWTileMap.current_tilemap;
+        for (int x = 0; x < 64; x++)
+        for (int y = 0; y < 64; y++)
+            for (int i = map.Tiles[x, y].indexObjectList, guard = 0; i != 0 && guard < 1024; guard++)
+            {
+                var o = map.LevelObjects[i];
+                if (o.majorclass == 5 && o.minorclass == 0) return (x, y);
+                i = o.next;
+            }
+        return (-1, -1);
+    }
+
+    void Run(ScenarioContext c, Case k, uwObject first) => Run(c, k, first, _px, _py);
+
+    void Run(ScenarioContext c, Case k, uwObject first, int x, int y)
+    {
+        k.Got = Fire(first, x, y);
         _cases.Add(k);
         c.Note($"{k.Name}: variable {Var} = {k.Got}");
     }

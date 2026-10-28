@@ -149,6 +149,9 @@ public partial class ScenarioRunner : Node
         (() => new MenuMusicRepeat(), true),
         (() => new Uw1EndgameEffects(), true),
         (() => new RingSlotRule(), true),
+        (() => new CastleScheduleWhoami8F(), true),
+        (() => new CreateObjectTrapPutAt(), true),
+        (() => new Uw1SetVariableQuestBit(), true),
         // batch D: guards
         (() => new GuardEat(), true),
         (() => new GuardLight(), true),

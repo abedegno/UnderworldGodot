@@ -117,14 +117,13 @@ namespace Underworld
                                 case 8://door trap
                                     {
                                         implemented = true;
-                                        a_door_trap.Activate(
+                                        if (a_door_trap.Activate(
                                             triggerX: triggerX,
                                             triggerY: triggerY,
                                             trapObj: trapObj,
-                                            objList: objList);
-                                        if (_RES != GAME_UW2)
+                                            objList: objList))
                                         {
-                                            triggerNextIndex = 0;//a door trap always ends the chain in UW1 (uw1 TRIGGER.C:339-340)
+                                            triggerNextIndex = 0;
                                         }
                                         break;
                                     }
