@@ -12,6 +12,4 @@
 # batch B: player and magic rules
 # end batch B
 # batch C
-uw1/end-barter-returns-items  ~deselected item left in the trade area expected put back  # only selected player slots dropped at conversation end: conversationvm.cs:640-646; uw1 BARTER.C:212-225
-uw2/end-barter-returns-items  ~deselected item left in the trade area expected put back  # only selected player slots dropped at conversation end: conversationvm.cs:640-646; uw2 BARTER.C:172-190
 # batch D: guards
