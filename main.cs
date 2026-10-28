@@ -54,6 +54,8 @@ public partial class main : Node3D
 	static double testclock = 0;
 	/// <summary>The motion update runs once this much time has passed since the last (_PhysicsProcess).</summary>
 	const double MotionUpdateInterval = 0.097659;
+	/// <summary>One tick of the game's clock, an AIL timer at 0x100 Hz (init_timers, uw1 SOUND.C:179, uw2 SOUND.C:706).</summary>
+	const double PitTickInterval = 1.0 / 256.0;
 
 	double cycletime = 0;
 	const double MenuPaletteCycleInterval = 14.0 / 256.0;
@@ -267,11 +269,10 @@ public partial class main : Node3D
 	public override void _Process(double delta)
 	{
 		base._Process(delta);
-		//draw the camera between its last two motion updates (enhancements.smoothcamera). The update waits for
-		//whole physics frames and drops the remainder (testclock = 0), so it comes every ceil(interval * rate) frames.
-		var rate = Engine.PhysicsTicksPerSecond;
-		var sinceUpdate = testclock + Engine.GetPhysicsInterpolationFraction() / rate;
-		cameraRender.DrawBetween(sinceUpdate / (Math.Ceiling(MotionUpdateInterval * rate) / rate));
+		//draw the camera between its last two motion updates (enhancements.smoothcamera), one interval apart. The
+		//update keeps the time left over (testclock), so a frame's alpha follows the clock evenly from one update into the next.
+		var sinceUpdate = testclock + Engine.GetPhysicsInterpolationFraction() / Engine.PhysicsTicksPerSecond;
+		cameraRender.DrawBetween(sinceUpdate / MotionUpdateInterval);
 		if (uimanager.InGame)
 		{
 			var mat = (ShaderMaterial)uimanager.instance.uwviewport.Material;
@@ -309,11 +310,12 @@ public partial class main : Node3D
 				cycletime = (cycletime >= 2 * GamePaletteCycleInterval) ? 0 : cycletime - GamePaletteCycleInterval;
 				PaletteLoader.UpdatePaletteCycles();
 			}
-			if (PitTimer >= 0.00391)
+			if (PitTimer >= PitTickInterval)
 			{
-				//simulation of the dos pit timer.
-				GlobalPITTimer += (uint)(PitTimer / 0.00391);
-				PitTimer = 0;
+				//simulation of the dos pit timer. Carry the part of a tick left over so it counts 256 a second at any frame rate.
+				var ticks = (uint)(PitTimer / PitTickInterval);
+				GlobalPITTimer += ticks;
+				PitTimer -= ticks * PitTickInterval;
 				// if ((GlobalPITTimer % 32) == 0)
 				// {
 				if (uimanager.InGame)
@@ -359,7 +361,10 @@ public partial class main : Node3D
 
 		if ((uimanager.InGame) && (testclock >= MotionUpdateInterval) && (!uimanager.blockinput))
 		{
-			testclock = 0;
+			//carry the remainder so the updates average one per interval (0x19 ticks, 256 a second) at any frame rate;
+			//after a stall (a long frame, the menus) run once and drop the rest, as check_physics takes at most 0x40
+			//ticks a frame (uw1 PLAYMOVE.C:330, uw2 PLAYMOVE.C:323)
+			testclock = (testclock >= 2 * MotionUpdateInterval) ? 0 : testclock - MotionUpdateInterval;
 			byte AnimationFrameDeltaIncrement = 0;
 
 			var ClockIncrement = GlobalPITTimer - LastGlobalPitTimer;
