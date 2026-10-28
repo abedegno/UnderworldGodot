@@ -179,8 +179,8 @@ namespace Underworld
                 }
             }
 
-            if (levelno == playerdat.dungeon_level-1)
-            {
+            if ((levelno == playerdat.dungeon_level-1) && (_RES != GAME_UW2 || playerdat.AutomapEnabled))
+            {//no marker for a lost player in UW2 (uw2 AUTOMAP.C:795)
                 var src = new Rect2I(
                     x: 0, 
                     y: 0, 
