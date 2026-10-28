@@ -470,12 +470,13 @@ namespace Underworld
                         }
                         else
                         {
-                            //Check for ranged attacks
-                            if ((critter.npc_animation == ANIMATION_RANGEDATTACK) || (critter.npc_animation == ANIMATION_MAGICATTACK))
+                            //Check for ranged attacks. UW2 shoots and casts in one sequence and picks by the cast slot (uw2 AI.C:1136-1145).
+                            //UW1 always fires in SEQ_FIRE and casts in SEQ_CAST only with a cast slot set, else carries on with its goals (uw1 AI.C:1162-1180)
+                            if ((critter.npc_animation == ANIMATION_RANGEDATTACK) || ((critter.npc_animation == ANIMATION_MAGICATTACK) && ((_RES == GAME_UW2) || (critter.npc_spellindex != 0))))
                             {
                                 if (critter.AnimationFrame == COMBAT_HITFRAME)
                                 {
-                                    if (critter.npc_spellindex == 0)
+                                    if ((_RES == GAME_UW2) ? (critter.npc_spellindex == 0) : (critter.npc_animation == ANIMATION_RANGEDATTACK))
                                     {
                                         //launch missile using rangedwweapon data in critter.dat 
                                         var si_ammoitemid = critterObjectDat.WeaponLootTableLookup(critter.item_id);
