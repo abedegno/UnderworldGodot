@@ -205,15 +205,14 @@ namespace Underworld
             switch (result)
             {
                 case playerdat.SkillCheckResult.CritFail:
-                    {//damage the object
-                        //destroyed only when the roll is above quality + skill, quality left as it was. uw1 WORLDEV.C:642-643, uw2 WORLDEV.C:1023-1024
-                        if (Rng.r.Next(0, 64) > itemToRepair.quality + repairskill)
+                    {//destroyed, its quality untouched, when (rand() & 0x3F) is above quality + skill; else 4..11 off. uw1 WORLDEV.C:642-645, uw2 WORLDEV.C:1023-1026
+                        if (Rng.RandMod(64) > itemToRepair.quality + repairskill)
                         {
                             return -2;
                         }
                         else
-                        {//damage the object, 4 + (rand() & 7). uw1 WORLDEV.C:644, uw2 WORLDEV.C:1025
-                            var newq = itemToRepair.quality - (4 + Rng.r.Next(0, 8));
+                        {//damage the object
+                            var newq = itemToRepair.quality - (4 + Rng.RandMod(8));
                             itemToRepair.quality = (short)Math.Max(0, newq);
                             if (itemToRepair.quality == 0)
                             {
