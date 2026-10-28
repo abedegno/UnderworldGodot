@@ -44,7 +44,7 @@ public sealed class CritterFlees : Scenario
         _id = BatchA.PickCritter(i => BatchA.Walker(i)
             && critterObjectDat.NPCPower_0x2DBits1To7(i) == 0
             && critterObjectDat.maybemorale(i) < 8
-            && critterObjectDat.speed(i) != (critterObjectDat.unk_b(i) + 1) / 2);
+            && critterObjectDat.run(i) != (critterObjectDat.walkspeed(i) + 1) / 2);
         if (_id < 0) _problem = "no walking critter that never casts, has nerve under 8 and runs at another speed than it backs off";
         return Task.CompletedTask;
     }
@@ -96,7 +96,7 @@ public sealed class CritterFlees : Scenario
             Globals(critter, 2, false, false);
             Rng.Source = new BorlandRandSource(1);
             BatchA.Call(t, "NPC_Goal6", critter);
-            Diff("speed 0x20 above its target (runs)", critter.UnkBit_0X13_Bit0to6, critterObjectDat.speed(_id));
+            Diff("speed 0x20 above its target (runs)", critter.UnkBit_0X13_Bit0to6, critterObjectDat.run(_id));
             p.zpos = savedZ;
             critter.zpos = savedZ;
 
@@ -140,7 +140,7 @@ public sealed class CritterFlees : Scenario
             Rng.Source = saved;
             p.zpos = savedZ;
         }
-        c.Note($"critter 0x{_id:X}, speed {critterObjectDat.unk_b(_id)}, run {critterObjectDat.speed(_id)}: {_diffs.Count} of {_cases} differ");
+        c.Note($"critter 0x{_id:X}, speed {critterObjectDat.walkspeed(_id)}, run {critterObjectDat.run(_id)}: {_diffs.Count} of {_cases} differ");
         return Task.CompletedTask;
     }
 
