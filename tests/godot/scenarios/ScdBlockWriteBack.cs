@@ -158,3 +158,104 @@ public sealed class ScdBlockWriteBack : Scenario
         return k.Result;
     }
 }
+
+/// <summary>
+/// The hourly step keeps SCD.ARK block 0 the same way (UW2). On every 60th 20-second step
+/// duration_check does Sched_Load(0), Sched_WrapTime(xclock[XC_TIME], DAY_STEPS, 1) and Sched_Save(0)
+/// (uw2/src/game/PLAYTIME.C:157-162): the block is read from SCD.ARK as last written, and written back
+/// only when a row ran or deleted itself (SCHEDULE.C:66-69, 129, 137-158), whatever Sched_WrapTime returned.
+///
+/// The port's scd.ProcessSCDBlock0 worked on the block it holds in place and set it to null whenever
+/// no row ran (src/scd/scd.cs, ProcessSCDBlock0), so an hour that ran nothing put block 0 back as it is
+/// in the file: rows that had deleted themselves came back and the next row went back to 0.
+///
+/// The scenario puts in a block 0 as an earlier pass would have written it (one row left, clock 2,
+/// next row 0, the row due at 10), steps the hour to 3, then to 10.
+/// </summary>
+public sealed class ScdHourlyStepWriteBack : Scenario
+{
+    const int Var = 103;
+
+    public override string Name => "scd-hourly-step-write-back";
+    public override string[] Games => new[] { "uw2" };
+    public override string Cites => "underworld-exhumed uw2/src/game/PLAYTIME.C:157-162, uw2/src/event/SCHEDULE.C:56-80, 122-158, 169-199";
+
+    UWBlock[] _origData;
+    int _origXClock0, _origVar, _level;
+    int _kept1, _rows1, _clock1, _next1, _var1, _kept2, _rows2, _clock2, _next2, _var2;
+
+    public override Task Setup(ScenarioContext c)
+    {
+        _level = playerdat.dungeon_level;
+        _origData = scd.scd_data;
+        _origXClock0 = playerdat.GetXClock(0);
+        _origVar = playerdat.GetGameVariable(Var);
+        return Task.CompletedTask;
+    }
+
+    public override Task Act(ScenarioContext c)
+    {
+        try
+        {
+            playerdat.SetGameVariable(Var, 0);
+            var data = new byte[324 + 16 * 2];
+            data[0] = 1;                        // rows: one left after an earlier once row deleted itself
+            data[4 + _level * 4] = 2;           // this level's clock
+            data[6 + _level * 4] = 0;           // and its next row
+            data[324 + 0] = 10;                 // the row: due at 10, any level, event 9 adds 1 to Var
+            data[324 + 2] = 0xFF;
+            data[324 + 4] = 9;
+            data[324 + 5] = Var;
+            data[324 + 8] = 1;
+            scd.scd_data = new UWBlock[16];
+            scd.scd_data[0] = new UWBlock { Data = data, DataLen = data.Length };
+
+            // The hour steps to 3: no row is due.
+            playerdat.SetXClock(0, 3);
+            scd.ProcessSCDBlock0(1);
+            var b = scd.scd_data[0];
+            _kept1 = b == null ? 0 : 1;
+            _rows1 = b == null ? -1 : b.Data[0];
+            _clock1 = b == null ? -1 : b.Data[4 + _level * 4];
+            _next1 = b == null ? -1 : b.Data[6 + _level * 4];
+            _var1 = playerdat.GetGameVariable(Var);
+
+            // The hour steps to 10: the row runs. Not when block 0 was dropped, which would run the file's own day schedule.
+            if (b != null)
+            {
+                playerdat.SetXClock(0, 10);
+                scd.ProcessSCDBlock0(1);
+                b = scd.scd_data[0];
+            }
+            _kept2 = b == null ? 0 : 1;
+            _rows2 = b == null ? -1 : b.Data[0];
+            _clock2 = b == null ? -1 : b.Data[4 + _level * 4];
+            _next2 = b == null ? -1 : b.Data[6 + _level * 4];
+            _var2 = playerdat.GetGameVariable(Var);
+            c.Note($"hour 3: kept {_kept1} rows {_rows1} clock {_clock1} next {_next1} var {_var1}; hour 10: kept {_kept2} rows {_rows2} clock {_clock2} next {_next2} var {_var2}");
+        }
+        finally
+        {
+            scd.scd_data = _origData;
+            playerdat.SetXClock(0, _origXClock0);
+            playerdat.SetGameVariable(Var, _origVar);
+        }
+        return Task.CompletedTask;
+    }
+
+    public override string Assert(ScenarioContext c)
+    {
+        var k = new Checks();
+        k.Equal("block 0 still holds the earlier write after an hour that ran nothing", 1, _kept1, "uw2 PLAYTIME.C:160-162, SCHEDULE.C:137-158");
+        k.Equal("block 0 rows after that hour", 1, _rows1, "uw2 SCHEDULE.C:122-133");
+        k.Equal("block 0 clock after that hour (a clock change alone is not saved)", 2, _clock1, "uw2 SCHEDULE.C:129, 155-158, 169-183");
+        k.Equal("block 0 next row after that hour", 0, _next1, "uw2 SCHEDULE.C:137-158");
+        k.Equal($"the row due at 10 has not run at hour 3 (var {Var})", 0, _var1, "uw2 SCHEDULE.C:63-64");
+        k.Equal($"the row due at 10 runs at hour 10 (var {Var})", 1, _var2, "uw2 SCHEDULE.C:63-69");
+        k.Equal("block 0 written back after the hour a row ran", 1, _kept2, "uw2 SCHEDULE.C:69, 155-158");
+        k.Equal("block 0 rows after hour 10", 1, _rows2, "uw2 SCHEDULE.C:155-158");
+        k.Equal("block 0 clock after hour 10", 10, _clock2, "uw2 SCHEDULE.C:174, 155-158");
+        k.Equal("block 0 next row after hour 10", 1, _next2, "uw2 SCHEDULE.C:76-78");
+        return k.Result;
+    }
+}
