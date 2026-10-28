@@ -35,14 +35,15 @@ namespace Underworld
             int playerdemandscore = GetPlayerDemandScore();
             int npcdemandscore = GetNPCDemandScore(talker, attitude);
 
-            if (playerdemandscore > npcdemandscore)
+            //an ally always gives in, and the attitude can fall to 0 (uw1 BARTER.C:723-727)
+            if ((playerdemandscore > npcdemandscore) || (talker.IsAlly == 1))
             {
                 //succeed: the NPC's unselected items go back, its selected ones stay for the player to take (uw1 BARTER.C:724-726)
                 yield return say_op(ifYouInsist);
                 ReturnTradeObjectsToNPC(talker, OnlyUnselected: true);
                 TradeResult = 1;
                 result_register = 1;
-                if (attitude > 1)
+                if (attitude > 0)
                 {
                     attitude--;
                     Set(attitudeOffset, attitude);
@@ -135,10 +136,9 @@ namespace Underworld
                     / avghit
                     );
             }
-            var hungerbit = ((talker.npc_hunger) & (0x40)) >> 6;
             var di = 0;
-            if (hungerbit == 1)
-            {
+            if (talker.IsAlly == 1)
+            {//an ally (bit 6 of byte 0x19) scores 1 less (uw1 BARTER.C:719, uw2 BARTER.C:694)
                 di = -1;
             }
             else
