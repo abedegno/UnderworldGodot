@@ -119,25 +119,17 @@ namespace Underworld
                     }
                     break;
             }
-            int band = uwsettings.instance.shaderbandsize;
             for (int i = 0; i < 8; i++)
             {
-                if (i > 3) // this allows for the first 0-3 palettes to be used to simulate hallucination effects. Not vanilla behaviour
-                {
-                    uwsettings.instance.shaderbandsize = 1;
-                }
                 if ((i == 2) && (_RES != GAME_UW2))
                 {
-                    Palettes[i].cycledGamePalette = CreateShadedPaletteCycles(Palettes[i]);
                     Palettes[i].cycledUIPalette = MainMenuPaletteCycle(Palettes[i]);//main menu flames effect in uw1                 
                 }
                 else
                 {
-                    Palettes[i].cycledGamePalette = CreateShadedPaletteCycles(Palettes[i]);//init the first palette as cycled
                     Palettes[i].cycledUIPalette = CreateUnshadedPaletteCycles(Palettes[i]); //set up a simple palette cycle for fullbright ui sprites
                 }
             }
-            uwsettings.instance.shaderbandsize = band;
 
             RenderingServer.GlobalShaderParameterAdd(
                 name: "uipalette",
@@ -154,7 +146,7 @@ namespace Underworld
             RenderingServer.GlobalShaderParameterAdd(
                 name: "smoothpalette",
                 type: RenderingServer.GlobalShaderParameterType.Sampler2D,
-                defaultValue: (Texture)Palettes[Palette.CurrentPalette].cycledGamePalette[Palette.ColourTone, 0, 0]);
+                defaultValue: (Texture)ShadedPalette(Palette.CurrentPalette, Palette.ColourTone, 0, 0));
             RenderingServer.GlobalShaderParameterAdd(
                 name: "xfer",
                 type: RenderingServer.GlobalShaderParameterType.Sampler2D,
@@ -281,54 +273,86 @@ namespace Underworld
 
 
         /// <summary>
-        /// Creates a full set of cycled colour palettes based on the inital palette for all mono,light and shade levels
+        /// The number of different palettes the colour cycle goes through: its banks of 4 and runs of 5 and 3
+        /// come back together after 60 steps (COLCYCLE.C).
         /// </summary>
-        /// <param name="toCycle"></param>
-        /// <returns></returns>
-        public static ImageTexture[,,] CreateShadedPaletteCycles(Palette toCycle)
+        public const int CycleSteps = 60;
+
+        /// <summary>
+        /// One step of the original's cycle_colors: four banks of 4 colours rotate one place down, and a run of 5
+        /// and a run of 3 one place up. UW1 cycles 30h..3Fh and 10h..14h, 15h..17h (uw1 COLCYCLE.C:53-71), UW2
+        /// E0h..EFh and 3..7, 8..10 (uw2 COLCYCLE.C:49-67).
+        /// </summary>
+        static void CycleColours(Palette pal)
         {
-            //copy initial palette
-            var tmpPalette = new Palette();
-            for (int i = 0; i < 256; i++)
+            int banks = (_RES == GAME_UW2) ? 0xE0 : 0x30;
+            int runs = (_RES == GAME_UW2) ? 0x3 : 0x10;
+            for (int b = 0; b < 4; b++)
             {
-                tmpPalette.red = toCycle.red;
-                tmpPalette.green = toCycle.green;
-                tmpPalette.blue = toCycle.blue;
-                tmpPalette.alpha = toCycle.alpha;
+                Palette.cyclePalette(pal, banks + b * 4, 4);//rotate_bank(first, 4, 0): one place down
             }
+            //rotate_bank(first, count, 1): one place up. cyclePaletteReverse rotates length + 1 colours.
+            Palette.cyclePaletteReverse(pal, runs, 5 - 1);
+            Palette.cyclePaletteReverse(pal, runs + 5, 3 - 1);
+        }
 
-            var NewCycledPalette = new ImageTexture[2, 9, 28]; //mono/light,light level (8 is shade.Unlit),Cycle
-            for (int l = 0; l < 9; l++)
+        /// <summary>
+        /// A copy of the palette's colours to cycle, so that cycling leaves the loaded palette as it is.
+        /// </summary>
+        static Palette CopyOf(Palette toCycle)
+        {
+            return new Palette
             {
-                var shading = (l == shade.Unlit) ? new short[16] : shade.shadesdata[l].shadingbasedata;//unlit: light table 0 at every distance
-                for (int c = 0; c <= 27; c++)
-                {//Create palette cycles
-                    switch (_RES)
-                    {
-                        case GAME_UW2:
-                            Palette.cyclePalette(tmpPalette, 224, 16);
-                            Palette.cyclePaletteReverse(tmpPalette, 3, 6);
-                            break;
-                        default:
-                            Palette.cyclePalette(tmpPalette, 48, 16);//Forward
-                            Palette.cyclePaletteReverse(tmpPalette, 16, 7);//Reverse direction.
-                            break;
-                    }
-                    NewCycledPalette[0, l, c] = shade.GetFullShadingImage(pal: tmpPalette, light, l, shading);//$"light_{l}_{c}");   // tmpPalette.toImage();
-                    if (_RES == GAME_UWDEMO)
-                    {
-                        //UWDEMO does not have a mono palette. To maintain compatability the colour palette is copied.
-                        NewCycledPalette[1, l, c] = NewCycledPalette[0, l, c];//shade.GetFullShadingImage(pal: tmpPalette, light, l, shade.shadesdata[l].shadingbasedata);//$"mono_{l}_{c}");
-                    }
-                    else
-                    {
-                        NewCycledPalette[1, l, c] = shade.GetFullShadingImage(pal: tmpPalette, mono, l, shading);//$"mono_{l}_{c}");
-                    }
+                red = (byte[])toCycle.red.Clone(),
+                green = (byte[])toCycle.green.Clone(),
+                blue = (byte[])toCycle.blue.Clone(),
+                alpha = (byte[])toCycle.alpha.Clone()
+            };
+        }
 
-                }
+        /// <summary>
+        /// Palette palNo at cycle step `step`: a copy of the loaded palette after step + 1 steps of cycle_colors, the
+        /// same for every light level, since the original cycles its one palette and shades through the light tables
+        /// (COLCYCLE.C).
+        /// </summary>
+        static Palette CycledPalette(int palNo, int step)
+        {
+            var pal = CopyOf(Palettes[palNo]);
+            for (int n = 0; n < (step + 1) % CycleSteps; n++)
+            {
+                CycleColours(pal);
             }
+            return pal;
+        }
 
-            return NewCycledPalette;
+        /// <summary>
+        /// The last palette by distance built, with what it was built for, kept together so they cannot disagree.
+        /// </summary>
+        sealed class ShadedPaletteCache
+        {
+            public (int palNo, int tone, int lightLevel, int step) Key;
+            public ImageTexture Texture;
+        }
+        static readonly ShadedPaletteCache shadedPalette = new();
+
+        /// <summary>
+        /// The palette by distance the shaders read as smoothpalette, for palette palNo, colour tone (0 colour, 1 mono),
+        /// light level (shade.Unlit for no shading) and cycle step. It is built when one of these changes, a few times a
+        /// second, as a new texture.
+        /// </summary>
+        public static ImageTexture ShadedPalette(int palNo, int tone, int lightLevel, int step)
+        {
+            var key = (palNo, tone, lightLevel, step);
+            if (shadedPalette.Texture != null && key == shadedPalette.Key)
+            {
+                return shadedPalette.Texture;
+            }
+            var shading = (lightLevel == shade.Unlit) ? new short[16] : shade.shadesdata[lightLevel].shadingbasedata;//unlit: light table 0 at every distance
+            //palettes 4 and up are drawn with band size 1; the first four allow for the hallucination effects. Not vanilla behaviour
+            int bandSize = (palNo > 3) ? 1 : uwsettings.instance.shaderbandsize;
+            shadedPalette.Texture = ImageTexture.CreateFromImage(shade.GetFullShadingImage(CycledPalette(palNo, step), (tone == 1) ? mono : light, shading, bandSize));
+            shadedPalette.Key = key;
+            return shadedPalette.Texture;
         }
 
 
@@ -339,15 +363,7 @@ namespace Underworld
         /// <returns></returns>
         public static ImageTexture[] MainMenuPaletteCycle(Palette toCycle)
         {
-            //copy initial palette
-            var tmpPalette = new Palette();
-            for (int i = 0; i < 256; i++)
-            {
-                tmpPalette.red = toCycle.red;
-                tmpPalette.green = toCycle.green;
-                tmpPalette.blue = toCycle.blue;
-                tmpPalette.alpha = toCycle.alpha;
-            }
+            var tmpPalette = CopyOf(toCycle);
             var NewCycledPalette = new ImageTexture[64]; //cycle
             for (int c = 0; c <= NewCycledPalette.GetUpperBound(0); c++)
             {//Create palette cycles                    
@@ -365,34 +381,12 @@ namespace Underworld
         /// <returns></returns>
         public static ImageTexture[] CreateUnshadedPaletteCycles(Palette toCycle)
         {
-            //copy initial palette
-            var tmpPalette = new Palette();
-            for (int i = 0; i < 256; i++)
-            {
-                tmpPalette.red = toCycle.red;
-                tmpPalette.green = toCycle.green;
-                tmpPalette.blue = toCycle.blue;
-                tmpPalette.alpha = toCycle.alpha;
-            }
-
-            var NewCycledPalette = new ImageTexture[28]; //cycle
-            for (int l = 0; l < 8; l++)
-            {
-                for (int c = 0; c <= 27; c++)
-                {//Create palette cycles
-                    switch (_RES)
-                    {
-                        case GAME_UW2:
-                            Palette.cyclePalette(tmpPalette, 224, 16);
-                            Palette.cyclePaletteReverse(tmpPalette, 3, 6);
-                            break;
-                        default:
-                            Palette.cyclePalette(tmpPalette, 48, 16);//Forward
-                            Palette.cyclePaletteReverse(tmpPalette, 16, 7);//Reverse direction.
-                            break;
-                    }
-                    NewCycledPalette[c] = tmpPalette.toImage();   // tmpPalette.toImage();
-                }
+            var tmpPalette = CopyOf(toCycle);
+            var NewCycledPalette = new ImageTexture[CycleSteps]; //cycle, in step with the 3D view's
+            for (int c = 0; c < CycleSteps; c++)
+            {//Create palette cycles
+                CycleColours(tmpPalette);
+                NewCycledPalette[c] = tmpPalette.toImage();   // tmpPalette.toImage();
             }
 
             return NewCycledPalette;
@@ -401,7 +395,7 @@ namespace Underworld
 
         public static void UpdatePaletteCycles()
         {
-            if (NextPaletteCycle_GAME + 1 > Palettes[Palette.CurrentPalette].cycledGamePalette.GetUpperBound(2))
+            if (NextPaletteCycle_GAME + 1 >= CycleSteps)
             {
                 NextPaletteCycle_GAME = -1;
             }
@@ -424,7 +418,7 @@ namespace Underworld
             {
                 RenderingServer.GlobalShaderParameterSet(
                     name: "smoothpalette",
-                    value: (Texture)Palettes[Palette.CurrentPalette].cycledGamePalette[Palette.ColourTone, shade.DrawnLightLevel, NextPaletteCycle_GAME]);
+                    value: (Texture)ShadedPalette(Palette.CurrentPalette, Palette.ColourTone, shade.DrawnLightLevel, NextPaletteCycle_GAME));
             }
 
             if (NextPaletteCycle_UI != -1)

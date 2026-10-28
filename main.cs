@@ -55,6 +55,7 @@ public partial class main : Node3D
 
 	double cycletime = 0;
 	const double MenuPaletteCycleInterval = 14.0 / 256.0;
+	const double GamePaletteCycleInterval = 64.0 / 256.0;
 
 	public static double playingnotetimer = 0;
 
@@ -296,9 +297,9 @@ public partial class main : Node3D
 					PaletteLoader.UpdatePaletteCycles();
 				}
 			}
-			else if (cycletime > 0.2)
-			{
-				cycletime = 0;
+			else if (cycletime >= GamePaletteCycleInterval)
+			{//the game's colours step every 64 ticks of the 256 Hz clock (cycle_colors, uw1 COLCYCLE.C:55-59, uw2 COLCYCLE.C:51-55; the clock: uw1 SOUND.C:179), at most once a call
+				cycletime = (cycletime >= 2 * GamePaletteCycleInterval) ? 0 : cycletime - GamePaletteCycleInterval;
 				PaletteLoader.UpdatePaletteCycles();
 			}
 			if (PitTimer >= 0.00391)

@@ -42,7 +42,7 @@ public sealed class VoidUnlit : Scenario
     /// </summary>
     static bool? Flat()
     {
-        var tex = PaletteLoader.Palettes[Palette.CurrentPalette].cycledGamePalette[Palette.ColourTone, shade.DrawnLightLevel, 0];
+        var tex = PaletteLoader.ShadedPalette(Palette.CurrentPalette, Palette.ColourTone, shade.DrawnLightLevel, System.Math.Max(PaletteLoader.NextPaletteCycle_GAME, 0));
         var img = tex?.GetImage();
         if (img == null) return null;
         int last = img.GetHeight() - 1;

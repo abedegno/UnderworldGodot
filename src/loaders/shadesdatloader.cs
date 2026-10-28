@@ -89,11 +89,12 @@ namespace Underworld
         /// </summary>
         /// <param name="pal"></param>
         /// <param name="maps"></param>
-        /// <param name="index"></param>
+        /// <param name="shadingdata"></param>
+        /// <param name="bandSize"></param>
         /// <returns></returns>
-        public static Godot.ImageTexture GetFullShadingImage(Palette pal, lightmap[] maps, int index, short[] shadingdata)
+        public static Godot.Image GetFullShadingImage(Palette pal, lightmap[] maps, short[] shadingdata, int bandSize)
         {
-            int BandSize = Math.Max(uwsettings.instance.shaderbandsize, 1);
+            int BandSize = Math.Max(bandSize, 1);
             var img = Godot.Image.CreateEmpty(256, BandSize * 15, false, Godot.Image.Format.Rgba8);
 
             lightmap basemap = maps[0];
@@ -151,11 +152,7 @@ namespace Underworld
                     }
                 }
             }
-            //img.SavePng($"c:\\temp\\colourmap {index}.png");
-
-            var tex = new ImageTexture();
-            tex.SetImage(img);
-            return tex;
+            return img;
         }
 
 
@@ -277,19 +274,24 @@ namespace Underworld
             }
         }
 
+        /// <summary>
+        /// The shades used when SHADES.DAT cannot be read. The original's set_light then leaves the shading alone
+        /// (uw1 LIGHTING.C:66-68, uw2 LIGHTING.C:71-72), so the grid keeps what init_3d built: preset_grid(8)
+        /// (uw1 VIEW3D.C:240, uw2 VIEW3D.C:238) with smooth_div 6, smooth_base 0 and smooth_lowpass 0, the values
+        /// the executables start with (UW.EXE 3963:064C, UW2.EXE 370D:064C).
+        /// </summary>
         private static void CreateEmptyShades()
         {
             shadesdata = new shade[8];
-            Debug.Print("Defaulting to fullbright shades.");
-            //initial an array of empty shades that provide full bright
+            Debug.Print("SHADES.DAT not read. Defaulting to the shades the original starts with.");
             for (int i = 0; i < 8; i++)
             {
                 shadesdata[i] = new shade(
                     _index: i,
-                    _Shading: 0,
+                    _Shading: 6,
                     _StartingLightLevel: 0,
                     _StartOfShadingDistance: 0,
-                    _ViewingDistance: 20
+                    _ViewingDistance: 8
                  );
             }
         }
