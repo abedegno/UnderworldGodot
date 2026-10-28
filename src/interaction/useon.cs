@@ -96,13 +96,10 @@ namespace Underworld
             {
                 case 0:
                     {
-                        if (_RES != GAME_UW2)
+                        switch (objInHand.classindex)
                         {
-                            switch (objInHand.classindex)
-                            {
-                                case >= 2 and <= 6://skulls and bones (0xC2..0xC6)
-                                    return UseBonesOn(objInHand, targetObject);
-                            }
+                            case >= 2 and <= 6://skulls and bones (0xC2..0xC6)
+                                return UseBonesOn(objInHand, targetObject);
                         }
                         break;
                     }
@@ -212,10 +209,11 @@ namespace Underworld
         }
 
         /// <summary>
-        /// UW1 bones used on something (UseBonesOn, uw1 USEITEMS.C:327-365). Garamon's bones (owner 0x3E) on his grave
-        /// (a gravestone that is a quantity with special link 0x21) bury him: talisman_ok and garamon are set, the grave's
-        /// link becomes 0x222, Garamon talks (whoami 0x1B) and the trigger at tile (0x36, 0x34) is set off.
-        /// Other bones on a gravestone get message 0x86, anything else 0x84. Bones that did something are used up.
+        /// Bones used on something (UseBonesOn, uw1 USEITEMS.C:327-365, uw2 USEITEMS.C:42-58). UW1: Garamon's bones (owner 0x3E)
+        /// on his grave (a gravestone that is a quantity with special link 0x21) bury him: talisman_ok and garamon are set, the
+        /// grave's link becomes 0x222, Garamon talks (whoami 0x1B) and the trigger at tile (0x36, 0x34) is set off.
+        /// Other bones on a gravestone, and in UW2 any bones on one, are buried ("You thoughtfully give the bones a final resting
+        /// place."); on anything else "It seems to have no effect." Bones that did something are used up.
         /// </summary>
         /// <param name="bones"></param>
         /// <param name="targetObject"></param>
@@ -225,7 +223,7 @@ namespace Underworld
             bool used = false;
             if (targetObject.item_id == 0x165)//gravestone
             {
-                if (bones.owner == 0x3E)
+                if ((_RES != GAME_UW2) && (bones.owner == 0x3E))
                 {
                     if ((targetObject.is_quant == 1) && ((targetObject.link & 0x200) != 0) && ((targetObject.link & 0x1FF) == 0x21))
                     {
@@ -261,12 +259,12 @@ namespace Underworld
                 else
                 {
                     used = true;
-                    uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x86));
+                    uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_you_thoughtfully_give_the_bones_a_final_resting_place_));
                 }
             }
             if (!used)
             {
-                uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x84));
+                uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_it_seems_to_have_no_effect_));
             }
             else
             {
