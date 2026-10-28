@@ -457,13 +457,20 @@ namespace Underworld
         }
 
         /// <summary>
-        /// Destroys a floating skull, turning it into a plain skull. uw2 WORLDEV.C:1649-1660 (destroy_floatskull)
+        /// Destroys a floating skull, turning it into a plain skull and dropping what it carried. uw2 WORLDEV.C:1649-1660 (destroy_floatskull)
         /// </summary>
         public static bool SmiteUndeadObject(uwObject obj)
         {
             obj.item_id = 0xC3;
+            if (!motion.TestIfObjectFitsInTile(0xC3, obj.index, (obj.tileX << 3) + obj.xpos, (obj.tileY << 3) + obj.ypos, obj.zpos, 1, 0))
+            {//no room for the plain skull: WORLDEV.C:1652-1656
+                obj.quality = 0;
+            }
+            if ((obj.is_quant == 0) && (obj.link > 0))
+            {//free its contents: WORLDEV.C:1657-1658
+                ObjectRemover.FreeChain(UWTileMap.current_tilemap.LevelObjects, obj.DataBuffer, obj.PTR + 6);
+            }
             objectInstance.RedrawFull(obj);
-            //TODO: the original also sets quality 0 when the skull cannot be placed (can_place) and frees any linked contents. WORLDEV.C:1652-1658
             return true;
         }
 
