@@ -237,8 +237,12 @@ namespace Underworld
                         AttackScoreFlankingBonus = 0;
                         AttackWasACrit = false;
 
-                        // From the weapon hand at every swing, as GetPlayerWeapon does (uw2 COMBAT.C:573-606, called at 845)
-                        PlayerWeaponSound = PlayerWeaponSoundClass(playerdat.PrimaryHandObject);
+                        // The weapon is the one in the hand at every swing, as GetPlayerWeapon finds it
+                        // (uw1 COMBAT.C:538-563, called at 745; uw2 COMBAT.C:573-607, called at 845), not
+                        // the one held when the weapon was drawn: it may have broken or been swapped since.
+                        var weapon = playerdat.PrimaryHandObject;
+                        currentweapon = isWeapon(weapon) != 0 ? weapon : null;
+                        PlayerWeaponSound = PlayerWeaponSoundClass(weapon);
 
                         //can start swing animation
                         uimanager.DrawWeaponAnimation(WeaponAnimGroup + WeaponAnimStrikeOffset + WeaponAnimHandednessOffset, 0);
