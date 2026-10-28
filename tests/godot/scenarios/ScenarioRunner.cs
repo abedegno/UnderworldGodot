@@ -96,6 +96,7 @@ public partial class ScenarioRunner : Node
         (() => new TeleportOccupied(), true),
         (() => new TybalTalkTrap(), true),
         (() => new XTrapsValueRange(), true),
+        (() => new NumberedVariableRanges(), true),
         // batch D: guards
         (() => new GuardEat(), true),
         (() => new GuardLight(), true),
