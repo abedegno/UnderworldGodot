@@ -66,12 +66,10 @@ namespace Underworld
 
                 if (_RES != GAME_UW2)
                 {
-                    if ((dungeon_level == 9) && (playertimer > 0.2f)) //todo need to figure out the correct timing on this.
+                    //one random test per update, with no timer: uw1 INTERACT.C:256-257 (display_scr)
+                    if ((dungeon_level == 9) && ((Rng.Source.Rand() & 0x1F) == 0))
                     {
-                        if ((Rng.r.Next(0x7FFF) & 0x1F) == 0)
-                        {
-                            Etherealvoid.EtherealVoidEndGameSpecialEffects();
-                        }
+                        Etherealvoid.EtherealVoidEndGameSpecialEffects();
                     }
                 }
 
