@@ -25,8 +25,8 @@ namespace Underworld
                 if (IsPlayerOfferingItems() && IsNPCOfferingItems())
                 {
                     //the NPC values the player's items with its likes and dislikes, its own without (uw1 BARTER.C:648-657, uw2 BARTER.C:611-620)
-                    var playervalue = TotalOffering(useLikes: true, playerSide: true, accuracy: NPCAppraisalAccuracy);
-                    var npcvalue = TotalOffering(useLikes: false, playerSide: false, accuracy: NPCAppraisalAccuracy);
+                    var playervalue = TotalOffering(useLikes: true, playerSide: true, values: PlayerAppraisals, accuracy: NPCAppraisalAccuracy);
+                    var npcvalue = TotalOffering(useLikes: false, playerSide: false, values: NpcAppraisals, accuracy: NPCAppraisalAccuracy);
                     var evaluation = TradeGain(playervalue, npcvalue);
                     if (evaluation >= TradeThreshold)
                     {//accept offer
