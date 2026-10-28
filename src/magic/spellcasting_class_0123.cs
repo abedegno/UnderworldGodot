@@ -2,7 +2,8 @@ namespace Underworld
 {
     public partial class SpellCasting : UWClass
     {
-        public static void CastClass0123_Spells(uwObject caster, int majorclass, int minorclass)
+        /// <returns>false when the active spell could not be started, all three slots being taken (uw1 SPELLS.C:107-111, uw2 SPELLS.C:101-104)</returns>
+        public static bool CastClass0123_Spells(uwObject caster, int majorclass, int minorclass)
         {
             if ((majorclass == 1) && (((minorclass & 0x3F) == 3) || ((minorclass & 0x3F) == 5)))
             {
@@ -28,12 +29,13 @@ namespace Underworld
             }
 
             //Apply the active effect if possible.
-            PlayerActiveStatusEffectSpells(
+            var applied = PlayerActiveStatusEffectSpells(
                 major: majorclass,
                 minor: minorclass & 0x3F,
                 stabilityclass: minorclass & 0xC0);
 
             playerdat.PlayerStatusUpdate();
+            return applied;
         }
 
         /// <summary>

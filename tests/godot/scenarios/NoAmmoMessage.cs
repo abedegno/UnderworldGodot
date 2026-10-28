@@ -13,11 +13,14 @@ namespace Underworld.Scenarios;
 /// Observed in DOS by Underworld Revisited (PQMarine, MIT): Assets/UWDataImport/UWData/UWItemMessages.cs:115-128
 /// ("Sorry, you have no arrows." with the bow, "Sorry, you have no sling stones." with the sling).
 ///
-/// The scenario puts a bow in the weapon hand with no arrows carried, draws it, presses the attack key and reads the
-/// scroll.
+/// After the message GetPlayerWeapon waits for the button to be let go (mouse_release(1): uw1 COMBAT.C:551,
+/// uw2 COMBAT.C:587), so a held press prints it once.
+///
+/// The scenario puts a bow in the weapon hand with no arrows carried, draws it, holds the attack key for ten frames and
+/// reads the scroll. The message must be there once.
 ///
 /// The port printed string 207 of block 1 and the singular name with an "s" (src/interaction/combat/combat_input.cs:189);
-/// 207 is UW2's 0xCF, but in UW1 it is another line.
+/// 207 is UW2's 0xCF, but in UW1 it is another line. It printed it again on every frame the key was held.
 /// </summary>
 public sealed class NoAmmoMessage : Scenario
 {
@@ -69,6 +72,8 @@ public sealed class NoAmmoMessage : Scenario
         if (_text.Length == 0) return "precondition: the attack key printed nothing";
         var k = new Checks();
         k.True(_text.Contains(_want), $"a bow with no arrows: expected \"{_want}\", got \"{_text}\" ({(c.Game == "uw1" ? "check_ammo: uw1 COMBAT.C:524-528" : "check_ammo: uw2 COMBAT.C:559-562")})");
+        int times = (_text.Length - _text.Replace(_want, "").Length) / _want.Length;
+        k.Equal("times the message is printed while the key is held", 1, times, c.Game == "uw1" ? "GetPlayerWeapon waits for the release: uw1 COMBAT.C:551" : "GetPlayerWeapon waits for the release: uw2 COMBAT.C:587");
         return k.Result;
     }
 }
