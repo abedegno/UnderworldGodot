@@ -366,7 +366,8 @@ namespace Underworld
         public static void UpdateLightStability(int updatecounter)
         {
             //loop each lit light source.
-            //when updatecounter % lightsource class index. decrease light quality by 1 point
+            //a lit light loses a quality point when updatecounter is a multiple of its burn rate (Lights[].duration in OBJECTS.DAT)
+            //uw1 PLAYTIME.C:150-185, uw2 PLAYTIME.C:174-213 (DegradeLights, called with amount 1)
             for (int slot = 5; slot <= 8; slot++)
             {
                 var objInSlot = GetInventorySlotObject(slot);
@@ -375,11 +376,30 @@ namespace Underworld
                     if ((objInSlot.majorclass == 2) && (objInSlot.minorclass == 1) && (objInSlot.classindex >= 4 && objInSlot.classindex <= 7))
                     {
                         //a lit light source
-                        if (updatecounter % objInSlot.classindex == 0)
+                        var burnrate = lightsourceObjectDat.duration(objInSlot.item_id);
+                        if (burnrate == 0)
                         {
-                            objInSlot.quality = (short)Math.Max(objInSlot.quality - 1, 1);
-                            if (objInSlot.quality == 1)
+                            continue;
+                        }
+                        if (updatecounter % burnrate == 0)
+                        {
+                            var burn = 1;
+                            bool burnsout;
+                            if (_RES == GAME_UW2)
+                            {//uw2 PLAYTIME.C:197-206, the light goes out at quality 1
+                                burnsout = (ushort)(objInSlot.quality - 1) <= burn;
+                            }
+                            else
+                            {//uw1 PLAYTIME.C:172-181, the light goes out at quality 0
+                                burnsout = objInSlot.quality <= burn;
+                            }
+                            if (!burnsout)
                             {
+                                objInSlot.quality = (short)(objInSlot.quality - burn);
+                            }
+                            else
+                            {
+                                objInSlot.quality = (short)(_RES == GAME_UW2 ? 1 : 0);
                                 light.LightOff(objInSlot);
                                 uimanager.UpdateInventoryDisplay();
                             }
