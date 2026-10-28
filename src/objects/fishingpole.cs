@@ -28,7 +28,9 @@ namespace Underworld
 
                         if (terrain == 1)
                         {//water
-                            if ((playerdat.playerObject.zpos >> 3) >= (tile.floorHeight - 2))
+                            //the player's height step must be above the water's less one, as an unsigned word,
+                            //so water at height 0 always refuses (uw1 WORLDEV.C:326-327, uw2 WORLDEV.C:533-534)
+                            if ((playerdat.playerObject.zpos >> 3) > (ushort)(tile.floorHeight - 1))
                             {
                                 var catchfish = (playerdat.Track + 7) / 8 >= Rng.r.Next(0, 5);
                                 //Note: in UW1 this is simply a rng(0-4)==0 check. 

@@ -688,7 +688,7 @@ namespace Underworld
 			RenderingServer.GlobalShaderParameterSet("renderfloors", playerdat.RenderFloors);
 			
 			//And simple shade for object info layer.
-			RenderingServer.GlobalShaderParameterSet("simpleshade", (Texture)shade.shadesdata[playerdat.lightlevel].simpleshade);
+			RenderingServer.GlobalShaderParameterSet("simpleshade", (Texture)shade.DrawnSimpleShade);
 
 			uimanager.EnableDisable(uimanager.instance.uwviewport,true); //turn on camera, this might be turned off due to player death
 			
