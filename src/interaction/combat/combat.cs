@@ -1030,19 +1030,12 @@ namespace Underworld
         /// </summary>
         static int CalcFlankingBonus()
         {
-            if (DefendingCharacter.majorclass == 1)
+            var bonus = (DefendingCharacter.heading + 0xC - AttackingCharacter.heading) & 0x7;
+            if (bonus > 4)
             {
-                var bonus = (DefendingCharacter.heading + 0xC - AttackingCharacter.heading) & 0x7;
-                if (bonus > 4)
-                {
-                    bonus = 8 - bonus;
-                }
-                return bonus;
+                bonus = 8 - bonus;
             }
-            else
-            {
-                return 0;
-            }
+            return bonus;
         }
 
 
