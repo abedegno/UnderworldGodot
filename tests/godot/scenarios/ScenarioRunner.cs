@@ -126,6 +126,8 @@ public partial class ScenarioRunner : Node
         (() => new ObjectCastCooldown(), true),
         // issue #117
         (() => new DoCollisionEntry(), true),
+        // issue #207
+        (() => new CulledContainerContents(), true),
         (() => new HarnessFails(), false),
     };
 
