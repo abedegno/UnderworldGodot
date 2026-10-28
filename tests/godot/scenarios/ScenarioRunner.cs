@@ -75,6 +75,7 @@ public partial class ScenarioRunner : Node
         (() => new Uw1CastingCheck(), true),
         (() => new SummonMonsterLevel(), true),
         (() => new CarryCapacity(), true),
+        (() => new CollisionMapEdge(), true),
         (() => new LightBurnRates(), true),
         (() => new LightOnQuality(), true),
         (() => new LightStackInSlot(), true),
