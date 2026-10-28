@@ -52,18 +52,16 @@ namespace Underworld
 
                 motion.GetCoordinateInDirection(heading, distanceFromObject, ref tileX, ref tileY);
 
-                if (UWTileMap.ValidTile (tileX, tileY))
-                {
-                    RunCodeOnTargetsInArea(
-                        methodToCall: methodToCall,
-                        Rng_arg0: rngProbablity,
-                        srcItemIndex: CentreObject,
-                        typeOfTargetArg8: targetType,
-                        tileX0: tileX - tileRadius,
-                        tileY0: tileY - tileRadius,
-                        xWidth: 1 + (tileRadius << 1),
-                        yHeight: 1 + (tileRadius << 1));//radius * 2 + 1. uw1 SPELLS.C:509, uw2 SPELLS.C:696
-                }     
+                //No test of the centre: an area whose centre is off the map is clipped to the map by RunCodeOnTargetsInArea, as process_area does. uw1 SPELLS.C:428-450, 509, uw2 SPELLS.C:614-636, 696
+                RunCodeOnTargetsInArea(
+                    methodToCall: methodToCall,
+                    Rng_arg0: rngProbablity,
+                    srcItemIndex: CentreObject,
+                    typeOfTargetArg8: targetType,
+                    tileX0: tileX - tileRadius,
+                    tileY0: tileY - tileRadius,
+                    xWidth: 1 + (tileRadius << 1),
+                    yHeight: 1 + (tileRadius << 1));//radius * 2 + 1. uw1 SPELLS.C:509, uw2 SPELLS.C:696
         }
 
         /// <summary>
