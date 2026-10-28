@@ -9,14 +9,17 @@ namespace Underworld.Scenarios;
 /// hour night (plus 1 or 2 hours when HP is below 10) when it ends: UW1 adds hours * 0xE1000 to
 /// the clock itself (uw1/src/game/SKILLS.C:545-546, 580-583), UW2 calls
 /// pass_time(hours * 3600), which adds seconds << 8 (uw2/src/game/SKILLS.C:463-466, 507-510;
-/// uw2/src/event/WORLDEV.C:163-166). The clock is in 1/256 s, so an hour is 0xE1000, and an
-/// uninterrupted night at full health moves it on by 7 to 10 hours.
+/// uw2/src/event/WORLDEV.C:163-169). The clock is in 1/256 s, so an hour is 0xE1000, and an
+/// uninterrupted night at full health moves it on by 7 to 10 hours. In UW2 pass_time also sets
+/// the time of day, X clock 0 (XC_TIME), to clock / 0x4B000 modulo 72 (uw2/src/event/WORLDEV.C:167);
+/// the scenario reads the clock and X clock 0 together on the frame of the last time jump, before
+/// the settle frames can move the clock across a 0x4B000 step. UW1 has no X clocks.
 ///
 /// The scenario sleeps the way a player does, by using a bedroll (item 0x121, the port's
 /// use.Use, which calls sleep.Sleep(1); DOS player_sleep(1)), then lets frames pass until any
-/// dream has played and the game is back in play. Known failure today: the port's
-/// playerdat.AdvanceTime only prints (src/player/playerdatclock.cs:86), so the clock moves only
-/// by the seconds of real play the frames take.
+/// dream has played and the game is back in play. Before the fix the port's
+/// playerdat.AdvanceTime only printed (src/player/playerdatclock.cs), so the clock moved only
+/// by the seconds of real play the frames took.
 ///
 /// Precondition that the sleep really ran to its end: fatigue, set to 0x30 first, is 0 after
 /// (the uninterrupted night zeroes it, uw1 SKILLS.C:589, uw2 SKILLS.C:516; an interrupted sleep
@@ -31,10 +34,10 @@ public sealed class SleepPassesTime : Scenario
     const ulong SettleMs = 30000;              // dreams are cutscenes with real-time waits
 
     public override string Name => "sleep-passes-time";
-    public override string Cites => "underworld-exhumed uw1/src/game/SKILLS.C:545-546, 580-583; uw2/src/game/SKILLS.C:463-466, 507-510, uw2/src/event/WORLDEV.C:163-166";
+    public override string Cites => "underworld-exhumed uw1/src/game/SKILLS.C:545-546, 580-583; uw2/src/game/SKILLS.C:463-466, 507-510, uw2/src/event/WORLDEV.C:163-169";
 
-    int _clockBefore, _clockAfter, _hungerBefore, _hungerAfter, _fatigueAfter, _hpBefore, _frames;
-    bool _bedroll, _settled, _usedOk;
+    int _clockBefore, _clockAfter, _hungerBefore, _hungerAfter, _fatigueAfter, _hpBefore, _frames, _clockAtJump, _timeOfDayAtJump;
+    bool _bedroll, _settled, _usedOk, _jumped;
 
     public override Task Setup(ScenarioContext c)
     {
@@ -53,6 +56,8 @@ public sealed class SleepPassesTime : Scenario
         if (!_bedroll) return;
 
         _usedOk = use.Use(bedroll, playerdat.playerObject, UWTileMap.current_tilemap.LevelObjects, WorldObject: true);
+        int last = _clockBefore;
+        RecordJump(c, ref last);
 
         // Let any dream play out and the game come back to play.
         ulong deadline = Time.GetTicksMsec() + SettleMs;
@@ -61,6 +66,7 @@ public sealed class SleepPassesTime : Scenario
         {
             await c.Frames(1);
             _frames++;
+            RecordJump(c, ref last);
             stable = (uimanager.InGame && !cutsplayer.IsPlaying && !uimanager.blockinput) ? stable + 1 : 0;
             if (stable >= 30) { _settled = true; break; }
         }
@@ -68,6 +74,22 @@ public sealed class SleepPassesTime : Scenario
         _hungerAfter = playerdat.play_hunger;
         _fatigueAfter = playerdat.play_fatigue;
         c.Note($"clock rose {_clockAfter - _clockBefore} over {_frames} frames; fatigue 0x30 -> 0x{_fatigueAfter:X}, hunger 0x{_hungerBefore:X} -> 0x{_hungerAfter:X}");
+    }
+
+    /// <summary>
+    /// A rise of an hour or more since the last look is a time jump (frames add at most 0x40 each):
+    /// the clock and X clock 0 are read together there, so the comparison sees what pass_time left.
+    /// </summary>
+    void RecordJump(ScenarioContext c, ref int last)
+    {
+        int now = playerdat.ClockValue;
+        if ((long)now - last >= Hour)
+        {
+            _jumped = true;
+            _clockAtJump = now;
+            if (c.Game == "uw2") _timeOfDayAtJump = playerdat.GetXClock(0);
+        }
+        last = now;
     }
 
     public override string Assert(ScenarioContext c)
@@ -85,7 +107,14 @@ public sealed class SleepPassesTime : Scenario
         var k = new Checks();
         k.Within("clock advance over the night", 7 * Hour, 10 * Hour + play, (long)_clockAfter - _clockBefore,
             uw1 ? "7 to 10 hours of 0xE1000: uw1 SKILLS.C:545-546, 580-583"
-                : "7 to 10 hours through pass_time: uw2 SKILLS.C:463-466, 507-510, WORLDEV.C:163-166");
+                : "7 to 10 hours through pass_time: uw2 SKILLS.C:463-466, 507-510, WORLDEV.C:163-169");
+        if (!uw1)
+        {
+            k.True(_jumped, "time of day (X clock 0): no time jump of an hour or more was seen");
+            if (_jumped)
+                k.Equal("time of day (X clock 0) after the night's time jump", (_clockAtJump / 0x4B000) % 0x48, _timeOfDayAtJump,
+                    "pass_time sets xclock[XC_TIME] = (game_clock / 0x4B000) % 0x48: uw2 WORLDEV.C:167");
+        }
         return k.Result;
     }
 }
