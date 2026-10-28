@@ -1,0 +1,18 @@
+# Routines of the original that more than one declaration in the port implements, on purpose or
+# not yet reviewed: "routine | path#Member path#Member ... | reason". The reason starts with one of
+# "UW1 and UW2 variant", "wrapper", "deliberate split" or "duplicate, to review". A routine with
+# two implementations that is not listed here, or listed with other declarations, fails
+# RuleIndex_NoRoutineImplementedTwice; a line that is no longer true fails
+# RuleIndex_ExpectedDuplicatesAreCurrent. Remove a "duplicate, to review" line in the piece that
+# merges the two.
+
+uw1:SquareRoot_seg019_A78@IMATH.ASM | src/audio/sfx/PositionalAudio.cs#IntSqrt src/npc/npcai.cs#SquareRoot_seg019_A78 | duplicate, to review: two square roots for cSqRt. IntSqrt is an exact floor root by Newton's method to convergence; SquareRoot_seg019_A78 takes five Newton steps from 4 or 0x40 and is only right below 0x10000. The original takes five steps from a guess set by the highest non-zero byte of a 32-bit value (uw1 IMATH.ASM:100-107), and play_effect calls it on the squared distance (uw1 SOUND.C:558, uw2 SOUND.C:581), so neither copy is the original for every input.
+uw1:DegradeLights@PLAYTIME.C | src/player/playerdatloop.cs#DegradeLights src/player/playerdatloop.cs#UpdateLightStability | wrapper: UpdateLightStability is DegradeLights with amount 1.
+uw2:DegradeLights@PLAYTIME.C | src/player/playerdatloop.cs#DegradeLights src/player/playerdatloop.cs#UpdateLightStability | wrapper: UpdateLightStability is DegradeLights with amount 1.
+uw1:kill_effect@SOUND.C | src/audio/UWSoundEffects.cs#KillEffect src/audio/sfx/TvfxVoice.cs#Stop src/audio/sfx/godot/SoundEffects.cs#Stop | wrapper: KillEffect sends the handle to SoundEffects.Stop, which stops that effect's voice (TvfxVoice.Stop); three layers of one rule.
+uw2:kill_effect@SOUND.C | src/audio/UWSoundEffects.cs#KillEffect src/audio/sfx/TvfxVoice.cs#Stop src/audio/sfx/godot/SoundEffects.cs#Stop | wrapper: KillEffect sends UW2's digital handle to StopDigitalEffect and the rest to SoundEffects.Stop, which stops that effect's voice (TvfxVoice.Stop).
+uw1:seg014_1DC5_C7C@SOUND.C | src/audio/UWSoundEffects.cs#KillAllEffects src/audio/sfx/godot/SoundEffects.cs#StopAll | wrapper: KillAllEffects calls SoundEffects.StopAll.
+uw2:kill_all_effects@SOUND.C | src/audio/UWSoundEffects.cs#KillAllEffects src/audio/sfx/godot/SoundEffects.cs#StopAll | wrapper: KillAllEffects calls SoundEffects.StopAll, then stops UW2's digital channel.
+uw2:instant_kill@WORLDEV.C | src/npc/npcdeath.cs#DropRemainsAndLoot src/npc/npcdeath.cs#KillCritter | wrapper: KillCritter runs the special deaths and then DropRemainsAndLoot, which the critter loop also calls.
+uw1:choose_music@OPTIONS.C | src/ui/uimanager_options.cs#LeaveMusicSoundPage src/ui/uimanager_options.cs#PressOptionButton | deliberate split: PressOptionButton is the page handlers together and calls LeaveMusicSoundPage for the end of choose_music and choose_sounds.
+uw2:move_hilite@WRAPPER.C | src/ui/uimanager_options.cs#MoveOptionsHilite src/ui/uimanager_options.cs#OptionsHandleKey | deliberate split: OptionsHandleKey is the key handling and calls MoveOptionsHilite for move_hilite.
