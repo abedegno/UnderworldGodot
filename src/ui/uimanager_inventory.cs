@@ -893,8 +893,7 @@ namespace Underworld
         }
 
         public static bool ValidObjectForSlot(int slot, uwObject obj)
-        {//TODO: this should respect objects.dat settings
-            //test game specific special objects
+        {
             //Ensure that "storage" slots are always valud
             switch (slot)
             {
@@ -905,85 +904,27 @@ namespace Underworld
                 case >= 11: //backpacks
                     return true;
             }
-            switch (UWClass._RES)
+            //armour and ring slots take armour (major class 0, minor class 2 or 3) whose objects.dat slot matches
+            //(uw1 INVPANEL.C:554-582, uw2 INVPANEL.C:540-568, ItemFitsSlot)
+            if (obj.majorclass != 0 || obj.minorclass < 2)
             {
-                case UWClass.GAME_UW2:
-                    {
-                        switch (obj.item_id)
-                        {
-                            case 47://	a_pair of swamp boots&pairs of swamp boots
-                                return slot == 4;
-                            case 51://	fraznium gauntlets&pairs of fraznium gauntlets
-                                return slot == 2;
-                            case 52://	a_fraznium circlet
-                                return slot == 0;
-                            case 53://	a_Guardian signet ring
-                            case 55://	a_copper ring
-                                return (slot == 9) || (slot == 10);
-                        }
-                        break;
-                    }
-
-                default:
-                    {
-                        switch (obj.item_id)
-                        {
-                            case 47: //a_pair of dragon skin boots&pairs of dragon skin boots
-                                return slot == 4;
-                            case 54://an_iron ring
-                                return (slot == 9) || (slot == 10);
-                        }
-                        break;
-                    }
+                return false;
             }
-            //standard rules
             switch (slot)
             {
                 case 0: //helm. 
-                    return
-                        obj.majorclass == 0
-                        &&
-                        (
-                            (obj.minorclass == 2) && (obj.classindex >= 0xC)
-                            ||
-                            (obj.minorclass == 3) && (obj.classindex <= 2)
-                        );
+                    return armourObjectDat.slot(obj.item_id) == 8;
                 case 1://body armour
-                    return
-                        obj.majorclass == 0
-                        &&
-                        obj.minorclass == 2
-                        &&
-                        (obj.classindex >= 0 && obj.classindex <= 2);
+                    return armourObjectDat.slot(obj.item_id) == 1;
                 case 2://gloves
-                    return
-                        obj.majorclass == 0
-                        &&
-                        obj.minorclass == 2
-                        &&
-                        (obj.classindex >= 6 && obj.classindex <= 8);
+                    return armourObjectDat.slot(obj.item_id) == 4;
                 case 3://leggings
-                    return
-                        obj.majorclass == 0
-                        &&
-                        obj.minorclass == 2
-                        &&
-                        (obj.classindex >= 3 && obj.classindex <= 5);
+                    return armourObjectDat.slot(obj.item_id) == 3;
                 case 4://boots
-                    return
-                        obj.majorclass == 0
-                        &&
-                        obj.minorclass == 2
-                        &&
-                        (obj.classindex >= 9 && obj.classindex <= 0xB);
+                    return armourObjectDat.slot(obj.item_id) == 5;
                 case 9:
                 case 10://rings
-                    return
-                        obj.majorclass == 0
-                        &&
-                        obj.minorclass == 3
-                        &&
-                        (obj.classindex >= 9 && obj.classindex <= 0xB);
+                    return armourObjectDat.slot(obj.item_id) == 9;
             }
 
             return true;

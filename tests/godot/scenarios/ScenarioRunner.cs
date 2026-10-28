@@ -120,6 +120,7 @@ public partial class ScenarioRunner : Node
         (() => new NumberedVariableRanges(), true),
         (() => new MenuMusicRepeat(), true),
         (() => new Uw1EndgameEffects(), true),
+        (() => new RingSlotRule(), true),
         // batch D: guards
         (() => new GuardEat(), true),
         (() => new GuardLight(), true),
