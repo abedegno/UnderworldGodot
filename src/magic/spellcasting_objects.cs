@@ -108,6 +108,62 @@ namespace Underworld
         }
 
         /// <summary>
+        /// The game clock before which the player may not cast from another object,
+        /// nextSpellTime in both games (uw1 USEITEMS.C:70, uw2 OBJUSE.C:39). DOS keeps it in a
+        /// global, not in PLAYER.DAT, and reset_times zeroes it on a restore or a death
+        /// (uw1 UWEDIT.C:375, uw2 UWEDIT.C:359). Separate from the runic cast interval.
+        /// </summary>
+        static int NextObjectSpellClock_nextSpellTime = 0;
+
+        /// <summary>
+        /// How long checkSpell makes the player wait after casting from an object:
+        /// nextSpellTime = game_clock + 0x2FD (uw1 USEITEMS.C:1063, uw2 OBJUSE.C:367).
+        /// </summary>
+        public const int ObjectSpellInterval = 0x2FD;
+
+        /// <summary>
+        /// checkSpell's wait for a use by the player (how nonzero), uw1 USEITEMS.C:1058-1064,
+        /// uw2 OBJUSE.C:361-368. While game_clock &lt; nextSpellTime the cast is refused with
+        /// effect 0x15 at pan 0x40, and in UW2 string 0xB, "You are not yet ready to cast
+        /// another spell."; the caller then casts nothing and spends no charge. Otherwise the
+        /// wait starts again from now. Both values are 32 bit and the comparison unsigned.
+        /// </summary>
+        public static bool ObjectSpellWaitHasElapsed()
+        {
+            uint now = (uint)playerdat.ClockValue;
+            uint next = (uint)NextObjectSpellClock_nextSpellTime;
+            if (next > (long)now + ObjectSpellInterval)
+            {
+                // A stamp DOS could not reach: it never sets one more than 0x2FD ahead, and
+                // reset_times zeroes it on a restore or a death. The port's static outlives a
+                // game, so loading an earlier save would leave it in the future. Treat it as
+                // the zero DOS would hold, as RunicMagic.SpellCastIntervalHasElapsed does.
+                next = 0;
+            }
+            if (now < next)
+            {
+                UWsoundeffects.PlaySoundEffectAtAvatar(effectno: 0x15, pan: 0x40, velocityOffset: 0);
+                if (_RES == GAME_UW2)
+                {
+                    uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x0B));
+                }
+                return false;
+            }
+            NextObjectSpellClock_nextSpellTime = (int)(now + ObjectSpellInterval);
+            return true;
+        }
+
+        /// <summary>
+        /// nextSpellTime = 0. UW2's UseFood does this either side of its checkSpell, so a spell
+        /// in food or a potion is cast with no wait and leaves none behind
+        /// (uw2 USEITEMS.C:349-351).
+        /// </summary>
+        public static void ClearObjectSpellWait()
+        {
+            NextObjectSpellClock_nextSpellTime = 0;
+        }
+
+        /// <summary>
         /// Casts appropiate spells from objects
         /// </summary>
         /// <param name="spellno"></param>
