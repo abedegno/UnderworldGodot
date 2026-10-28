@@ -540,6 +540,8 @@ namespace Underworld
                                 case 3: //turn off
                                     {
                                         playerdat.SoundEffectsEnabled = false;
+                                        // turn_fx(0) also silences the effects playing (uw1 OPTIONS.C:265, SOUND.C:484-493; uw2 WRAPPER.C:310, SOUND.C:1035-1045)
+                                        UWsoundeffects.KillAllEffects();
                                         SetGameOptionButtons(new int[]{
                                             (int)OptionButtonIndices.SoundIsOffLabel,
                                             (int)OptionButtonIndices.TurnSoundLabel,
