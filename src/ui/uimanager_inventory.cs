@@ -663,10 +663,7 @@ namespace Underworld
                 }
                 else
                 {
-                    var Added = playerdat.AddObjectToPlayerInventory(srcObj, false);
-                    var AddedObj = playerdat.InventoryObjects[Added];
-                    AddedObj.next = target.link;
-                    target.link = Added;
+                    AddToEndOfContainer(target, playerdat.AddObjectToPlayerInventory(srcObj, false));
                     playerdat.ObjectInHand = -1;
                     instance.mousecursor.SetCursorToCursor();
                 }
@@ -703,19 +700,9 @@ namespace Underworld
                 {//the open bag must take the extra weight (uw1 INVPANEL.C:747-748, uw2 INVPANEL.C:738-739)
                     return;
                 }
-                //a piece without the quantity bit counts as one, and the stack takes the plain average of the two qualities (uw1 INVPANEL.C:749-764, uw2 INVPANEL.C:740-755)
-                var qty = source.ObjectQuantity;
-                if (target.is_quant == 0)
-                {
-                    target.is_quant = 1;
-                    target.link = 1;
-                }
-                target.link = (short)(target.link + qty);
-                target.quality = (short)((target.quality + source.quality) >> 1);
-
-                UpdateInventoryDisplay();
-                //destroy the source.
-                ObjectFreeLists.ReleaseFreeObject(source); //object in hand
+                //a piece without the quantity bit counts as one, the stack takes the plain average of the two qualities, and
+                //the player carries the piece's weight (uw1 INVPANEL.C:749-764, uw2 INVPANEL.C:740-755). The source is freed.
+                JoinStack(target, source);
                 playerdat.ObjectInHand = -1; instance.mousecursor.SetCursorToCursor();
                 playerdat.PlayerStatusUpdate();
                 return;
@@ -774,21 +761,73 @@ namespace Underworld
             {
                 if (CanStackTogether(obj, next))
                 {
-                    var qty = obj.ObjectQuantity;
-                    if (next.is_quant == 0)
-                    {
-                        next.is_quant = 1;
-                        next.link = 1;
-                    }
-                    next.link = (short)(next.link + qty);
-                    next.quality = (short)((next.quality + obj.quality) >> 1);
-                    ObjectFreeLists.ReleaseFreeObject(obj);
-                    UpdateInventoryDisplay();
+                    JoinStack(next, obj);
                     return true;
                 }
                 next = (next.next == 0) ? null : playerdat.InventoryObjects[next.next];
             }
             return false;
+        }
+
+        /// <summary>
+        /// When the open bag is in the backpack or on the paperdoll, PutObjectInBag looks for a stack to join in the
+        /// player's own list, which holds everything in the backpack and on the paperdoll (uw1 BAGS.C:408-418, 441-458,
+        /// uw2 BAGS.C:405-415, 438-455). The port keeps no such list, so it looks through the slots in order.
+        /// </summary>
+        static bool JoinStackInTopLevel(uwObject obj)
+        {
+            for (int slot = 0; slot <= 18; slot++)
+            {
+                var onto = playerdat.GetInventorySlotObject(slot);
+                if ((onto != null) && CanStackTogether(obj, onto))
+                {
+                    JoinStack(onto, obj);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Joins obj onto the stack: a piece without the quantity bit counts as one, the stack takes the plain average of the
+        /// two qualities, and the player carries obj's weight (PutObjectInBag, uw1 BAGS.C:435-436, 443-454, uw2 BAGS.C:432-433,
+        /// 440-451; AddToOccupiedSlot, uw1 INVPANEL.C:749-764, uw2 INVPANEL.C:740-755).
+        /// </summary>
+        static void JoinStack(uwObject onto, uwObject obj)
+        {
+            var qty = obj.ObjectQuantity;
+            if (onto.is_quant == 0)
+            {
+                onto.is_quant = 1;
+                onto.link = 1;
+            }
+            onto.link = (short)(onto.link + qty);
+            onto.quality = (short)((onto.quality + obj.quality) >> 1);
+            playerdat.WeightCarried += (short)(commonObjDat.mass(obj.item_id) * qty);
+            RefreshWeightDisplay();
+            ObjectFreeLists.ReleaseFreeObject(obj);
+            UpdateInventoryDisplay();
+        }
+
+        /// <summary>
+        /// Puts the inventory object at index at the end of the container's contents, as PutObjectInBag and AddToInventory do
+        /// with Obj_AddEnd (uw1 BAGS.C:459-460, INVDATA.C:106, OBJECTS.C:274-283; uw2 BAGS.C:456-457, INVDATA.C:91,
+        /// OBJECTS.C:266-275), so a bag lists its contents in the order they went in.
+        /// </summary>
+        static void AddToEndOfContainer(uwObject cont, int index)
+        {
+            playerdat.InventoryObjects[index].next = 0;
+            if (cont.link == 0)
+            {
+                cont.link = (short)index;
+                return;
+            }
+            var last = playerdat.InventoryObjects[cont.link];
+            while (last.next != 0)
+            {
+                last = playerdat.InventoryObjects[last.next];
+            }
+            last.next = (short)index;
         }
 
         /// <summary>
@@ -885,40 +924,54 @@ namespace Underworld
             return newIndex;
         }
 
+        /// <summary>
+        /// A drop on the open bag's own slot puts the object in the container the open bag sits in (PutObjectInBag with
+        /// slot 19, uw1 BAGS.C:394-472, uw2 BAGS.C:391-469). It must fit there first (ItemFitsSlot, uw1 INVPANEL.C:530-543,
+        /// uw2 INVPANEL.C:516-529): in a parent bag by weight and kind, and when the open bag is at the top level there must
+        /// be a free backpack slot. It then joins a stack or goes at the end of the list.
+        /// </summary>
         public static void MoveObjectInHandOutOfOpenedContainer(int ObjectToPickup)
         {
-            PutOutLitLight(UWTileMap.current_tilemap.LevelObjects[ObjectToPickup]);
-            //the opened container
-            if (OpenedContainerParent == -1)
+            var obj = UWTileMap.current_tilemap.LevelObjects[ObjectToPickup];
+            var lit = PutOutLitLight(obj);
+            var parent = OpenedContainerParent;
+            if (parent == -1)
             {
-                //on paperdoll. try and add to there
+                //the open bag is in the backpack or on the paperdoll: the object goes to the top level
                 var freeslot = FreePaperDollSlot;
-                if (freeslot != -1)
+                if (freeslot == -1)
+                {
+                    obj.item_id = lit;
+                    AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_there_is_no_place_to_put_that_));
+                    return;
+                }
+                if (!JoinStackInTopLevel(obj))
                 {
                     var index = playerdat.AddObjectToPlayerInventory(ObjectToPickup, false);
+                    playerdat.InventoryObjects[index].next = 0;
                     playerdat.SetInventorySlotListHead(freeslot, index);
-                    if (ObjectToPickup == playerdat.ObjectInHand)
-                    {
-                        playerdat.ObjectInHand = -1;
-                        instance.mousecursor.SetCursorToCursor();
-                    }
-                }
-                else
-                {
-                    Debug.Print("No room on paperdoll");
                 }
             }
             else
             {
                 //the container that contains the opened container.
-                var index = playerdat.AddObjectToPlayerInventory(playerdat.ObjectInHand, false);
-                var newobj = playerdat.InventoryObjects[index];
-                var container = playerdat.InventoryObjects[OpenedContainerParent];
-                newobj.next = container.link;
-                container.link = index;
+                var cont = playerdat.InventoryObjects[parent];
+                if (!container.TestContainerCanHold(cont, obj))
+                {
+                    obj.item_id = lit;
+                    return;
+                }
+                if (!JoinStackInContainer(cont, obj))
+                {
+                    AddToEndOfContainer(cont, playerdat.AddObjectToPlayerInventory(ObjectToPickup, false));
+                }
+            }
+            if (ObjectToPickup == playerdat.ObjectInHand)
+            {
                 playerdat.ObjectInHand = -1;
                 instance.mousecursor.SetCursorToCursor();
             }
+            UpdateInventoryDisplay();
         }
 
 

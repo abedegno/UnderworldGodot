@@ -16,10 +16,11 @@ namespace Underworld.Scenarios;
 /// no limit (uw1 INVPANEL.C:610, 615; uw2 INVPANEL.C:596, 601). The quiver and the rune bag have capacity 0.
 ///
 /// The scenario puts a container in the right shoulder and drops an object on it, as a click on the occupied slot
-/// does (uimanager.UseObjectsTogether), three times: on a map case (which takes only scrolls and maps), the first
+/// does (uimanager.UseObjectsTogether), five times: on a map case (which takes only scrolls and maps), the first
 /// weapon heavier than the map case holds; on a quiver, the same weapon, which is refused for its kind and not its
 /// weight; on a quiver, five arrows, which go in (the quiver takes sling stones, bolts and arrows, and in UW2 also
-/// misc minor class 1 from class 8: uw1 INVPANEL.C:641-642, uw2 INVPANEL.C:630-631); and on an empty sack, a stack
+/// misc minor class 1 from class 8: uw1 INVPANEL.C:641-642, uw2 INVPANEL.C:630-631); on a quiver, a wand (misc minor
+/// class 1, class 8), which UW2 takes and UW1 refuses with "That item does not fit."; and on an empty sack, a stack
 /// that weighs exactly what the sack holds, which goes in.
 ///
 /// The port tested the kind first (src/objects/container.cs:307-420), so it said "That item does not fit." to the
@@ -29,6 +30,7 @@ public sealed class ContainerWeightFirst : Scenario
 {
     const int MapCase = 0x88;   // ITEM_MAP_CASE: uw1/src/include/items.h:281, uw2 items.h:274
     const int Quiver = 0x8D, Sack = 0x80, Arrow = 0x12;   // ITEM_ARROW_12: uw1 items.h:167, uw2 items.h:152   // ITEM_QUIVER, ITEM_SACK: uw1/src/include/items.h:286, 273; uw2 items.h:279, 266
+    const int Wand = 0x98;   // ITEM_WAND_98: uw1/src/include/items.h:300, uw2 items.h:292
     const int Slot = 5;
 
     public override string Name => "container-weight-first";
@@ -36,8 +38,8 @@ public sealed class ContainerWeightFirst : Scenario
 
     string _problem, _text, _quiverText, _sackText;
     int _heavy = -1, _cap, _fits = -1, _fitsQty;
-    string _arrowText;
-    bool _stillHeld, _quiverHeld, _sackTook, _arrowsTaken;
+    string _arrowText, _wandText;
+    bool _stillHeld, _quiverHeld, _sackTook, _arrowsTaken, _wandHeld;
 
     public override Task Setup(ScenarioContext c)
     {
@@ -105,11 +107,13 @@ public sealed class ContainerWeightFirst : Scenario
         (_arrowText, arrowsHeld) = await Drop(c, Quiver, Arrow, 5);
         _arrowsTaken = !arrowsHeld;
         if (_problem != null) return;
+        (_wandText, _wandHeld) = await Drop(c, Quiver, Wand);
+        if (_problem != null) return;
         bool sackHeld;
         (_sackText, sackHeld) = await Drop(c, Sack, _fits, _fitsQty);
         _sackTook = !sackHeld;
         c.Note($"map case capacity {_cap}, dropped 0x{_heavy:X} of mass {commonObjDat.mass(_heavy)}: \"{_text}\", still in hand {_stillHeld}; "
-            + $"on a quiver: \"{_quiverText}\", still in hand {_quiverHeld}; 5 arrows on a quiver: \"{_arrowText}\", taken {_arrowsTaken}; {_fitsQty} of 0x{_fits:X} of mass {commonObjDat.mass(_fits)} on a sack of mass {commonObjDat.mass(Sack)} "
+            + $"on a quiver: \"{_quiverText}\", still in hand {_quiverHeld}; 5 arrows on a quiver: \"{_arrowText}\", taken {_arrowsTaken}; a wand on a quiver: \"{_wandText}\", still in hand {_wandHeld}; {_fitsQty} of 0x{_fits:X} of mass {commonObjDat.mass(_fits)} on a sack of mass {commonObjDat.mass(Sack)} "
             + $"and capacity {containerObjectDat.capacity(Sack)}: \"{_sackText}\", taken {_sackTook}");
     }
 
@@ -125,6 +129,10 @@ public sealed class ContainerWeightFirst : Scenario
         k.True(_quiverHeld, "the weapon dropped on the quiver did not stay in the hand");
         k.True(_quiverText.Contains(notFit) && !_quiverText.Contains("is too full"), $"a quiver given a weapon: expected \"{notFit}\", got \"{_quiverText}\" ({noLimit})");
         k.True(_arrowsTaken, $"a quiver given arrows: expected taken, got \"{_arrowText}\" ({(c.Game == "uw1" ? "uw1 INVPANEL.C:641-642" : "uw2 INVPANEL.C:630-631")})");
+        if (c.Game == "uw2")
+            k.True(!_wandHeld, $"a quiver given a wand: expected taken, got \"{_wandText}\" (uw2 INVPANEL.C:630-631)");
+        else
+            k.True(_wandHeld && _wandText.Contains(notFit), $"a quiver given a wand: expected \"{notFit}\", got \"{_wandText}\", still in hand {_wandHeld} (uw1 INVPANEL.C:641-642)");
         k.True(_sackTook, $"a stack that weighs what the sack holds: expected taken, got \"{_sackText}\" (the contents' weight only: {(c.Game == "uw1" ? "uw1 INVPANEL.C:613, BAGS.C:514-529" : "uw2 INVPANEL.C:599, BAGS.C:511")})");
         return k.Result;
     }
