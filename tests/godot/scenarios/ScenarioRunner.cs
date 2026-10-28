@@ -205,6 +205,10 @@ public partial class ScenarioRunner : Node
         (() => new ReachBlockingTerrain(), true),
         (() => new MoonstoneInContainer(), true),
         (() => new LightSphereInContainer(), true),
+        (() => new BonesLookScenario(), true),
+        (() => new TalismanLookScenario(), true),
+        (() => new BonesBurial(), true),
+        (() => new LastTalismanKeepsHp(), true),
         (() => new HarnessFails(), false),
     };
 
