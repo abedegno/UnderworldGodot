@@ -321,6 +321,21 @@ namespace Underworld
 
 
         /// <summary>
+        /// The terrain word for a corner's tile, as TILE_TERR. DOS takes the tile as centptr + tile_off[]
+        /// with no bounds check (uw1 COLLIDE.C:281-292, uw2 COLLIDE.C:260-271), so on row 0 or 63 it reads
+        /// memory outside the 64 by 64 map, whose contents are not defined (uw1 level.h:17-29). The map's
+        /// edge squares are solid, so a tile off the map counts as solid (type 0), a wall to GetHgt.
+        /// </summary>
+        static short OffsetTileAttributes(TileInfo tile)
+        {
+            if (tile == null)
+            {
+                return UWTileMap.TILE_SOLID;
+            }
+            return (short)((int)(tile.tileType) | ((int)tile.floorHeight << 4) | (TerrainDatLoader.GetTerrainTypeNo(tile) << 8));
+        }
+
+        /// <summary>
         /// Appears to do stuff with the tile the motion is happening in.
         /// </summary>
         /// <param name="distance_arg0"></param>
@@ -417,10 +432,10 @@ namespace Underworld
 
                 //2941:543
                 var searchPTR = (int)UWMotionParamArray.TileRelatedToMotion_dseg_67d6_257E.Ptr + (TileOffsetArray[UWMotionParamArray.SubArray.Unk2_offset] * 4);
-                var Tile_Var6 = UWTileMap.GetTileByPTR(searchPTR);//this can be unsafe and finds tiles out of bound when ran at the screen edge. TODO when failing to find a valid tile overwrite the data with 0x1111
+                var Tile_Var6 = UWTileMap.GetTileByPTR(searchPTR);//null past row 0 or 63, see OffsetTileAttributes
                 if (UWMotionParamArray.TileAttributesArray[UWMotionParamArray.SubArray.Unk2_offset] == 0x1111)
                 {//seg028_2941_572:
-                    UWMotionParamArray.TileAttributesArray[UWMotionParamArray.SubArray.Unk2_offset] = (short)((int)(Tile_Var6.tileType) | ((int)Tile_Var6.floorHeight << 4) | (TerrainDatLoader.GetTerrainTypeNo(Tile_Var6) << 8));
+                    UWMotionParamArray.TileAttributesArray[UWMotionParamArray.SubArray.Unk2_offset] = OffsetTileAttributes(Tile_Var6);
                 }
 
 
@@ -429,7 +444,7 @@ namespace Underworld
                 Tile_Var6 = UWTileMap.GetTileByPTR(searchPTR);
                 if (UWMotionParamArray.TileAttributesArray[UWMotionParamArray.SubArray.Unk7_offset] == 0x1111)
                 {//seg028_2941_5DA
-                    UWMotionParamArray.TileAttributesArray[UWMotionParamArray.SubArray.Unk7_offset] = (short)((int)(Tile_Var6.tileType) | ((int)Tile_Var6.floorHeight << 4) | (TerrainDatLoader.GetTerrainTypeNo(Tile_Var6) << 8));
+                    UWMotionParamArray.TileAttributesArray[UWMotionParamArray.SubArray.Unk7_offset] = OffsetTileAttributes(Tile_Var6);
                 }
 
                 //seg028_2941_618:
@@ -437,7 +452,7 @@ namespace Underworld
                 Tile_Var6 = UWTileMap.GetTileByPTR(searchPTR);
                 if (UWMotionParamArray.TileAttributesArray[UWMotionParamArray.SubArray.Unkc_offset] == 0x1111)
                 {//seg028_2941_648
-                    UWMotionParamArray.TileAttributesArray[UWMotionParamArray.SubArray.Unkc_offset] = (short)((int)(Tile_Var6.tileType) | ((int)Tile_Var6.floorHeight << 4) | (TerrainDatLoader.GetTerrainTypeNo(Tile_Var6) << 8));
+                    UWMotionParamArray.TileAttributesArray[UWMotionParamArray.SubArray.Unkc_offset] = OffsetTileAttributes(Tile_Var6);
                 }
 
                 //seg028_2941_686:
@@ -445,7 +460,7 @@ namespace Underworld
                 Tile_Var6 = UWTileMap.GetTileByPTR(searchPTR);
                 if (UWMotionParamArray.TileAttributesArray[UWMotionParamArray.SubArray.Unk11_offset] == 0x1111)
                 {//seg028_2941_6B9
-                    UWMotionParamArray.TileAttributesArray[UWMotionParamArray.SubArray.Unk11_offset] = (short)((int)(Tile_Var6.tileType) | ((int)Tile_Var6.floorHeight << 4) | (TerrainDatLoader.GetTerrainTypeNo(Tile_Var6) << 8));
+                    UWMotionParamArray.TileAttributesArray[UWMotionParamArray.SubArray.Unk11_offset] = OffsetTileAttributes(Tile_Var6);
                 }
 
 
