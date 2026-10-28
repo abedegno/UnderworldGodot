@@ -139,6 +139,9 @@ public partial class ScenarioRunner : Node
         (() => new CanPlace(), true),
         (() => new WeaponEachSwing(), true),
         (() => new MissileBodyLocation(), true),
+        (() => new SilverTreeResurrection(), true),
+        (() => new GemResurrection(), true),
+        (() => new VoidAutomap(), true),
         (() => new TybalTalkTrap(), true),
         (() => new XTrapsValueRange(), true),
         (() => new NumberedVariableRanges(), true),
@@ -387,9 +390,14 @@ public partial class ScenarioRunner : Node
     /// restore or a death). Without this a scenario's 20-second and 5-minute ticks fall where earlier
     /// scenarios left them, pathfinding runs with the paths an earlier scenario took, and a cast can
     /// be refused as too soon after an earlier scenario's.
+    /// start-up). Without this a scenario's 20-second and 5-minute ticks fall where earlier
+    /// scenarios left them, and pathfinding runs with the paths an earlier scenario took.
+    /// Also the palette number (palette.cs), which uimanager.ReturnToMainMenu leaves at 2 when a scenario ends the
+    /// game: main.StartGame sets 0, and a change there cycles palettes that are not loaded yet and throws.
     /// </summary>
     static void ResetProcessStatics()
     {
+        SetStatic(typeof(Palette), "_currentpalette", 0);
         SetStatic(typeof(playerdat), "playertimer", 0.0);
         SetStatic(typeof(playerdat), "playerUpdateCounter", 0);
         SetStatic(typeof(playerdat), "secondcounter", 0);
