@@ -176,6 +176,10 @@ public partial class main : Node3D
 		// ObjectCreator.grObjectsInfo.XFER = ArtLoader.XferChannnelMode.AllColours;
 
 		Palette.CurrentPalette = 0;
+		// music_ok is 1 when the program starts and nothing sets it again (uw1 SOUND.C:139,
+		// uw2 SOUND.C:170). The port's static outlives the game scene, so it is set here, where a
+		// game starts, or a theme that failed to load would keep the music off in the next one.
+		XMIMusic.MusicOk = true;
 		uimanager.instance.InitUI();
 		if (UWClass._RES != UWClass.GAME_UWDEMO)
 		{
