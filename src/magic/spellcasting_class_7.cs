@@ -9,49 +9,49 @@ namespace Underworld
         {
             if (_RES == GAME_UW2)
             {
+                //The cost held since the cast is paid only if the spell works: the critter spells (0-7) when their handler
+                //returns true (uw2 SPELLS.C:772-773), the object spells (8+) unless they find nothing to work on (SPELLS.C:823, 842, 875, 915).
+                bool works = true;
                 switch (minorclass)
                 {
                     case 0:
                         //cause bleeding  
-                        CauseBleeding(index: index, objList: objList);
+                        works = CauseBleeding(index: index, objList: objList);
                         break;
                     case 1:
                         //Causefear
-                        Causefear(index: index, objList: objList);
+                        works = Causefear(index: index, objList: objList);
                         break;
                     case 2:
                         //SmiteUndead
-                        SmiteUndead(index: index, objList: objList, caster: caster);
+                        works = SmiteUndead(index: index, objList: objList, caster: caster);
                         break;
                     case 3:
                         //Charm
-                        Charm(index, objList);
+                        works = Charm(index, objList);
                         break;
                     case 4:
                         //Poison
-                        PoisonSpell(index: index, objList: objList, WorldObject: WorldObject);//unused in uw2
+                        works = PoisonSpell(index: index, objList: objList, WorldObject: WorldObject);//unused in uw2
                         break;
                     case 5:
                         //paralyse  
-                        Paralyse(index, objList, caster);
+                        works = Paralyse(index, objList, caster);
                         break;
                     case 6:
                         //smite foe   
-                        SmiteFoe(index, objList, WorldObject);                     
+                        works = SmiteFoe(index, objList, WorldObject);                     
                         break;
                     case 7:
-                        StudyMonster(index, objList);
+                        works = StudyMonster(index, objList);
                         break;
                     case 8:
                         //Dispel rune
-                        if (WorldObject)
-                        {
-                            DispelRune(index, objList);
-                        }                        
+                        works = WorldObject && DispelRune(index, objList);
                         break;
                     case 9:
                         //Mending
-                        repair.MendingSpell(index, objList);
+                        works = repair.MendingSpell(index, objList);
                         break;
                     case 10:
                         //disarm trap
@@ -83,12 +83,17 @@ namespace Underworld
                         break;
                     case 15:
                         //gate travel
-                        GateTravelUW2(
+                        works = GateTravelUW2(
                             index: index,
                             objList: objList,
                             WorldObject: WorldObject);
                         break;
                 }
+                if (works)
+                {
+                    playerdat.play_mana = System.Math.Max(0, playerdat.play_mana - RunicMagic.PendingSpellCost);
+                }
+                RunicMagic.PendingSpellCost = 0;
             }
             else
             {//the uw1 list of class 7 spells is much shorter
@@ -124,7 +129,7 @@ namespace Underworld
         /// </summary>
         /// <param name="index"></param>
         /// <param name="objList"></param>
-        static void CauseBleeding(int index, uwObject[] objList)
+        static bool CauseBleeding(int index, uwObject[] objList)
         {  
             var target = objList[index];
             if (target != null)
@@ -148,9 +153,11 @@ namespace Underworld
                             WorldObject: true,
                             damagesource: 1);
                         animo.SpawnAnimoAtTarget(target: target, subclassindex: 0, si_zpos: 2, tileX: target.tileX, tileY: target.tileY );
+                        return true;
                     }
                 }
             }
+            return false;
         }
 
 
@@ -159,10 +166,10 @@ namespace Underworld
         /// </summary>
         /// <param name="index"></param>
         /// <param name="objList"></param>
-        static void StudyMonster(int index, uwObject[] objList)
+        static bool StudyMonster(int index, uwObject[] objList)
         {
             var critter = objList[index];
-            if (critter == null) { return; }
+            if (critter == null) { return false; }
             bool isNPC = (critter.majorclass == 1);
             var critterdat = critter.item_id & 0x3f; //for looking up critter dat when there are non-npc critter types here
             int var6 = 0;
@@ -190,7 +197,7 @@ namespace Underworld
                 {
                     if (critter.item_id != 0x1CD)
                     {//not a wisp
-                        return;
+                        return false;
                     }
                 }
             }
@@ -302,6 +309,7 @@ namespace Underworld
                 }
             }
             uimanager.AddToMessageScroll(output);
+            return true;
         }
 
 
@@ -375,7 +383,7 @@ namespace Underworld
         /// </summary>
         /// <param name="index"></param>
         /// <param name="objList"></param>
-        static void Causefear(int index, uwObject[] objList)
+        static bool Causefear(int index, uwObject[] objList)
         {
             var critter = objList[index];
             if (critter != null)
@@ -388,9 +396,10 @@ namespace Underworld
                         targetObject: critter,
                         newgoal: (byte)npc.npc_goals.npc_goal_fear_6,
                         newgtarg: 1);
-
+                    return true;//even if resisted
                 }
             }
+            return false;
         }
 
         /// <summary>
@@ -450,7 +459,7 @@ namespace Underworld
         /// <param name="index"></param>
         /// <param name="objList"></param>
         /// <param name="caster"></param>
-        public static void Paralyse(int index, uwObject[] objList, uwObject caster)
+        public static bool Paralyse(int index, uwObject[] objList, uwObject caster)
         {
             var critter = objList[index];
             if (critter != null)
@@ -479,6 +488,7 @@ namespace Underworld
                                 newgoal: (byte)npc.npc_goals.npc_goal_petrified,
                                 newattitude: 1,
                                 newgtarg: (byte)duration);
+                            return true;//even if resisted
                         }
                     }
                 }
@@ -493,6 +503,7 @@ namespace Underworld
                     }
                 }
             }
+            return false;
         }
 
         /// <summary>
@@ -500,7 +511,7 @@ namespace Underworld
         /// </summary>
         /// <param name="index"></param>
         /// <param name="objList"></param>
-        public static void Charm(int index, uwObject[] objList)
+        public static bool Charm(int index, uwObject[] objList)
         {//UW2 spell.
             var critter = objList[index];
             if (critter.majorclass == 1)
@@ -529,7 +540,9 @@ namespace Underworld
                         }
                     }
                 }
+                return true;//even if resisted or not charmable
             }
+            return false;
         }
 
         /// <summary>
@@ -603,7 +616,7 @@ namespace Underworld
         /// <param name="index"></param>
         /// <param name="objList"></param>
         /// <param name="WorldObject"></param>
-        private static void GateTravelUW2(int index, uwObject[] objList, bool WorldObject)
+        private static bool GateTravelUW2(int index, uwObject[] objList, bool WorldObject)
         {
             for (int i = 0; i < 2; i++)
             {
@@ -614,6 +627,7 @@ namespace Underworld
             if (MoonStoneActivated.item_id != 0x126)
             {//not a moonstone
                 uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x143));// that is not a moonstone.                
+                return false;
             }
             else
             {
@@ -640,14 +654,14 @@ namespace Underworld
                 if ((si >= 2) && (var9 == 0))
                 {
                     uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x121));// the moonstone is not available.
-                    return;
+                    return true;//still paid for
                 }
                 else
                 {
                     if (di == 2)
                     {
                         uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x121));// the moonstone is not available.
-                        return;
+                        return true;//still paid for
                     }
                     else
                     {
@@ -670,7 +684,7 @@ namespace Underworld
                                                 {
                                                     //Found a different moonstone. go to it.
                                                     Teleportation.Teleport(character: 0, tileX: x, tileY: y, newLevel: 0, HeadingHeightFlag: 0);
-                                                    return;
+                                                    return true;
                                                 }
                                             }
                                         }
@@ -698,6 +712,7 @@ namespace Underworld
                     }
                 }
             }
+            return true;
         }
 
 
@@ -706,7 +721,7 @@ namespace Underworld
         /// </summary>
         /// <param name="index"></param>
         /// <param name="objList"></param>
-        static void DispelRune(int index, uwObject[] objList)
+        static bool DispelRune(int index, uwObject[] objList)
         {
             var objToDispel = objList[index];
             if (objToDispel!=null)
@@ -716,12 +731,13 @@ namespace Underworld
                     case 0x19e://flam rune
                     case 0x19f://tym rune
                         ObjectRemover_OLD.DeleteObjectFromTile_DEPRECIATED(tileX: objToDispel.tileX, tileY: objToDispel.tileY, indexToDelete: objToDispel.index, RemoveFromWorld: true);
-                        break;
+                        return true;
                     default:
                         uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x12E));//that is not a rune
                         break;
                 }
             }
+            return false;
         }
 
 
@@ -772,7 +788,8 @@ namespace Underworld
                 {
                     var damagetoapply = (playerdat.Casting * 3) + 0x6E;
                     animo.SpawnAnimoAtTarget(target: target, subclassindex: 0, si_zpos: 2, tileX: target.tileX, tileY: target.tileY);
-                    return (damage.DamageObject(objToDamage: target, basedamage: damagetoapply, damagetype: 4, objList: objList, WorldObject: WorldObject, damagesource: 0) != false); 
+                    damage.DamageObject(objToDamage: target, basedamage: damagetoapply, damagetype: 4, objList: objList, WorldObject: WorldObject, damagesource: 0);
+                    return true;//wound_foe's 1 for any critter (uw2 SPELLS.C:502)
                 }
                 else
                 {
