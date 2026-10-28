@@ -76,7 +76,7 @@ namespace Underworld
             Teleportation.CodeToRunOnTeleport = TeleportToSilverTree;
             Teleportation.Teleport(
                 character: 0,
-                tileX: 32, tileY: 32,
+                tileX: 0x3F, tileY: 0x3F,//no square: CodeToRunOnTeleport sets it, so no search for room here (uw1 SKILLS.C:863)
                 newLevel: SilverTreeDungeon,
                 HeadingHeightFlag: 0);
         }
@@ -111,11 +111,14 @@ namespace Underworld
                                 ResurrectionEffects();
                                 //send to jail
                                 Teleportation.CodeToRunOnTeleport = GoToJail;
-                                Teleportation.Teleport(
+                                if (Teleportation.Teleport(
                                     character: 0,
                                     tileX: 42, tileY: 38,
                                     newLevel: 1,
-                                    HeadingHeightFlag: 0);
+                                    HeadingHeightFlag: 0) != 0x10)
+                                {//put_player_in_jail carries on where the player is when do_teleport fails (uw2 WORLDEV.C:2296-2314)
+                                    GoToJail();
+                                }
                                 return false;
                             }
                         }
