@@ -170,7 +170,7 @@ namespace Underworld
                     if (playerdat.SkillPoints > 0)
                     {                        
                         AdvanceGreatly(mantra);
-                        playerdat.UpdateHPManaMax(true);
+                        playerdat.UpdateHPManaMax(false);//player_compute(0): the maxima only, mana is not filled (uw1 SKILLS.C:347)
                     }
                     else
                     {
@@ -270,7 +270,7 @@ namespace Underworld
                             }
                             playerdat.SkillPoints--; //decrement points
                             uimanager.AddToMessageScroll(msg);
-                            playerdat.UpdateHPManaMax(true);
+                            playerdat.UpdateHPManaMax(false);//player_compute(0) (uw1 SKILLS.C:347)
                         }
                         else
                         {
