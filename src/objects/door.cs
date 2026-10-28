@@ -556,7 +556,7 @@ namespace Underworld
 
         /// <summary>
         /// Handles checking if the critter can operate this door or lock (checkLock, uw1 USEITEMS.C:1004-1045, uw2 OBJUSE.C:301-344)
-        /// Unimplemented: this function is used to operate the lock in vanilla underowrld
+        /// Keys and lockpicks operate the lock through it too (UseKeyOn, UseLockpickOn)
         /// </summary>
         /// <param name="character"></param>
         /// <param name="doorobj"></param>
@@ -672,14 +672,16 @@ namespace Underworld
                         else
                         {
                             //seg040_34E7_832
-                            if ((doorobj.OneF0Class == 0x14) && (doorobj.classindex >= 0x8))
+                            //an open door, or an open container (an odd item below 0x8C)
+                            if (((doorobj.OneF0Class == 0x14) && (doorobj.classindex >= 0x8))
+                                || ((doorobj.OneF0Class == 0x8) && (doorobj.classindex < 0xC) && ((doorobj.item_id & 1) == 1)))
                             {
                                 //seg040_34E7_862:
                                 return 4;
                             }
                             else
                             {
-                                if (LockObject.link != skillnegated)
+                                if ((LockObject.link & 0x1FF) != skillnegated)
                                 {
                                     return 0;
                                 }
