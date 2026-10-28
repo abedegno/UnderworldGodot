@@ -1,0 +1,11 @@
+# Vector tables UnderworldGodot does not match yet: "uwN/table  # the finding". A listed table
+# still runs and prints its failing rows but passes; remove the line in the piece that fixes it.
+uw1/pickloc           # tests the defender's top against the blow's bottom (attackerZ), not its middle: combat.cs:954 vs underworld-exhumed uw1/src/combat/COMBAT.C:116
+uw2/pickloc           # tests the defender's top against the blow's bottom (attackerZ), not its middle: combat.cs:954 vs underworld-exhumed uw2/src/combat/COMBAT.C:107
+uw1/sqrt              # values >= 0x10000 wrong: div divides AX not DX:AX, the CH branch divides twice, rcr's carry is lost (uwMath.cs:154, 252, 255)
+uw2/sqrt              # values >= 0x10000 wrong: div divides AX not DX:AX, the CH branch divides twice, rcr's carry is lost (uwMath.cs:154, 252, 255)
+uw1/compute_hitangle  # returns 0 when the defender is not a creature (majorclass != 1); the original computes the angle for any object: combat.cs:1033
+uw2/compute_hitangle  # returns 0 when the defender is not a creature (majorclass != 1); the original computes the angle for any object: combat.cs:1033
+uw2/check_res         # fire/cold doubling capped at 127 (Math.Min(127, d << 1)); the original doubles below 0x7F and gives 0xFF otherwise: damage.cs:615
+uw2/debris_type       # weapon test is majorclass == 0 (items 0..63), the original's is item class 0 (items 0..15): damage.cs:450
+uw2/is_sharp          # sling (0x18) not excluded: tests item_id == 0x19 (the bow) where the original excludes 0x18 only: combat.cs:1016
