@@ -311,7 +311,7 @@ namespace Underworld
             MotionCalcArray.y2 = (ushort)posY;
             MotionCalcArray.z4 = (ushort)posZ;
 
-            if ((MotionCalcArray.Height9 != 0x80) && (MotionCalcArray.Height9 > 0x7f))
+            if ((MotionCalcArray.Height9 != 0x80) && (MotionCalcArray.Height9 + MotionCalcArray.z4 > 0x7f))
             {
                 result = false;
                 goto ReturnResult;
@@ -346,11 +346,11 @@ namespace Underworld
                     }
                     else
                     {
-                        UWMotionParamArray.dseg_67d6_2586 = 1 << MotionCalcArray.UnkC_terrain;
+                        UWMotionParamArray.dseg_67d6_2586 = 1 << (MotionCalcArray.UnkC_terrain & 3);//the terrain class
                     }
 
                     //seg028_2941_113B:
-                    if (index >= 0x100 && UWMotionParamArray.dseg_67d6_2586 != 0x16)
+                    if (index >= 0x100 && UWMotionParamArray.dseg_67d6_2586 != 0x10)//not in the air
                     {
                         ScanForCollisions(1, 1);  //seg028_2941_1154
                     }
@@ -377,10 +377,10 @@ namespace Underworld
                                 while (MotionCalcArray.Unk16_collisionindex > si_index)
                                 {//seg028_2941_11B7:
                                     var collision = collisionTable[si_index];
-                                    di_match = si_index;
                                     if (collision.height > UWMotionParamArray.Z_dseg_67d6_2582)
-                                    {
+                                    {//only an object that raises the resting height is the one it rests on
                                         UWMotionParamArray.Z_dseg_67d6_2582 = collision.height;
+                                        di_match = si_index;
                                     }
                                     si_index++;
                                 }
