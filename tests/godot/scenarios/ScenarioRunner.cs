@@ -249,6 +249,8 @@ public partial class ScenarioRunner : Node
         (() => new ExploreExperienceLevelZero(), true),
         (() => new VoidUnlit(), true),
         (() => new LockpickRules(), true),
+        (() => new KeyRules(), true),
+        (() => new AutomapViewOrigin(), true),
         (() => new NightDoorsClose(), true),
         (() => new TremorHarmless(), true),
         (() => new CastSlotsFull(), true),
