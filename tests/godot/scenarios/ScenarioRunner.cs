@@ -114,6 +114,7 @@ public partial class ScenarioRunner : Node
         (() => new AltarasWand(), true),
         (() => new ScdSetQuestBit(), true),
         (() => new ScdBlockWriteBack(), true),
+        (() => new ScdHourlyStepWriteBack(), true),
         (() => new QbertGate(), true),
         (() => new CastleSchedule(), true),
         (() => new HackSetAllClocks(), true),
