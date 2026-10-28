@@ -26,8 +26,12 @@ namespace Underworld
                 case ObjectListType.StaticList:
                     //Take the object at the top of the list, then move PTR down.
                     if (UWTileMap.current_tilemap.StaticFreeListPtr < 0)
-                    {
-                        return 0;
+                    {//empty: garbage collect once and try again. uw1 OBJECTS.C:239-242, uw2 OBJECTS.C:232-235
+                        ObjectRemover.GarbageCollect(3, 10);
+                        if (UWTileMap.current_tilemap.StaticFreeListPtr < 0)
+                        {
+                            return 0;
+                        }
                     }
                     var staticslot = UWTileMap.current_tilemap.StaticFreeListObject;
                     UWTileMap.current_tilemap.StaticFreeListPtr--;
@@ -35,8 +39,12 @@ namespace Underworld
                     return staticslot;
                 case ObjectListType.MobileList:
                     if (UWTileMap.current_tilemap.MobileFreeListPtr < 0)
-                    {
-                        return 0;
+                    {//empty: garbage collect once and try again. uw1 OBJECTS.C:231-234, uw2 OBJECTS.C:224-227
+                        ObjectRemover.GarbageCollect(3, 5);
+                        if (UWTileMap.current_tilemap.MobileFreeListPtr < 0)
+                        {
+                            return 0;
+                        }
                     }
                     var newslot = UWTileMap.current_tilemap.MobileFreeListObject;
                     UWTileMap.current_tilemap.MobileFreeListPtr--;
