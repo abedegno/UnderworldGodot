@@ -93,6 +93,16 @@ namespace Underworld
                 //Reset the camera reference as the old reference belonged to a previous map
                 playerdat.CameraReference = playerdat.playerObject;
 
+                //Handle enter level events. ChangeLevel runs them before new_player_pos searches for room
+                //(uw1 UWEDIT.C:459-467, uw2 UWEDIT.C:475-481), so in UW2 the level 1 door on the square asked for is open by then.
+                LevelChangeEvents(EnterLevelMode, playerdat.dungeon_level);
+
+                if (_RES == GAME_UW2)
+                {//SCD.ARK then needs to be processed in UW2
+                    Debug.Print("Processing SCD due to level transition");
+                    scd.ProcessSCDArk(1);
+                }
+
                 int tileX = TeleportTileX, tileY = TeleportTileY;
                 if ((tileX != -1) && (tileY != -1))
                 {
@@ -121,15 +131,6 @@ namespace Underworld
                         //move to new tile on different level
                         InitialisePlayerOnLevelOrPositionChange(tileX: tileX, tileY: tileY, CeilingSpawn: false);
                     }
-                }
-
-                //Handle enter level events
-                LevelChangeEvents(EnterLevelMode, playerdat.dungeon_level);
-
-                if (_RES == GAME_UW2)
-                {//SCD.ARK then needs to be processed in UW2
-                    Debug.Print("Processing SCD due to level transition");
-                    scd.ProcessSCDArk(1);
                 }
             }
             else
@@ -419,24 +420,15 @@ namespace Underworld
                     }
                 }
 
-                bool coward = false;
                 if (playerdat.IsFightingInPit)
-                {
-
-                    if (newLevel != playerdat.dungeon_level)
+                {// a pit fighter who moves to another level, out of the arena ring, or into another quarter of it has run away (uw2 WORLDEV.C:196-218)
+                    var dest = ((newLevel == 0 || newLevel == playerdat.dungeon_level) && tileX != 0x3F && tileY != 0x3F) ? playerdat.dungeon_level : newLevel;
+                    int oldX = playerdat.playerObject.tileX, oldY = playerdat.playerObject.tileY;
+                    if (dest != playerdat.dungeon_level || !pitsofcarnage.InArena(tileX, tileY)
+                        || (pitsofcarnage.Mpos(tileX - 0x1F, tileY - 0x1F) >> 1) != (pitsofcarnage.Mpos(oldX - 0x1F, oldY - 0x1F) >> 1))
                     {
-                        //avatar is a coward
-                        coward = true;
+                        pitsofcarnage.AvatarIsACoward(skipConversation: dest != playerdat.dungeon_level);
                     }
-                    else
-                    {
-                        //Check if avatar is a coward by checking if they are still in an arena, when teleporting outside the arenas but still within the level. (eg using a moonstone)
-                        Debug.Print("todo check if avatar is a coward and has left the arena!");
-                    }
-                }
-                if (coward)
-                {
-                    pitsofcarnage.AvatarIsACoward(skipConversation: true);
                 }
 
                 return 0x10;
@@ -648,7 +640,7 @@ namespace Underworld
         /// picking skill of 0x2D), is opened whether that worked or not, and its motion is finished at once,
         /// so the player never arrives behind a shut door.
         /// </summary>
-        static void GruesomeDoorHack(int x, int y)
+        internal static void GruesomeDoorHack(int x, int y)
         {
             if (!UWTileMap.ValidTile(x, y)) { return; }
             var doorObj = objectsearch.FindMatchInTile(tileX: x, tileY: y, majorclass: 5, minorclass: 0, classindex: -1);
