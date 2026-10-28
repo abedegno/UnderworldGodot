@@ -957,7 +957,7 @@ namespace Underworld
                     if (si_attackermid >= di_defendermid)
                     {
                         //seg024_24E9_4E:
-                        if (Rng.r.Next(3) == 0)
+                        if (Rng.RandMod(3) == 0)
                         {
                             return 3;
                         }
@@ -965,13 +965,13 @@ namespace Underworld
                     else
                     {
                         //seg024_24E9_3A
-                        if (Rng.r.Next(2) != 0)
+                        if (Rng.RandMod(2) != 0)
                         {
                             return 2;
                         }
                     }
                     //seg024_24E9_62:
-                    if (Rng.r.Next(3) == 0)
+                    if (Rng.RandMod(3) == 0)
                     {
                         return 1;
                     }
