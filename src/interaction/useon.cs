@@ -94,6 +94,18 @@ namespace Underworld
         {
             switch (objInHand.minorclass)
             {
+                case 0:
+                    {
+                        if (_RES != GAME_UW2)
+                        {
+                            switch (objInHand.classindex)
+                            {
+                                case >= 2 and <= 6://skulls and bones (0xC2..0xC6)
+                                    return UseBonesOn(objInHand, targetObject);
+                            }
+                        }
+                        break;
+                    }
                 case 1:
                     {//some misc items                    
                         switch (objInHand.classindex)
@@ -197,6 +209,70 @@ namespace Underworld
                     }
             }
             return false;
+        }
+
+        /// <summary>
+        /// UW1 bones used on something (UseBonesOn, uw1 USEITEMS.C:327-365). Garamon's bones (owner 0x3E) on his grave
+        /// (a gravestone that is a quantity with special link 0x21) bury him: talisman_ok and garamon are set, the grave's
+        /// link becomes 0x222, Garamon talks (whoami 0x1B) and the trigger at tile (0x36, 0x34) is set off.
+        /// Other bones on a gravestone get message 0x86, anything else 0x84. Bones that did something are used up.
+        /// </summary>
+        /// <param name="bones"></param>
+        /// <param name="targetObject"></param>
+        /// <returns></returns>
+        public static bool UseBonesOn(uwObject bones, uwObject targetObject)
+        {
+            bool used = false;
+            if (targetObject.item_id == 0x165)//gravestone
+            {
+                if (bones.owner == 0x3E)
+                {
+                    if ((targetObject.is_quant == 1) && ((targetObject.link & 0x200) != 0) && ((targetObject.link & 0x1FF) == 0x21))
+                    {
+                        playerdat.CanTalismansBeDestroyed = true;
+                        playerdat.IsGaramonBuried = true;
+                        targetObject.link = 0x222;
+                        //Garamon talks. The original talks to a temporary object on the stack (item 0x7E, goal 7, friendly, whoami 0x1B);
+                        //the port needs a real one, removed again when the conversation ends.
+                        var garamon = talk.SpawnTemporaryTalker(
+                            whoami: 0x1B, itemid: 0x7E,
+                            tileX: playerdat.playerObject.tileX, tileY: playerdat.playerObject.tileY,
+                            attitude: 3, goal: 7);
+                        talk.Talk(garamon, true);
+                        //set off the trigger at tile (0x36, 0x34), UseTrigger(ThePlayer, 0, o, 0)
+                        var tile = UWTileMap.current_tilemap.Tiles[0x36, 0x34];
+                        if (tile.indexObjectList != 0)
+                        {
+                            trigger.RunTrigger(
+                                character: 1,
+                                ObjectUsed: null,
+                                TriggerObject: UWTileMap.current_tilemap.LevelObjects[tile.indexObjectList],
+                                triggerType: (int)triggerObjectDat.triggertypes.MOVE,
+                                objList: UWTileMap.current_tilemap.LevelObjects);
+                        }
+                        used = true;
+                    }
+                    else
+                    {
+                        uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x103));
+                        return true;
+                    }
+                }
+                else
+                {
+                    used = true;
+                    uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x86));
+                }
+            }
+            if (!used)
+            {
+                uimanager.AddToMessageScroll(GameStrings.GetString(1, 0x84));
+            }
+            else
+            {
+                ObjectCreator.Consume(bones, true);//bones only ask for a target from the inventory (using_punt(ObjectActing, how, 1))
+            }
+            return true;
         }
 
     } //end class

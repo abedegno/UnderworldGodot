@@ -39,6 +39,7 @@ public partial class ScenarioRunner : Node
         (() => new ExperienceLoss(), true),
         (() => new SleepPassesTime(), true),
         (() => new GaramonBurial(), true),
+        (() => new GaramonDeathClearsTalismans(), true),
         (() => new HarnessFails(), false),
     };
 
