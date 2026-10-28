@@ -60,17 +60,23 @@ namespace Underworld
         }
 
 
+        /// <summary>The 256 Hz clock when the flasks were last animated.</summary>
+        static uint FlaskClock;
+
         /// <summary>
         /// Updates the hp/mana flask animations.
         /// </summary>
         public static void AnimateFlasks()
         {
-            if ((TargetHealthFlaskLevel > CurrentHealthFlaskLevel) && (main.GlobalPITTimer % 32 == 0))
+            //the flasks step when the 256 Hz clock passes a multiple of 32, however many ticks the frame added (update_screen, uw1 PANELS.C:356, uw2 PANELS.C:287)
+            bool step = (main.GlobalPITTimer >> 5) != (FlaskClock >> 5);
+            FlaskClock = main.GlobalPITTimer;
+            if ((TargetHealthFlaskLevel > CurrentHealthFlaskLevel) && (step))
             {
                 CurrentHealthFlaskLevel++;
                 RedrawHealthFlask();
             }
-            else if ((TargetHealthFlaskLevel < CurrentHealthFlaskLevel) && (main.GlobalPITTimer % 32 == 0))
+            else if ((TargetHealthFlaskLevel < CurrentHealthFlaskLevel) && (step))
             {
                 CurrentHealthFlaskLevel--;
                 RedrawHealthFlask();
@@ -78,7 +84,7 @@ namespace Underworld
             else
             {
                 bool doBubbling = false;
-                if (main.GlobalPITTimer % 32 == 0)
+                if (step)
                 {
                     if (HealthBubbleCounter == 0)
                     {
@@ -90,7 +96,7 @@ namespace Underworld
                     }
                 }
 
-                if ((doBubbling) && (((CurrentHealthFlaskLevel >= 3) && (CurrentHealthFlaskLevel <= 9)) && (TargetHealthFlaskLevel == CurrentHealthFlaskLevel) && (main.GlobalPITTimer % 32 == 0)))
+                if ((doBubbling) && (((CurrentHealthFlaskLevel >= 3) && (CurrentHealthFlaskLevel <= 9)) && (TargetHealthFlaskLevel == CurrentHealthFlaskLevel) && (step)))
                 {
                     RedrawHealthFlask(doBubbling, HealthBubbleCounter++); //false for now.
                     if (HealthBubbleCounter > 11)
@@ -104,7 +110,7 @@ namespace Underworld
                     {
                         HealthBubbleCounter = 0;
                     }
-                    if (main.GlobalPITTimer % 32 == 0)
+                    if (step)
                     {
                         RedrawHealthFlask(false, 0);
                     }
@@ -117,12 +123,12 @@ namespace Underworld
             //     Debug.Print("no mana");
             // }
 
-            if ((TargetManaFlaskLevel > CurrentManaFlaskLevel) && (main.GlobalPITTimer % 32 == 0))
+            if ((TargetManaFlaskLevel > CurrentManaFlaskLevel) && (step))
             {
                 CurrentManaFlaskLevel++;
                 RedrawManaFlask();
             }
-            else if ((TargetManaFlaskLevel < CurrentManaFlaskLevel) && (main.GlobalPITTimer % 32 == 0))
+            else if ((TargetManaFlaskLevel < CurrentManaFlaskLevel) && (step))
             {
                 CurrentManaFlaskLevel--;
                 RedrawManaFlask();
@@ -130,7 +136,7 @@ namespace Underworld
             else
             {
                 bool doBubbling = false;
-                if (main.GlobalPITTimer % 32 == 0)
+                if (step)
                 {
                     if (ManaBubbleCounter == 0)
                     {
@@ -142,7 +148,7 @@ namespace Underworld
                     }
                 }
 
-                if ((doBubbling) && (((CurrentManaFlaskLevel >= 3) && (CurrentManaFlaskLevel <= 9)) && (TargetManaFlaskLevel == CurrentManaFlaskLevel) && (main.GlobalPITTimer % 32 == 0)))
+                if ((doBubbling) && (((CurrentManaFlaskLevel >= 3) && (CurrentManaFlaskLevel <= 9)) && (TargetManaFlaskLevel == CurrentManaFlaskLevel) && (step)))
                 {
                     RedrawManaFlask(doBubbling, ManaBubbleCounter++); //false for now.
                     if (ManaBubbleCounter > 11)
@@ -156,7 +162,7 @@ namespace Underworld
                     {
                         ManaBubbleCounter = 0;
                     }
-                    if (main.GlobalPITTimer % 32 == 0)
+                    if (step)
                     {
                         RedrawManaFlask(false, 0);
                     }

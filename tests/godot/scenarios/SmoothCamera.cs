@@ -12,8 +12,8 @@ namespace Underworld.Scenarios;
 ///
 /// The original places the camera once a drawn frame, after check_physics has run with the ticks
 /// since the last frame (uw1/src/motion/PLAYMOVE.C:324-356, uw2 PLAYMOVE.C:317-349). The port runs
-/// the motion update every 0.097659 s with a fixed 0x19 ticks (main._PhysicsProcess), every 6
-/// physics frames at 60 a second, and placed the camera only then. This is drawing only, so the
+/// the motion update every 0.097659 s with a fixed 0x19 ticks (main._PhysicsProcess), every 5 or 6
+/// physics frames at 60 a second as it carries the time left over, and placed the camera only then. This is drawing only, so the
 /// rules are checked against the flag itself: the same walk with the flag on and off must give the
 /// same game state at every update.
 ///
@@ -22,7 +22,8 @@ namespace Underworld.Scenarios;
 /// game state (playerMotionParams, CameraTileX/Y, CameraYawHeadingRelated_2B52, CameraPointer2C)
 /// and each frame's drawn camera. With the flag on, each update must be drawn at several places on
 /// the way from the place before it to its own, and the frame of an update must show the place
-/// before it (alpha 0); a whole update (alpha 1) draws the update's place exactly. With it off,
+/// before it or no more than one physics frame's share of an update on from it (alpha 0 plus the
+/// time the update carried over, under 1/60 s); a whole update (alpha 1) draws the update's place exactly. With it off,
 /// every frame must show the latest update's place. It then checks two places drawn at once with
 /// the flag on: a teleport to the next square, and a switch back from a camera that is not the
 /// player's (do_trap_camera, roaming sight) half a tile away; and that a turn is drawn the short
@@ -33,6 +34,7 @@ public sealed class SmoothCamera : Scenario
 {
     const int WalkFrames = 120;
     const int StopFrames = 90;   // the speed falls to 0 over 9 updates, 54 frames
+    const double FirstFrameAlpha = (1.0 / 60) / 0.097659;   // one physics frame at --fixed-fps 60 over main.MotionUpdateInterval
 
     public override string Name => "smooth-camera";
     public override string Cites => "underworld-exhumed uw1/src/motion/PLAYMOVE.C:324-356, uw2/src/motion/PLAYMOVE.C:317-349 (the camera follows every frame); Godot main.cs _PhysicsProcess, playerdatcamera.cs PositionCamera";
@@ -249,7 +251,8 @@ public sealed class SmoothCamera : Scenario
             if (from == to) continue;
             moving++;
             fewest = Math.Min(fewest, frames.Select(f => f.Drawn).Distinct().Count());
-            if (frames[0].Drawn != from) notAtStart++;
+            var first = (frames[0].Drawn - from).Dot(to - from) / (to - from).LengthSquared();
+            if (first < -1e-4f || first > FirstFrameAlpha + 1e-4f) notAtStart++;
             foreach (var f in frames)
             {
                 var seg = to - from;
@@ -260,7 +263,7 @@ public sealed class SmoothCamera : Scenario
         k.True(moving >= 5, $"precondition: only {moving} updates moved the camera with the flag on");
         k.True(fewest >= 3, $"an update that moved the camera was drawn at only {fewest} places");
         k.Equal("frames drawn off the line from an update's place before to its own", 0, outside, "cameraRender.DrawBetween");
-        k.Equal("updates whose own frame did not show the place before them (alpha 0)", 0, notAtStart, "main._Process");
+        k.Equal("updates whose own frame was not drawn within one frame's share of the place before them (alpha 0 to 0.17)", 0, notAtStart, "main._Process");
         var lastOn = _on.Frames[^1];
         k.True(lastOn.Drawn == lastOn.To, $"standing still the flag-on camera drew {lastOn.Drawn}, not the update's place {lastOn.To}");
 
