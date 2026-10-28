@@ -85,7 +85,7 @@ namespace Underworld
                                     {
                                         //ovr157_943:
                                         MakeAttemptVar8 = true;
-                                        diDifficulty = ExistingEnchantment.SpellMinorClass & 0xFFF8;
+                                        diDifficulty = ExistingEnchantment.SpellMinorClass & 0xFFFB;//effect & ~4, uw2 SPELLS2.C:351
                                         siSkill = (playerdat.Casting / 0xB) + (playerdat.play_level - 8) / 4;
                                     }
                                     if (MakeAttemptVar8)
