@@ -153,6 +153,7 @@ public partial class ScenarioRunner : Node
         (() => new CastleScheduleWhoami8F(), true),
         (() => new CreateObjectTrapPutAt(), true),
         (() => new Uw1SetVariableQuestBit(), true),
+        (() => new MessagesAndSounds(), true),
         // batch D: guards
         (() => new GuardEat(), true),
         (() => new GuardLight(), true),
