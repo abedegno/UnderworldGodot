@@ -73,7 +73,8 @@ public class RuleIndexTests
             Assert.True(index.Any(r => r.Routine == routine && r.Member == member && r.How == how),
                 $"the scanner no longer finds {member} implementing {routine} ({how}); has the code or the scanner changed?");
         }
-        Has("uw1:SquareRoot_seg019_A78@IMATH.ASM", "SquareRoot_seg019_A78", "name");      // UW1 address, no paragraph
+        Has("uw1:SquareRoot_seg019_A78@IMATH.ASM", "sqrt_vanilla", "cite");               // uw1 IMATH.ASM:107, an .ASM file
+        Has("uw2:SquareRoot_seg021_22FD_A78@IMATH.ASM", "sqrt_vanilla", "cite");          // uw2 IMATH.ASM:103
         Has("uw2:beeline@PATHFIND.C", "PathAlongStraightLine_seg006_1413_205B", "name");   // UW2 paragraph 1413
         Has("uw2:fill_the_grid@VIEW3D.C", "TestVisionAndShade_seg32_1014", "name");        // segment number cut to two digits
         Has("uw2:dseg_67d6_B4", "BitFieldForPathing_dseg_67d6_B4", "name");                // a UW2 global

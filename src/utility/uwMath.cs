@@ -186,6 +186,10 @@ namespace Underworld
     /// </summary>
     public class UnderWorldSqrt : UnderworldMath
     {
+        /// <summary>
+        /// The original's square root of a 32-bit value (uw1 IMATH.ASM:107, uw2 IMATH.ASM:103), which cSqRt calls:
+        /// five Newton steps from a guess set by the value's highest non-zero byte.
+        /// </summary>
         public static ushort sqrt_vanilla(uint value)
         {
             cx = (ushort)(value >> 16);

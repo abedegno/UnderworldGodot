@@ -80,6 +80,19 @@ public class PositionalAudioTests
     }
 
     [Fact]
+    public void Distance_is_the_originals_square_root_not_the_exact_one()
+    {
+        // dist = cSqRt(d2) (uw1 SOUND.C:558, uw2 SOUND.C:581), five Newton steps (uw1 IMATH.ASM:107).
+        // d2 = 12*12 + 12*12 = 288 gives 17 there, where the exact floor root is 16:
+        // vol = 80 * (48 - 17) / 40 = 62 = 0x3E.
+        var r = PositionalAudio.Sample(
+            srcX: 80 + 12, srcY: 80 + 12, playerX: 80, playerY: 80,
+            heading8: 0, baseVelocity: 0x50, volDelta: 0);
+        Assert.False(r.Culled);
+        Assert.Equal((byte)0x3E, r.Vol);
+    }
+
+    [Fact]
     public void Volume_clamps_to_upper_bound()
     {
         // raw = 0x7F + 10 = 137 → clamp to 0x7F at UW1_asm.asm:64874-64888.

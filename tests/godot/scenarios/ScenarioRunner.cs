@@ -45,6 +45,7 @@ public partial class ScenarioRunner : Node
         (() => new SkillCheckSeeded(), true),
         (() => new NewGameStart(), true),
         (() => new NewGameRecord(), true),
+        (() => new NewGameAfterGameView(), true),
         (() => new ExperienceLoss(), true),
         (() => new ExperienceGain(), true),
         (() => new SleepPassesTime(), true),
