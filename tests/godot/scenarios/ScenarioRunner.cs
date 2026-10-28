@@ -199,6 +199,8 @@ public partial class ScenarioRunner : Node
         (() => new MapStopsEffects(), true),
         (() => new CutsceneSpeechStops(), true),
         (() => new CutsceneLoop(), true),
+        // missing routines
+        (() => new StepMoves(), true),
         (() => new HarnessFails(), false),
     };
 
