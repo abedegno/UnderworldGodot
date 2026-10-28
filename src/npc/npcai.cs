@@ -1818,11 +1818,11 @@ namespace Underworld
                         //seg006_1413_3664
                         if (critter.npc_goal == 5)
                         {
-                            var8 = critterObjectDat.speed(critter.item_id);
+                            var8 = critterObjectDat.run(critter.item_id);
                         }
                         else
                         {
-                            var8 = critterObjectDat.unk_b(critter.item_id);
+                            var8 = critterObjectDat.walkspeed(critter.item_id);
                         }
                     }
                     else
@@ -2637,7 +2637,7 @@ namespace Underworld
                             critter.heading = (short)headingvar1;
                             critter.npc_heading = 0;
                             FleeAnimation(critter, uw1Sequence: 7, uw2Sequence: 1);//back off
-                            critter.UnkBit_0X13_Bit0to6 = (short)((critterObjectDat.unk_b(critter.item_id) + 1) / 2);
+                            critter.UnkBit_0X13_Bit0to6 = (short)((critterObjectDat.walkspeed(critter.item_id) + 1) / 2);
                             return;
                         }
                     }
@@ -2717,12 +2717,12 @@ namespace Underworld
                 if (currentGTargSquaredDistanceByTiles >= 0x40)
                 {
                     //seg007_17A2_14A2:
-                    critter.UnkBit_0X13_Bit0to6 = (short)critterObjectDat.unk_b(critter.item_id);
+                    critter.UnkBit_0X13_Bit0to6 = (short)critterObjectDat.walkspeed(critter.item_id);
                 }
                 else
                 {
                     //seg007_17A2_1493
-                    critter.UnkBit_0X13_Bit0to6 = (short)critterObjectDat.speed(critter.item_id);
+                    critter.UnkBit_0X13_Bit0to6 = (short)critterObjectDat.run(critter.item_id);
                 }
                 FleeAnimation(critter, uw1Sequence: 0x2C, uw2Sequence: 1);//walk
                 critter.Projectile_Speed = 4;
@@ -2986,7 +2986,7 @@ namespace Underworld
                     //seg007_17A2_9F5:
                     headingvar2 = ((headingvar2 + (Rng.r.Next(2) << 1) - 1) + 8) % 8;
                     animVar4 = combatSeq;
-                    AttackTypeVar6 = (critterObjectDat.unk_b(critter.item_id) << 1) / 3;
+                    AttackTypeVar6 = (critterObjectDat.walkspeed(critter.item_id) << 1) / 3;
                 }
             }
 

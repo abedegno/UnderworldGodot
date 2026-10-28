@@ -588,7 +588,7 @@ namespace Underworld
                 case 0xc:
                     return "death";
                 case 0xd:
-                    return "begin_combat";
+                    return "cast";//SEQ_CAST, uw1 critter.h:130
                 case 0x20:
                     return "idle_rear";
                 case 0x21:
