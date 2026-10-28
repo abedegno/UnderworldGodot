@@ -36,9 +36,8 @@ namespace Underworld
 
 
         /// <summary>
-        /// Prebuilt array of cycled palettes for use in shaders.
+        /// Prebuilt array of cycled palettes for the interface. The 3D view's are built as needed (PaletteLoader.ShadedPalette).
         /// </summary>
-        public ImageTexture[,,] cycledGamePalette;   //[mono|shaded, ]
         public ImageTexture[] cycledUIPalette;
         int[] xferindices = new int[]{0xF9, 0xFA, 0xFB, 0xFC, 0xFD};
         /// <summary>
