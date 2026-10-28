@@ -301,9 +301,29 @@ namespace Underworld
             {
                 printmode = MessageDisplay.MessageDisplayMode.TemporaryMessage;
             }
-            bool WeightTest = false;
             bool ContainerCanHold = false;
             bool WrongTypeMessage = false;
+
+            //Test total weight first: an object too heavy is refused whatever it is (uw1 INVPANEL.C:598-622, uw2 INVPANEL.C:584-608).
+            //The weight is the object's and the contents', not the container's own, and a capacity of 0 has no limit.
+            var contentsMass = 0;
+            if ((containerobject.is_quant == 0) && (containerobject.link > 0))
+            {
+                contentsMass = GetTotalMass(playerdat.InventoryObjects[containerobject.link], playerdat.InventoryObjects, false);
+            }
+            var itemToAddMass = GetTotalMass(objectToAdd, UWTileMap.current_tilemap.LevelObjects, true);
+            var capacity = containerObjectDat.capacity(containerobject.item_id);
+            if ((capacity != 0) && (contentsMass + itemToAddMass > capacity))
+            {
+                if (printReason)
+                {
+                    uimanager.AddToMessageScroll(
+                        stringToAdd: $"The {GameStrings.GetSimpleObjectNameUW(containerobject.item_id)} is too full.",
+                        mode:printmode);
+                }
+                return false;
+            }
+
             var mask = containerObjectDat.objectmask(containerobject.item_id);
             if (mask <= -1)
             {
@@ -312,24 +332,9 @@ namespace Underworld
             else
             {
                 if ((mask >= 0) && (mask < 512))
-                {//check for exact match. I don't think this actually happens with any container but just incase...
-                    if (objectToAdd.item_id == mask)
-                    {
-                        if (printReason)
-                        {
-                            if (uimanager.InConversation)
-                            {
-                                uimanager.AddToMessageScroll(
-                                    stringToAdd: GameStrings.GetString(1, GameStrings.str_that_item_does_not_fit_),
-                                    mode: printmode);
-                            }
-                        }
-                        ContainerCanHold = false;
-                    }
-                    else
-                    {
-                        ContainerCanHold = true;
-                    }
+                {//a mask below 512 names the one item the container takes (uw1 INVPANEL.C:625-629, uw2 INVPANEL.C:611-615)
+                    ContainerCanHold = objectToAdd.item_id == mask;
+                    WrongTypeMessage = !ContainerCanHold;
                 }
                 else
                 {//check category against mask-512;
@@ -345,14 +350,14 @@ namespace Underworld
                                     mode:printmode);
                             }
                             break;
-                        case 513://quivers, accepts missiles and wands
+                        case 513://quivers: sling stones, bolts and arrows, and in UW2 also misc minor class 1 from class 8 (uw1 INVPANEL.C:641-642, uw2 INVPANEL.C:630-631)
                             {
                                 if (
-                                    ((objectToAdd.majorclass == 0) && (objectToAdd.minorclass == 3) && (objectToAdd.classindex <= 3))
+                                    ((objectToAdd.majorclass == 0) && (objectToAdd.minorclass == 1) && (objectToAdd.classindex < 3))
                                     ||
-                                    ((objectToAdd.majorclass == 0) && (objectToAdd.minorclass == 3) && (objectToAdd.classindex >= 8))
+                                    ((_RES == GAME_UW2) && (objectToAdd.majorclass == 2) && (objectToAdd.minorclass == 1) && (objectToAdd.classindex >= 8))
                                 )
-                                {//a wand or ammo
+                                {//ammo, or in UW2 a wand
                                     ContainerCanHold = true;
                                 }
                                 else
@@ -417,28 +422,7 @@ namespace Underworld
                     mode: printmode);
             }
 
-            //Test total weight.
-            if (ContainerCanHold)
-            {
-                var containerMass = GetTotalMass(containerobject, playerdat.InventoryObjects, true);
-                var itemToAddMass = GetTotalMass(objectToAdd, UWTileMap.current_tilemap.LevelObjects, true);
-                if (containerMass + itemToAddMass > containerObjectDat.capacity(containerobject.item_id))
-                {
-                    WeightTest = false;
-                    if (printReason)
-                    {
-                        uimanager.AddToMessageScroll(
-                            stringToAdd: $"The {GameStrings.GetSimpleObjectNameUW(containerobject.item_id)} is too full",
-                            mode:printmode);
-                    }
-                }
-                else
-                {
-                    WeightTest = true;
-                }
-            }
-
-            return (ContainerCanHold && WeightTest);
+            return ContainerCanHold;
         }
 
 
