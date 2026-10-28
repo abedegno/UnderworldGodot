@@ -166,9 +166,9 @@ namespace Underworld
                                     playerdat.SetQuest(questno, tmp);
                                     break;
                                 }
-                            default://maybe set
+                            default://set the bit to right > 0. uw2 TRIGGER.C:188-191
                                 {
-                                    playerdat.SetQuest(questno,1);
+                                    playerdat.SetQuest(questno, RightVariable > 0 ? 1 : 0);
                                     break;
                                 }
                         }
