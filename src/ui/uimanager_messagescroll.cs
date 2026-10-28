@@ -161,7 +161,8 @@ namespace Underworld
 		/// <param name="stringToAdd"></param>
 		/// <param name="option"></param>
 		/// <param name="colour"></param>
-		public static void AddToMessageScroll(string stringToAdd, int option = 0, int colour = 0, MessageDisplay.MessageDisplayMode mode = MessageDisplay.MessageDisplayMode.NormalMode)
+		/// <param name="escapes">false shows backslash escapes as typed (DOS's scroll_esc)</param>
+		public static void AddToMessageScroll(string stringToAdd, int option = 0, int colour = 0, MessageDisplay.MessageDisplayMode mode = MessageDisplay.MessageDisplayMode.NormalMode, bool escapes = true)
 		{
 			if (MessageScrollIsTemporary)
 			{//don't allow any overwriting when a message is already being displayed temporarily.
@@ -189,7 +190,7 @@ namespace Underworld
 						MessageScrollIsTemporary = true;
 						instance.scroll.Clear();
 						_ = Peaky.Coroutines.Coroutine.Run(
-							instance.scroll.AddText(newText: stringToAdd, option: option, colour: colour),
+							instance.scroll.AddText(newText: stringToAdd, option: option, colour: colour, escapes: escapes),
 							main.instance
 							);
 
@@ -204,7 +205,7 @@ namespace Underworld
 				default:
 					{
 						_ = Peaky.Coroutines.Coroutine.Run(
-								instance.scroll.AddText(newText: stringToAdd, option: option, colour: colour),
+								instance.scroll.AddText(newText: stringToAdd, option: option, colour: colour, escapes: escapes),
 								main.instance
 								);
 						break;

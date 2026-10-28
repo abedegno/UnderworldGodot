@@ -12,7 +12,8 @@ namespace Underworld
         /// <summary>
         /// Game strings carry display codes as a backslash and a digit, for instance the
         /// description prompt begins "\6" and the save messages begin "\4" and end "\0".
-        /// Nothing in the scroll strips them, so they appear on screen verbatim.
+        /// The message scroll draws them as DOS does (MessageDisplay.AddText); this is for text
+        /// shown anywhere else.
         /// </summary>
         public static string StripDisplayCodes(string text)
         {
