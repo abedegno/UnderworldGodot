@@ -27,12 +27,24 @@ namespace Underworld
                 if ((magicenchantment != null) && (!WorldObject))
                 {
                     //uimanager.AddToMessageScroll($"Cast a spell from this object", colour: 2);
-                    MagicEnchantment.CastObjectSpell(ObjectUsed, magicenchantment);
-                    ObjectCreator.Consume(ObjectUsed, true);
+                    // UW2 uses the scroll up only when checkSpell cast it, so a scroll read
+                    // too soon after another object's spell is kept (uw2 USEITEMS.C:517-518).
+                    if (MagicEnchantment.CastObjectSpell(ObjectUsed, magicenchantment))
+                    {
+                        ObjectCreator.Consume(ObjectUsed, true);
+                    }
                     return true;
                 }
                 else
                 {
+                    if (magicenchantment != null)
+                    {
+                        // A use from the world passes how 0 and UseBook returns at once, and
+                        // UseObj does not go on to checkSpell after a book: the scroll casts
+                        // nothing (uw2 USEITEMS.C:460-461, OBJUSE.C:113-114). Stop use.Use
+                        // casting it afterwards.
+                        use.SpellHasBeenCast = true;
+                    }
                     return LookAt(ObjectUsed, WorldObject);
                 }
             }
@@ -64,9 +76,20 @@ namespace Underworld
                 else
                 {
                     var magicenchantment = MagicEnchantment.GetSpellEnchantment(ObjectUsed, objList);
+                    if ((magicenchantment != null) && (WorldObject))
+                    {
+                        // A use from the world passes how 0 and UseBook returns at once, and
+                        // UseObj does not go on to checkSpell after a book: the scroll casts
+                        // nothing, is not used up and sets no wait (uw1 USEITEMS.C:925-926,
+                        // 137-138). Stop use.Use casting it afterwards.
+                        use.SpellHasBeenCast = true;
+                        return LookAt(ObjectUsed, WorldObject);
+                    }
                     if (magicenchantment != null)
                     {
                         //uimanager.AddToMessageScroll($"Cast a spell from this object", colour: 2);
+                        // UW1 uses the scroll up whether or not checkSpell's wait let it cast
+                        // (uw1 USEITEMS.C:946-948).
                         MagicEnchantment.CastObjectSpell(ObjectUsed, magicenchantment);
                         ObjectCreator.Consume(ObjectUsed, true);
                     }
