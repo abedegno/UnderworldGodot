@@ -491,12 +491,7 @@ namespace Underworld
                             {
                                 case 2://turn on
                                     {
-                                        playerdat.MusicEnabled = true;
-                                        if (MusicStreamPlayer.Instance != null)
-                                        {//restart music if not already playing.
-                                            //XMIMusic.ChangeTheme(XMIMusic.PickLevelThemeMusic());
-                                            XMIMusic.PickLevelThemeMusic(0);
-                                        }
+                                        XMIMusic.TurnMusic(true);
                                         SetGameOptionButtons(new int[]{
                                                 (int)OptionButtonIndices.MusicIsOnLabel,
                                                 (int)OptionButtonIndices.TurnMusicLabel,
@@ -508,8 +503,7 @@ namespace Underworld
                                     }
                                 case 3: //turn off
                                     {
-                                        playerdat.MusicEnabled = false;
-                                        MusicStreamPlayer.Instance?.Stop();
+                                        XMIMusic.TurnMusic(false);
                                         SetGameOptionButtons(new int[]{
                                             (int)OptionButtonIndices.MusicIsOffLabel,
                                             (int)OptionButtonIndices.TurnMusicLabel,

@@ -357,15 +357,21 @@ namespace Underworld
                 playerdat.play_drawn = 1;//draw the weapon 
                 if (updateThemes)
                 {
-                    XMIMusic.ChangeThemeMusic(XMIMusic.Armed);
+                    //theme 8 (UW1) or 5 (UW2) unless a combat theme plays: uw1 INTERACT.C:800-801, 830-831; uw2 INTERACT.C:682-683, 712-713
+                    byte combatFirst = (byte)(UWClass._RES == UWClass.GAME_UW2 ? 2 : 5);
+                    if ((XMIMusic.CurrentlyPlayingThemeNo < combatFirst) || (XMIMusic.CurrentlyPlayingThemeNo > combatFirst + 2))
+                    {
+                        XMIMusic.ChangeThemeMusic(XMIMusic.Armed);
+                    }
                 }
             }
             else
             {
                 playerdat.play_drawn = 0; //ensure weapon is not drawn.
-                if (updateThemes)
+                if (updateThemes && (XMIMusic.CurrentlyPlayingThemeNo == XMIMusic.Armed))
                 {
-                    XMIMusic.PickLevelThemeMusic(0);
+                    //a walking theme if the armed theme plays: uw1 INTERACT.C:807-808, uw2 INTERACT.C:688-689
+                    XMIMusic.PickLevelThemeMusic(-1);
                 }
                 if (UWClass._RES == UWClass.GAME_UW2)
                 {
