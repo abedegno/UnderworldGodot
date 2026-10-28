@@ -4,57 +4,33 @@ namespace Underworld
 {
     public partial class ConversationVM : UWClass
     {
+        /// <summary>
+        /// The NPC hands over the object with this index, if it is in its inventory.
+        /// Returns 0 when the player's hand is full or the NPC does not have it; otherwise as NpcBarterGive.
+        /// (npc_barter_give_id, uw1 BARTER.C:991-1024, uw2 BARTER.C:971-1004)
+        /// </summary>
         public static void take_id_from_npc(uwObject talker)
         {
             var id = GetConvoStackValueAtPtr(stack + stackptr-1);
             Debug.Print($"Take ID {id}");
-            var ObjectToGive = UWTileMap.current_tilemap.LevelObjects[id];
-            if (playerdat.ObjectInHand  == -1)
+            result_register = 0;
+            if (playerdat.ObjectInHand != -1)
             {
-                //player is holding nothing                
-                if (talker.link!=0)
-                {
-                    // if (talker.link == id)
-                    // {
-                    //     talker.link = ObjectToGive.next;
-                    //     ObjectToGive.next = 0;
-                    // }
-                    // else
-                    // {
-                        ObjectRemover_OLD.RemoveObjectFromLinkedList(talker.link, id, UWTileMap.current_tilemap.LevelObjects, talker.PTR+6);
-                    //}
-                }
-                                
-                if (playerdat.CanCarryWeight(ObjectToGive))
-                {
-                    //player can hold, place in hand
-                    playerdat.ObjectInHand = ObjectToGive.index;
-                    uimanager.instance.mousecursor.SetCursorToObject(ObjectToGive.item_id);
-                    result_register = 1;
-                }
-                else
-                {   //player cannot hold. Try and place on ground
-                    objectInstance.PlaceObjectInTile(playerdat.playerObject.tileX, playerdat.playerObject.tileY, ObjectToGive);
-                    result_register = 2;
-                }
-            }   
-            else
+                return;
+            }
+            var nextItem = talker.link;
+            var previous = talker;
+            while (nextItem != 0)
             {
-                //player is already holding something, try and place in trade slots
-                for (int i = 0; i<uimanager.NoOfTradeSlots;i++)
+                var obj = UWTileMap.current_tilemap.LevelObjects[nextItem];
+                if (obj.index == id)
                 {
-                    var objAtSlot = uimanager.GetPlayerTradeSlot(i, false);
-                    if (objAtSlot==-1)
-                    {   //place at slot
-                        uimanager.SetPlayerTradeSlot(i,ObjectToGive.index,false);
-
-                        result_register = 1;
-                        return;
-                    }
+                    UnlinkFromNPC(talker, previous, obj);
+                    result_register = NpcBarterGive(talker, obj);
+                    return;
                 }
-                //cannot place in trade slot. drop on ground.
-                objectInstance.PlaceObjectInTile(playerdat.playerObject.tileX, playerdat.playerObject.tileY, ObjectToGive);
-                result_register = 2;
+                previous = obj;
+                nextItem = obj.next;
             }
         }
 

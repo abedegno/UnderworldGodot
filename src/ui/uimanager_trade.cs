@@ -72,12 +72,11 @@ namespace Underworld
         }
 
         /// <summary>
-        /// Starts dragging an item out of the player's trade area.
+        /// Starts dragging an item out of a trade slot.
         /// </summary>
         static void TryStartTradeDrag(Vector2 position)
         {
             if (!tradePointerDown || tradeDragActive
-                || !tradePressIsPlayerSide
                 || !CanInventoryDrag(tradePointerButton)
                 || tradePressPos.DistanceTo(position) < TradeDragThresholdPx)
             {
@@ -85,15 +84,38 @@ namespace Underworld
             }
 
             tradeDragActive = true;
-            if (playerdat.ObjectInHand != -1 || PlayerItemIDs[tradePressSlot] == -1)
+            PickUpFromTradeSlot((int)tradePressSlot, tradePressIsPlayerSide);
+        }
+
+        /// <summary>
+        /// Picks up the item in a trade slot into the hand. The NPC's items can be taken only after an accepted offer
+        /// or demand (UseTradeSlot, uw1 BARTER.C:355-356, uw2 BARTER.C:316-317).
+        /// Returns true when the item is now in the hand.
+        /// </summary>
+        public static bool PickUpFromTradeSlot(int slotNo, bool isPlayerSide)
+        {
+            int[] itemIds = isPlayerSide ? PlayerItemIDs : NPCItemIDs;
+            if (playerdat.ObjectInHand != -1 || itemIds[slotNo] == -1)
             {
-                return;
+                return false;
+            }
+            if (!isPlayerSide && ConversationVM.TradeResult == 0)
+            {
+                return false;
             }
 
-            playerdat.ObjectInHand = PlayerItemIDs[tradePressSlot];
+            playerdat.ObjectInHand = itemIds[slotNo];
             var obj = UWTileMap.current_tilemap.LevelObjects[playerdat.ObjectInHand];
             instance.mousecursor.SetCursorToObject(obj.item_id);
-            SetPlayerTradeSlot((int)tradePressSlot, -1, false);
+            if (isPlayerSide)
+            {
+                SetPlayerTradeSlot(slotNo, -1, false);
+            }
+            else
+            {
+                SetNPCTradeSlot(slotNo, -1, false);
+            }
+            return true;
         }
 
         public static bool TradeDragActive => tradeDragActive;
@@ -362,7 +384,7 @@ namespace Underworld
             int[] itemIds = isPlayerSide ? PlayerItemIDs : NPCItemIDs;
             if (eventMouseButton.Pressed)
             {
-                if (isPlayerSide
+                if ((isPlayerSide || ConversationVM.TradeResult != 0)
                     && playerdat.ObjectInHand == -1
                     && CanInventoryDrag(eventMouseButton.ButtonIndex)
                     && itemIds[slotNo] != -1)
@@ -386,13 +408,11 @@ namespace Underworld
 
             if (tradeDragActive)
             {
-                if (isPlayerSide)
+                //an item dragged from either side can be put down in the player's slots, never in the NPC's
+                var destinationSlot = FindPlayerTradeSlotUnderMouse(eventMouseButton.GlobalPosition);
+                if (destinationSlot != -1)
                 {
-                    var destinationSlot = FindPlayerTradeSlotUnderMouse(eventMouseButton.GlobalPosition);
-                    if (destinationSlot != -1)
-                    {
-                        PlaceHeldItemAtTradeSlot(destinationSlot);
-                    }
+                    PlaceHeldItemAtTradeSlot(destinationSlot);
                 }
                 ClearTradePointerState();
                 return;

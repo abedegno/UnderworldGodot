@@ -3,7 +3,7 @@ namespace Underworld
 {
     public partial class ConversationVM : UWClass
     {
-        public static IEnumerator do_offer()
+        public static IEnumerator do_offer(uwObject talker)
         {
             //Get strings ids from the stack
             var YeahWeTrade = GetConvoStackValueAtPtr(stack + stackptr - 5);//Guess            
@@ -45,7 +45,11 @@ namespace Underworld
                     if (evaluation >= TradeThreshold)
                     {//accept offer
                         yield return say_op(YeahWeTrade);
-                        //TODO trade items.
+                        //the NPC's unselected items go back to its inventory, it takes the player's selected items,
+                        //and its selected items stay in its slots for the player to take (uw1 BARTER.C:658-663, uw2 BARTER.C:621-626)
+                        ReturnTradeObjectsToNPC(talker, OnlyUnselected: true);
+                        TradeObjectsToNPC(talker);
+                        TradeResult = 1;
                         result_register = 1;
                     }
                     else
@@ -122,6 +126,7 @@ namespace Underworld
                 else
                 {//no items offered
                     result_register = 0;
+                    TradeResult = 0;
                     yield return say_op(YouMakeNoSense);
                 }
             }
