@@ -40,6 +40,69 @@ public partial class ScenarioRunner : Node
         (() => new SleepPassesTime(), true),
         (() => new GaramonBurial(), true),
         (() => new GaramonDeathClearsTalismans(), true),
+        // batch A: combat and critters
+        (() => new SwingChargeResets(), true),
+        (() => new CritterMeleeChoice(), true),
+        (() => new FleeingCritterSteers(), true),
+        (() => new AlliesJoinFight(), true),
+        (() => new AlliesWearOff(), true),
+        (() => new WanderingMonsters(), true),
+        (() => new SpecialDeathsUW2(), true),
+        (() => new PoisonWeaponDamage(), true),
+        (() => new CombatEquipmentWear(), true),
+        (() => new CritterLineOfSight(), true),
+        (() => new PathsFreedOnLevelChange(), true),
+        // batch B: player and magic rules
+        (() => new SmiteUndeadRule(), true),
+        (() => new KillExperience(), true),
+        (() => new SkillPointGain(), true),
+        (() => new QuestFlagOperations(), true),
+        (() => new NaturalHealing(), true),
+        (() => new PlayerArmour(), true),
+        (() => new ItemProtection(), true),
+        (() => new SleepNight(), true),
+        (() => new SleepKillornCrash(), true),
+        (() => new SleepInVoid(), true),
+        (() => new MapAreaRadius(), true),
+        (() => new BritanniaSpellCircle(), true),
+        (() => new AcademyManaLevel(), true),
+        (() => new TargetedSpellMana(), true),
+        (() => new Uw1CastingCheck(), true),
+        (() => new SummonMonsterLevel(), true),
+        (() => new CarryCapacity(), true),
+        (() => new LightBurnRates(), true),
+        (() => new RepairCriticalFailure(), true),
+        (() => new Uw1CreateObjectTrap(), true),
+        (() => new Uw1SoundsDatLength(), true),
+        (() => new Uw1AreaSpells(), true),
+        // end batch B
+        // batch C
+        (() => new TimeOfDayHourlyStep(), true),
+        (() => new NewGameTimeOfDay(), true),
+        (() => new RepairTime(), true),
+        (() => new JailTerm(), true),
+        (() => new AltarasWand(), true),
+        (() => new ScdSetQuestBit(), true),
+        (() => new QbertGate(), true),
+        (() => new CastleSchedule(), true),
+        (() => new EnchantWeaponTier(), true),
+        (() => new EnchantRechargeWand(), true),
+        (() => new GivePtrNpc(), true),
+        (() => new EndBarter(), true),
+        (() => new TrapChainFlow(), true),
+        (() => new TeleportOccupied(), true),
+        (() => new TybalTalkTrap(), true),
+        // batch D: guards
+        (() => new GuardEat(), true),
+        (() => new GuardLight(), true),
+        (() => new GuardPickupDrop(), true),
+        (() => new GuardDoor(), true),
+        (() => new GuardSwitch(), true),
+        (() => new GuardTalk(), true),
+        (() => new GuardWalk(), true),
+        (() => new GuardLevelChange(), true),
+        (() => new GuardSaveLoad(), true),
+        (() => new GuardMelee(), true),
         (() => new HarnessFails(), false),
     };
 
@@ -192,6 +255,7 @@ public partial class ScenarioRunner : Node
         try
         {
             Rng.Source = new BorlandRandSource(s.Seed);
+            ResetProcessStatics();
 
             // The value a fresh process starts with. A previous scenario left it at GAME, and
             // the intro cutscene restores whatever mode it found when it ends.
@@ -228,6 +292,7 @@ public partial class ScenarioRunner : Node
         finally
         {
             Rng.Source = previousSource;
+            Guards.ReleaseHeldKeys();
             if (root != null && IsInstanceValid(root))
             {
                 await DrainAudio();
@@ -236,6 +301,28 @@ public partial class ScenarioRunner : Node
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             }
         }
+    }
+
+    /// <summary>
+    /// Puts back the statics a fresh process starts with that a new game does not reset and a
+    /// scenario may have moved: the player loop's tick counters (playerdatloop.cs:13-17; only
+    /// Load resets one of them) and the critters' free-path mask (npcai.cs:185, set only at
+    /// start-up). Without this a scenario's 20-second and 5-minute ticks fall where earlier
+    /// scenarios left them, and pathfinding runs with the paths an earlier scenario took.
+    /// </summary>
+    static void ResetProcessStatics()
+    {
+        SetStatic(typeof(playerdat), "playertimer", 0.0);
+        SetStatic(typeof(playerdat), "playerUpdateCounter", 0);
+        SetStatic(typeof(playerdat), "secondcounter", 0);
+        SetStatic(typeof(npc), "BitFieldForPathing_dseg_67d6_B4", 0xFFFF);
+    }
+
+    static void SetStatic(Type type, string name, object value)
+    {
+        var field = type.GetField(name, System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)
+            ?? throw new MissingFieldException(type.Name, name);
+        field.SetValue(null, value);
     }
 
     /// <summary>
