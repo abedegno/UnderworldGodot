@@ -516,66 +516,135 @@ namespace Underworld
 
 
         /// <summary>
-        /// Spawns the loot, blood fluids and corpse object for this crittter type
+        /// A dead critter leaves the map as the original's critter loop and instant_kill do it: it is taken off its
+        /// square, its loot is made if it has none yet, its remains are left (build_corpse), it drops what it carries
+        /// (drop_some_objects), and it is freed (uw1 AI.C:1140-1144, uw2 AI.C:1112-1116, WORLDEV.C:1703-1729).
         /// </summary>
         /// <param name="critter"></param>
-        private static void DropRemainsAndLoot(uwObject critter)
+        /// <returns>whether the critter was removed</returns>
+        private static bool DropRemainsAndLoot(uwObject critter)
         {
             if (!UWTileMap.ValidTile(critter.tileX, critter.tileY))
             {
-                return;//cannot drop an offmap npc
+                return false;//cannot drop an offmap npc
             }
-            var tile = UWTileMap.current_tilemap.Tiles[critter.tileX, critter.tileY];
+            if (!ObjectRemover_OLD.DeleteObjectFromTile_DEPRECIATED(critter.tileX, critter.tileY, critter.index, RemoveFromWorld: false) && _RES == GAME_UW2)
+            {
+                return false;//UW2 does nothing more when the critter is not in its square's list (uw2 AI.C:1112, WORLDEV.C:1717)
+            }
             //Drop npc loot (spawn if missing)
             if (critter.LootSpawnedFlag == 0)
             {
                 spawnloot(critter);
             }
-            container.SpillWorldContainer(critter); //spill the items added in spawnloot or that are already heald
+            BuildCorpse(critter);
+            DropSomeObjects(critter);
+            ObjectFreeLists.ReleaseFreeObject(critter);
+            return true;
+        }
 
+        /// <summary>
+        /// Leaves a dead critter's remains (build_corpse, uw1 PATHFIND.C:146-167, uw2 PATHFIND.C:146-167). Its fluids
+        /// (0xD8 + n in UW1, 0xD9 + n in UW2) go where it lay, at its fine position and height, quality 0x28, at the head
+        /// of its square's list, and are settled. Its corpse (0xC0 + n) is made 7 times in 16, and always in UW2's Pits of
+        /// Carnage (world 7), with the creature type as owner, and placed within 4 eighths of a tile of it
+        /// (near_mob_put_at).
+        /// </summary>
+        static void BuildCorpse(uwObject critter)
+        {
+            int x = critter.tileX, y = critter.tileY;
             var fluids = critterObjectDat.fluids(critter.item_id);
             if (fluids != 0)
             {
-                if (_RES == GAME_UW2)
+                var slot = ObjectCreator.PrepareNewObject(fluids + (_RES == GAME_UW2 ? 0xD9 : 0xD8));
+                if (slot != 0)
                 {
-                    fluids += 0xD9;
+                    var stain = UWTileMap.current_tilemap.LevelObjects[slot];
+                    stain.xpos = critter.xpos;
+                    stain.ypos = critter.ypos;
+                    stain.zpos = critter.zpos;
+                    stain.quality = 0x28;
+                    stain.tileX = x; stain.tileY = y;
+                    var tile = UWTileMap.current_tilemap.Tiles[x, y];
+                    stain.next = tile.indexObjectList;
+                    tile.indexObjectList = stain.index;
+                    objectInstance.RedrawFull(stain);
+                    var settled = motion.PlacedObjectCollision_seg030_2BB7_10BC(stain, x, y, 1);
+                    if (settled != null && settled != stain)
+                    {
+                        objectInstance.RedrawFull(settled);
+                    }
                 }
-                else
-                {
-                    fluids += 0xD8;
-                }
-                //UWTileMap.GetRandomXYZForTile(tile, out int newxpos, out int newypos, out int newzpos);
-                ObjectCreator.spawnObjectInTile(
-                    itemid: fluids,
-                    tileX: critter.tileX,
-                    tileY: critter.tileY,
-                    xpos: (short)critter.xpos,
-                    ypos: (short)critter.zpos,
-                    zpos: (short)(tile.floorHeight << 3),
-                    WhichList: ObjectFreeLists.ObjectListType.StaticList);
             }
 
-            //Drop corpse
             var corpse = critterObjectDat.corpse(critter.item_id);
-            if ((_RES == GAME_UW2) && (worlds.GetWorldNo(playerdat.dungeon_level) == 7))
-            {
-                corpse = 0;//no spawn in the pits of carnage
-            }
             if (corpse != 0)
             {
-                if (Rng.r.Next(0, 16) < 7)
+                if (Rng.RandMod(16) >= 7 && !((_RES == GAME_UW2) && (worlds.GetWorldNo(playerdat.dungeon_level) == 7)))
                 {
-                    corpse += 0xC0;
-                    //UWTileMap.GetRandomXYZForTile(tile, out int newxpos, out int newypos, out int newzpos);
-                    ObjectCreator.spawnObjectInTile(
-                        itemid: corpse,
-                        tileX: critter.tileX,
-                        tileY: critter.tileY,
-                        xpos: (short)critter.xpos,
-                        ypos: (short)critter.zpos,
-                        zpos: (short)(tile.floorHeight << 3),
-                        WhichList: ObjectFreeLists.ObjectListType.StaticList);
+                    return;
                 }
+                var slot = ObjectCreator.PrepareNewObject(0xC0 + corpse);
+                if (slot != 0)
+                {
+                    var remains = UWTileMap.current_tilemap.LevelObjects[slot];
+                    remains.owner = (short)(critter.item_id & 0x3F);
+                    motion.NearMobPutAt(critter, remains, 4, false);
+                }
+            }
+        }
+
+        /// <summary>
+        /// A dead critter drops what it carries round where it stood, each object within 6 eighths of a tile of it with
+        /// put_at (drop_some_objects and drop_link_chain, uw1 TREASURE.C:49-86, uw2 TREASURE.C:37-82). In UW2 any lock is
+        /// removed first, each object that can be owned belongs to the critter's race, and lit lights are put out; UW1
+        /// gives the owner to the critter itself, which is then freed, so the objects keep theirs.
+        /// </summary>
+        static void DropSomeObjects(uwObject critter)
+        {
+            var objList = UWTileMap.current_tilemap.LevelObjects;
+            if (critter.is_quant != 0)
+            {
+                return;
+            }
+            var race = critterObjectDat.faction(critter.item_id);
+            if (_RES == GAME_UW2)
+            {//remove_lock(cont, 1): uw2 DAMAGE.C:35-55
+                var lockObj = objectsearch.FindMatchInObjectChain(critter.link, 4, 0, 0xF, objList, SkipNext: false, SkipLinks: true);
+                while (lockObj != null)
+                {
+                    if (ObjectRemover_OLD.RemoveObjectFromLinkedList(critter.link, lockObj.index, objList, critter.PTR + 6))
+                    {
+                        ObjectFreeLists.ReleaseFreeObject(lockObj);
+                    }
+                    lockObj = objectsearch.FindMatchInObjectChain(critter.link, 4, 0, 0xF, objList, SkipNext: false, SkipLinks: true);
+                }
+            }
+            var next = (int)critter.link;
+            if (next == 0)
+            {
+                return;
+            }
+            critter.link = 0;
+            var x = (critter.tileX << 3) + critter.xpos;
+            var y = (critter.tileY << 3) + critter.ypos;
+            while (next != 0)
+            {
+                var obj = objList[next];
+                next = obj.next;
+                obj.next = 0;
+                if (_RES == GAME_UW2)
+                {
+                    if (race != 0 && commonObjDat.canhaveowner(obj.item_id))
+                    {
+                        obj.owner = (short)race;
+                    }
+                    if (obj.item_id >= 0x94 && obj.item_id <= 0x97)
+                    {//FIRST_LIT_LIGHT to ITEM_LIT_LIGHT_SPHERE: put out
+                        obj.item_id -= 4;
+                    }
+                }
+                motion.PutAt(x, y, critter.zpos, obj, 6, false);
             }
         }
 
@@ -656,13 +725,12 @@ namespace Underworld
         /// Outright kills an npc
         /// </summary>
         /// <param name="critter"></param>
-        public static void KillCritter(uwObject critter)
+        /// <returns>whether the critter was removed (instant_kill, uw2 WORLDEV.C:1703-1729)</returns>
+        public static bool KillCritter(uwObject critter)
         {
             SpecialDeathCases(critter, 0);
             SpecialDeathCases(critter, 1);
-            DropRemainsAndLoot(critter);
-            //remove from tile and free object
-            ObjectRemover_OLD.DeleteObjectFromTile_DEPRECIATED(critter.tileX, critter.tileY, critter.index, true);
+            return DropRemainsAndLoot(critter);
         }
     }//end class
 }//end namespace
