@@ -123,6 +123,8 @@ public partial class ScenarioRunner : Node
         (() => new Uw2AutomapSaved(), true),
         // issue #120
         (() => new ObjectCastCooldown(), true),
+        // issue #117
+        (() => new DoCollisionEntry(), true),
         (() => new HarnessFails(), false),
     };
 
