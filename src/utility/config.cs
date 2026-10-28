@@ -9,7 +9,7 @@ namespace Underworld;
 public class uwsettings
 {
 
-	private static readonly JsonSerializerOptions JsonOpts = new()
+	internal static readonly JsonSerializerOptions JsonOpts = new()
     {
         WriteIndented = true,
         IgnoreReadOnlyProperties = true,
@@ -117,6 +117,20 @@ public class uwsettings
     // Legacy field, still read for backward compatibility. If set and synthpath is empty,
     // synthpath is populated from this in LoadSettings.
     public string rompath { get; set; } = "";
+
+    /// <summary>
+    /// Changes to the original game, each behind its own switch (docs/enhancements.md). A file
+    /// written before this section existed, or with it set to null, loads with the defaults.
+    /// </summary>
+    public Enhancements enhancements { get => _enhancements; set => _enhancements = value ?? new(); }
+    private Enhancements _enhancements = new();
+
+    public class Enhancements
+    {
+        /// <summary>Draws the camera between the game's motion updates, so the view moves at the
+        /// display's frame rate rather than ten times a second. Drawing only.</summary>
+        public bool smoothcamera { get; set; } = true;
+    }
 
     public void Save()
     {

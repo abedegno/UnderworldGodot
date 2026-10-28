@@ -31,8 +31,8 @@ public sealed class GuardWalk : Scenario
 {
     const int Target = 0x3AC * (0x70 >> 2) / 32;   // 0x336
     const int Accel = 0x60;
-    static readonly short[] Yaw = { 0, 16384, -32768, -16384 };   // motion.PlayerCardinalHeadingLookupTable
-    static readonly int[] Dx = { 0, 1, 0, -1 }, Dy = { 1, 0, -1, 0 };
+    internal static readonly short[] Yaw = { 0, 16384, -32768, -16384 };   // motion.PlayerCardinalHeadingLookupTable
+    internal static readonly int[] Dx = { 0, 1, 0, -1 }, Dy = { 1, 0, -1, 0 };
 
     public override string Name => "guard-walk";
     public override string Cites => "underworld-exhumed uw1/src/motion/PLAYMOVE.C:235-238, 326-356; uw1/src/motion/PHYSICS.C:70, 296-309, 478, 584-606; uw1/src/motion/MOTION.C:130-142, 218-246; uw2 PLAYMOVE.C:228-231, PHYSICS.C:74, 673, 750-778";
@@ -75,7 +75,7 @@ public sealed class GuardWalk : Scenario
     /// objects, of (x, y)'s floor height, ending in a solid square; (x, y) itself open and empty
     /// but for the player. (-1, 0) if none.
     /// </summary>
-    static (int dir, int run) BestRun(int x, int y)
+    internal static (int dir, int run) BestRun(int x, int y)
     {
         var map = UWTileMap.current_tilemap;
         var t0 = map.Tiles[x, y];

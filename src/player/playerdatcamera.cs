@@ -68,7 +68,9 @@ namespace Underworld
         /// This is most often used in do_trap_camera but theoreticial the camera can be attached to any object by changing a global pointer 
         /// to point away from the player object and aim at an object instead.
         /// </summary>
-        public static void PositionPlayerCamera(bool DoLineOfSight = true)
+        /// <param name="DoLineOfSight">False before the map is loaded.</param>
+        /// <param name="tick">True only from the regular motion update, whose camera move may be drawn over the frames that follow it (cameraRender).</param>
+        public static void PositionPlayerCamera(bool DoLineOfSight = true, bool tick = false)
         {
             if (CameraReference != null)
             {
@@ -92,7 +94,9 @@ namespace Underworld
                             roll: PlayerCameraRoll_dseg_67d6_33D8,
                             pitch: PlayerCameraPitch_dseg_67d6_33D6,
                             applyBob: CameraIsBobbing_dseg_67d6_33c6,
-                            DoLineOfSight: DoLineOfSight);
+                            DoLineOfSight: DoLineOfSight,
+                            onPlayer: true,
+                            tick: tick);
 
                     }
                     else
@@ -149,18 +153,12 @@ namespace Underworld
             }
         }
 
-        private static void PositionCamera(short x, short y, short z, short yaw, short roll, short pitch, bool applyBob, bool DoLineOfSight)
+        private static void PositionCamera(short x, short y, short z, short yaw, short roll, short pitch, bool applyBob, bool DoLineOfSight, bool onPlayer = false, bool tick = false)
         {
             if (applyBob)
             {
                 z += CameraBobZAdjust_dseg_67d6_33CE; //note that over time when in water the camera will go beneath the water level due to the swimmingcounter getting larger
             }
-
-            //Get a vector for the camera that is relative to the bounds of an underworld level map.
-            Vector3 underworldVector = new(x: -(float)x / 16384f, y: (float)z / 1024f, z: (float)y / 16384f);
-
-            //then transform it into godot positioning using a vector based on the size we are rendering the gameworld in.
-            main.cameraYawGimbal_world.Position = underworldVector * tileMapRender.godotscale;
 
             if ((CameraIsBobbing_dseg_67d6_33c6) && (applyBob))
             {
@@ -172,32 +170,11 @@ namespace Underworld
             CameraTileX = (short)(x >> 8);
             CameraTileY = (short)(y >> 8);
 
-            //Set up the Yaw gimbal             
-            main.cameraYawGimbal_world.Rotation = Vector3.Zero;
-            main.cameraYawGimbal_world.Rotate(Vector3.Up, (float)(Math.PI));//align to the north.
-            main.cameraYawGimbal_world.Rotate(Vector3.Up, (float)(-((float)yaw / 32767f) * Math.PI));
-
-            //Set up the Roll Gimbal
-            main.cameraRollGimbal_world.Rotation = Vector3.Zero;
-            main.cameraRollGimbal_world.Rotate(Vector3.Forward, (float)(-((float)roll / 32767f) * Math.PI));
-
-            //Set up the pitch gimbal.
-            main.cameraPitchGimbal_world.Rotation = Vector3.Zero;
-            main.cameraPitchGimbal_world.Rotate(Vector3.Right, (float)(+((float)pitch / 32767f) * Math.PI));
-
-            //match the position on the gimbals
-            main.cameraPitchGimbal_sprites.Position = main.cameraPitchGimbal_world.Position;
-            main.cameraPitchGimbal_sprites.Rotation = main.cameraPitchGimbal_world.Rotation;
-            main.cameraYawGimbal_sprites.Position = main.cameraYawGimbal_world.Position;
-            main.cameraYawGimbal_sprites.Rotation = main.cameraYawGimbal_world.Rotation;
-            main.cameraRollGimbal_sprites.Position = main.cameraRollGimbal_world.Position;
-            main.cameraRollGimbal_sprites.Rotation = main.cameraRollGimbal_world.Rotation;
-            main.cameraPitchGimbal_objectinfo.Position = main.cameraPitchGimbal_world.Position;
-            main.cameraPitchGimbal_objectinfo.Rotation = main.cameraPitchGimbal_world.Rotation;
-            main.cameraYawGimbal_objectinfo.Position = main.cameraYawGimbal_world.Position;
-            main.cameraYawGimbal_objectinfo.Rotation = main.cameraYawGimbal_world.Rotation;
-            main.cameraRollGimbal_objectinfo.Position = main.cameraRollGimbal_world.Position;
-            main.cameraRollGimbal_objectinfo.Rotation = main.cameraRollGimbal_world.Rotation;
+            //draw the camera there, at once or over the frames to come (cameraRender, enhancements.smoothcamera)
+            cameraRender.Place(
+                pose: new cameraRender.Pose { x = x, y = y, z = z, yaw = yaw, roll = roll, pitch = pitch },
+                onPlayer: onPlayer,
+                tick: tick);
 
             //Set this value to calculate npc angles
             playerdat.CameraYawHeadingRelated_2B52 = (short)(((1 + (yaw >> 0xD)) & 0x7) >> 1);

@@ -87,6 +87,18 @@
             "description": "DEPRECATED: use 'synthpath'. Legacy path to ROM directory — still read if synthpath is empty.",
             "type": "string",
             "default": ""
+        },
+
+        "enhancements": {
+            "description": "Deliberate changes from the original game, each with its own switch. See docs/enhancements.md.",
+            "type": "object",
+            "properties": {
+                "smoothcamera": {
+                    "description": "Draw the camera every frame between the motion updates instead of about ten times a second. Drawing only.",
+                    "type": "boolean",
+                    "default": true
+                }
+            }
         }
 
     }

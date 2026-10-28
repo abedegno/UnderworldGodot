@@ -267,6 +267,9 @@ public partial class ScenarioRunner : Node
         (() => new ChangeTerrainRules(), true),
         (() => new Uw1HostileNoTalk(), true),
         (() => new ValuableLoot(), true),
+        // enhancements (docs/enhancements.md)
+        (() => new SmoothCamera(), true),
+        (() => new SettingsEnhancements(), true),
         (() => new HarnessFails(), false),
     };
 

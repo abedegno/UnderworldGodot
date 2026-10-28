@@ -52,6 +52,8 @@ public partial class main : Node3D
 
 	double gameRefreshTimer = 0f;
 	static double testclock = 0;
+	/// <summary>The motion update runs once this much time has passed since the last (_PhysicsProcess).</summary>
+	const double MotionUpdateInterval = 0.097659;
 
 	double cycletime = 0;
 	const double MenuPaletteCycleInterval = 14.0 / 256.0;
@@ -265,6 +267,11 @@ public partial class main : Node3D
 	public override void _Process(double delta)
 	{
 		base._Process(delta);
+		//draw the camera between its last two motion updates (enhancements.smoothcamera). The update waits for
+		//whole physics frames and drops the remainder (testclock = 0), so it comes every ceil(interval * rate) frames.
+		var rate = Engine.PhysicsTicksPerSecond;
+		var sinceUpdate = testclock + Engine.GetPhysicsInterpolationFraction() / rate;
+		cameraRender.DrawBetween(sinceUpdate / (Math.Ceiling(MotionUpdateInterval * rate) / rate));
 		if (uimanager.InGame)
 		{
 			var mat = (ShaderMaterial)uimanager.instance.uwviewport.Material;
@@ -350,7 +357,7 @@ public partial class main : Node3D
 
 		testclock += delta;
 
-		if ((uimanager.InGame) && (testclock >= 0.097659) && (!uimanager.blockinput))
+		if ((uimanager.InGame) && (testclock >= MotionUpdateInterval) && (!uimanager.blockinput))
 		{
 			testclock = 0;
 			byte AnimationFrameDeltaIncrement = 0;
@@ -550,8 +557,8 @@ public partial class main : Node3D
 
 		playerdat.FootSteps(EasyMove);
 
-		//Position player object now after all possible calcs have been completed
-		playerdat.PositionPlayerCamera();
+		//Position player object now after all possible calcs have been completed. A step move's camera is drawn at once, as its step is one move in the original too.
+		playerdat.PositionPlayerCamera(tick: !EasyMove);
 
 		uimanager.SwayWeapon();
 	}
