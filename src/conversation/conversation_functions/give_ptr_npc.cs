@@ -26,6 +26,11 @@ namespace Underworld
             {
                 if (ObjectIndex == itemIndices[i])
                 {
+                    if (itemIds[i] == 0)
+                    {//the original skips a trade entry whose item id is 0 (uw1 CONVERSE.C:705, uw2 CONVERSE.C:692), then looks for the object in the player's inventory, where a trade item is not, so nothing is given
+                        result_register = 0;
+                        return;
+                    }
                     var tradeObject = UWTileMap.current_tilemap.LevelObjects[ObjectIndex];
                     if (_RES == GAME_UW2 && tradeObject.is_quant == 1 && tradeObject.link < 0x200 && tradeObject.link > qty)
                     {//uw2 gives qty of a stack in the trade area and leaves the rest there (uw2 CONVERSE.C:694-703)
