@@ -146,6 +146,7 @@ public partial class ScenarioRunner : Node
         (() => new SilverTreeResurrection(), true),
         (() => new GemResurrection(), true),
         (() => new VoidAutomap(), true),
+        (() => new PlayerLost(), true),
         (() => new TybalTalkTrap(), true),
         (() => new XTrapsValueRange(), true),
         (() => new NumberedVariableRanges(), true),
