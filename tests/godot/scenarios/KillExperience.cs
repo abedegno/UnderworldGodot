@@ -56,6 +56,7 @@ public sealed class KillExperience : Scenario
         critter.npc_whoami = 0;
         playerdat.Exp = 0;
         playerdat.play_level = 1;   // a level gained by an earlier kill would bring in the level halving
+        _dragonDraws = DragonWouldDraw(4);
         BatchB.Seed(seed);
         damage.DamageObject(critter, basedamage: critter.npc_hp + 1, damagetype: 0,
             objList: UWTileMap.current_tilemap.LevelObjects, WorldObject: true, damagesource: source);
@@ -63,9 +64,31 @@ public sealed class KillExperience : Scenario
         return critter.npc_hp == 0;
     }
 
-    long Expected(bool uw2, bool powerful, uint seed)
+    bool _dragonDraws;
+
+    /// <summary>
+    /// Whether UW1's set_screen_frame would draw rand() picking a dragon for animation anim, given the
+    /// dragons' state before the kill (uw1 PANELS.C:295-316): no draw when either dragon already has it
+    /// as its goal or setting; a draw when both are idle, or both busy with no goal. Read from the
+    /// port's DragonGoal and DragonSetting where it keeps them; a port without them draws every time.
+    /// </summary>
+    static bool DragonWouldDraw(int anim)
+    {
+        var flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public;
+        var goalF = typeof(uimanager).GetField("DragonGoal", flags);
+        var setF = typeof(uimanager).GetField("DragonSetting", flags);
+        if (goalF == null || setF == null) return true;
+        var goal = (int[])goalF.GetValue(null);
+        var set = (int[])setF.GetValue(null);
+        if (goal[0] == anim || goal[1] == anim || set[0] == anim || set[1] == anim) return false;
+        if (set[0] == 0 && set[1] == 0) return true;
+        return set[0] != 0 && set[1] != 0 && goal[0] == 0 && goal[1] == 0;
+    }
+
+    long Expected(bool uw2, bool powerful, uint seed, bool dragonDraws)
     {
         var d = new BatchB.DosRand(seed);
+        if (!uw2 && dragonDraws) d.Rand();   // uw1 COMBAT.C:835 set_screen_frame(4, 2) first picks a dragon, rand() & 1 when it draws at all (uw1 PANELS.C:295-316)
         long n = _exp * 4 + d.Rollem(2, _exp);                       // COMBAT.C:942 / 838
         if (powerful) n = n * (d.Rand() % 24 + 24) / 16;            // COMBAT.C:943-944 / 839-840
         if (uw2) n = (n + d.Rand() % 2) / 2;                         // uw2 SKILLCHK.C:72-73
@@ -77,9 +100,9 @@ public sealed class KillExperience : Scenario
         if (_problem != null) return Task.CompletedTask;
         bool uw2 = c.Game == "uw2";
         _killed = Kill(1, false, KillSeed, out _gainKill);
-        _expectKill = Expected(uw2, false, KillSeed);
+        _expectKill = Expected(uw2, false, KillSeed, _dragonDraws);
         _poweredKilled = Kill(1, true, PowerfulSeed, out _gainPowerful);
-        _expectPowerful = Expected(uw2, true, PowerfulSeed);
+        _expectPowerful = Expected(uw2, true, PowerfulSeed, _dragonDraws);
         _trapKilled = Kill(0, false, KillSeed, out _gainTrap);
 
         playerdat.Exp = 0;

@@ -167,7 +167,10 @@ namespace Underworld
                     //if not already in the death animation
                     if (npc.SpecialDeathCases(critter))
                     {
-                        playerdat.AwardXPKill(critter);
+                        if (damagesource == 1)
+                        {//only the player's kills earn experience (uw2 AI.C:1505, uw1 AI.C:1494)
+                            playerdat.AwardXPKill(critter);
+                        }
                         critter.npc_animation = npc.ANIMATION_DEATH;
                         critter.AnimationFrame = 0;
                         npc.RedrawAnimation(critter);
