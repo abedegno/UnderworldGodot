@@ -66,6 +66,7 @@ public partial class ScenarioRunner : Node
         (() => new SleepKillornCrash(), true),
         (() => new SleepInVoid(), true),
         (() => new Uw1SleepMessages(), true),
+        (() => new DreamChoice(), true),
         (() => new MapAreaRadius(), true),
         (() => new BritanniaSpellCircle(), true),
         (() => new AcademyManaLevel(), true),
