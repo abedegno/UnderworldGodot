@@ -989,9 +989,9 @@ rule uw2 Underworld.a_hack_trap_castleschedule.GetCastleDestination(critter, New
 rule uw2 Underworld.a_hack_trap_castleschedule.GetCastleDestination(critter, NewTileX, NewTileY) (1,0,0) = NewTileX=99 NewTileY=99 seed=ffaafc28
 rule uw2 Underworld.a_hack_trap_castleschedule.GetCastleDestination(critter, NewTileX, NewTileY) (2,0,0) = throws IndexOutOfRangeException
 rule uw2 Underworld.a_hack_trap_castleschedule.GetCastleDestination(critter, NewTileX, NewTileY) (3,0,0) = NewTileX=16 NewTileY=26 seed=fdfbaa1a
-rule uw1 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) = 4464 rows sha256:74a12d919e15fbfa parts 9ee5 f88d e081 a1c5 71d0 c2db 93e1 949f 4f9d 354a c1d2 dade 16fd 0080 e4fc 174f
+rule uw1 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) = 4464 rows sha256:6a6b4c072270f2d9 parts 1d09 f88d e081 a1c5 71d0 cbce 93e1 949f 4f9d 354a de41 dade 16fd 0080 e4fc 064a
 rule uw1 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) (0,0,0,0,0,0,0) = 1
-rule uw1 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) (0,0,0,0,0,0,323) = 0
+rule uw1 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) (0,0,0,0,0,0,391) = 0
 rule uw1 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) (0,5,0,5,0,16,510) = 1
 rule uw1 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) (5,0,5,0,8,16,510) = 1
 rule uw2 Underworld.TileInfo.WillObjectMoveWithTileHeightChange(tileXToCheck, tileYToCheck, currentX, currentY, InitialTileHeight, NewHeight, obj) = 4464 rows sha256:74a12d919e15fbfa parts 9ee5 f88d e081 a1c5 71d0 c2db 93e1 949f 4f9d 354a c1d2 dade 16fd 0080 e4fc 174f

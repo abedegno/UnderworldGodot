@@ -208,8 +208,8 @@ namespace Underworld
                 else
                 {
                     var zDiff = playerdat.playerObject.zpos - obj.zpos;
-                    if (playerdat.SwimCounter > 0x50)
-                    {
+                    if ((UWClass._RES == UWClass.GAME_UW2) && (playerdat.SwimCounter > 0x50))
+                    {//a swimming player reaches lower in UW2 only (underworld-exhumed uw2/src/ui/INTERACT.C:156-157; UW1's InPickRange has no swim term, uw1/src/ui/INTERACT.C:290-293)
                         zDiff -= (playerdat.SwimCounter >> 3);
                     }
                     int pole = 0;

@@ -249,6 +249,11 @@ public partial class ScenarioRunner : Node
         (() => new CastSlotsFull(), true),
         (() => new NoAmmoMessage(), true),
         (() => new FlutterNeverDies(), true),
+        // UW1 using UW2's rules, and valuable loot
+        (() => new ReachSwimming(), true),
+        (() => new ChangeTerrainRules(), true),
+        (() => new Uw1HostileNoTalk(), true),
+        (() => new ValuableLoot(), true),
         (() => new HarnessFails(), false),
     };
 
