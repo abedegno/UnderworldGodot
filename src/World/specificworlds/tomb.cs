@@ -9,7 +9,8 @@ namespace Underworld
     public class tomb : UWClass
     {
         /// <summary>
-        /// Handles killing of all undead in Loths tomb. TODO: this needs to be called when changing levels when quest 7 is set
+        /// Handles killing of all undead in Loths tomb, and destroying the floating skulls, on arriving in the Tombs once Loth
+        /// has been laid to rest (genocide(0xFF) from do_level_hacks, uw2 GAMEWRAP.C:495-497, WORLDEV.C:1686-1698)
         /// </summary>
         /// <param name="raceparam"></param>
         public static void KillLothsLiches(int raceparam)
@@ -23,8 +24,10 @@ namespace Underworld
                 {//npc
                     if (npc.CheckIfMatchingRaceUW2(obj, raceparam))
                     {
-                        npc.KillCritter(obj);
-                        i--;//reduce index as list count has changed.
+                        if (npc.KillCritter(obj))
+                        {
+                            i--;//reduce index as list count has changed.
+                        }
                     }
                 }
                 else
@@ -32,8 +35,8 @@ namespace Underworld
                     if (raceparam == -1)
                     {
                         if (obj.item_id == 0x13)
-                        {
-                            Debug.Print($"Smite {obj.a_name}");
+                        {//a floating skull is destroyed (destroy_floatskull from genocide(0xFF), uw2 WORLDEV.C:1694)
+                            SpellCasting.SmiteUndeadObject(obj);
                         }
                     }
                 }

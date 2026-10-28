@@ -191,6 +191,13 @@ public partial class ScenarioRunner : Node
         (() => new RaceAttitudeRange(), true),
         (() => new CollisionScanLimit(), true),
         (() => new DemoFallbackRecompute(), true),
+        // death, remains and the Pits arena
+        (() => new DeathDropsCursorObject(), true),
+        (() => new CritterRemainsPutAt(), true),
+        (() => new BoulderBreaks(), true),
+        (() => new TombFloatSkulls(), true),
+        (() => new PitsArenaCoward(), true),
+        (() => new JailCatchUp(), true),
         // missing routines: doors
         (() => new DoorTurnsRound(), true),
         (() => new DoorObstructed(), true),
