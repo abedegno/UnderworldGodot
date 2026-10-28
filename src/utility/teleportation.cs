@@ -465,6 +465,7 @@ namespace Underworld
                 {
                     playerdat.LastDamagedNPCIndex = 0; playerdat.LastDamagedNPCType = -1;
                     CallBacks.RunCodeOnAllMobiles(ClearUnkBit_0x15_7_OnMobiles, null);
+                    npc.BitFieldForPathing_dseg_67d6_B4 = 0xFFFF;//clear_paths frees all 16 stored paths. uw2 CRITTIME.C:455
                     if (playerdat.play_drawn == 0)
                     {
                         //reselect level theme music.
@@ -565,6 +566,7 @@ namespace Underworld
                 {
                     playerdat.LastDamagedNPCIndex = 0; playerdat.LastDamagedNPCType = -1;
                     CallBacks.RunCodeOnAllMobiles(ClearUnkBit_0x15_7_OnMobiles, null);
+                    npc.BitFieldForPathing_dseg_67d6_B4 = 0xFFFF;//clear_paths frees all 16 stored paths. uw1 PATHFIND.C:953
                 }
                 else
                 {
