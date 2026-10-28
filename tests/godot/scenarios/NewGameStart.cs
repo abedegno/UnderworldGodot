@@ -18,7 +18,7 @@ namespace Underworld.Scenarios;
 /// game variable 0x1A).
 ///
 /// Not pinned: hit points and the attributes. InitEmptyPlayer leaves them 0, and the runner
-/// fills in main.LaunchUWDemo's stand-in stats (HP 30/30, STR/DEX/INT 20); they are setup, not
+/// fills in main.LaunchUWDemo's stand-in stats (HP 30, STR/DEX/INT 20, then the recompute); they are setup, not
 /// the port's behaviour. Chargen-dependent fields (sex, hand, class, skills, portrait, name,
 /// difficulty) are not reached by this path at all. The init_char fields the port gets wrong
 /// are in new-game-record, so this scenario keeps guarding the ones it gets right.

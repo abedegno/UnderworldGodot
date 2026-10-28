@@ -31,6 +31,11 @@ namespace Underworld.Scenarios;
 /// - random squares on an area reaching the bottom edge, y0 + h = 64 and 66: the y clip (finding 4).
 ///   The port's old bound (&gt;= 64) gives the same result, because at y0 + h = 64 the clip subtracts 0,
 ///   so this case checks the clip but cannot tell the two bounds apart.
+/// - every object (0xC0) round a centre off the map: gronk_area passes process_area whatever square
+///   move_along gives, and process_area clips the area to the map (uw1 SPELLS.C:428-450, 509), so the
+///   squares of the area that are on the map are still visited. The centre is the nearest square off
+///   the map in one of the four main directions, and the radius reaches back over the player and the
+///   critters.
 ///
 /// Both games.
 /// </summary>
@@ -54,6 +59,7 @@ public sealed class AreaSpellArea : Scenario
         public bool Succeeds;
         public uint Seed;
         public int MinModelVisits = 1;
+        public bool OffMapCentre;   // through RunCodeOnTargetsAroundObject, centred dist squares ahead, off the map
         public string Cite;
     }
 
@@ -86,6 +92,8 @@ public sealed class AreaSpellArea : Scenario
             MinModelVisits = 0, Cite = "uw1 SPELLS.C:444, uw2 SPELLS.C:630" });
         _cases.Add(new Case { What = "random squares past the bottom edge, y0 + h = 66 (0x40)", X0 = 1, Y0 = 61, W = 62, H = 5, Count = 0x7F, Src = 0, Type = 0x40, Succeeds = false, Seed = 7,
             MinModelVisits = 0, Cite = "uw1 SPELLS.C:444-445, uw2 SPELLS.C:630-631" });
+        _cases.Add(new Case { What = "every object round a centre off the map (0xC0)", OffMapCentre = true, Count = 0x7F, Src = 1, Type = 0xC0, Succeeds = false, Seed = 8,
+            MinModelVisits = 3, Cite = "uw1 SPELLS.C:428-450, 509; uw2 SPELLS.C:614-636, 696 (no test of the centre)" });
         return Task.CompletedTask;
     }
 
@@ -135,6 +143,26 @@ public sealed class AreaSpellArea : Scenario
         return v;
     }
 
+    /// <summary>
+    /// The nearest centre off the map from the player along one of the four main headings, as the
+    /// port's move_along (motion.GetCoordinateInDirection, which this scenario does not test) gives it.
+    /// </summary>
+    bool OffMapCentre(out int heading, out int dist, out int x, out int y)
+    {
+        heading = dist = x = y = 0;
+        bool found = false;
+        foreach (int h in new[] { 0, 64, 128, 192 })
+            for (int d = 1; d < 64 && (!found || d < dist); d++)
+            {
+                int tx = _cx, ty = _cy;
+                motion.GetCoordinateInDirection(h, d, ref tx, ref ty);
+                if (UWTileMap.ValidTile(tx, ty)) continue;
+                heading = h; dist = d; x = tx; y = ty; found = true;
+                break;
+            }
+        return found;
+    }
+
     public override Task Act(ScenarioContext c)
     {
         if (_problem != null) return Task.CompletedTask;
@@ -144,6 +172,19 @@ public sealed class AreaSpellArea : Scenario
         {
             foreach (var k in _cases)
             {
+                int heading = 0, dist = 0;
+                if (k.OffMapCentre)
+                {
+                    if (!OffMapCentre(out heading, out dist, out int ox, out int oy))
+                    {
+                        _problem = $"{k.What}: no square off the map within 63 squares of ({_cx},{_cy})";
+                        return Task.CompletedTask;
+                    }
+                    // round the centre, reaching back over the player and the critters below it
+                    k.R = System.Math.Max(System.Math.Abs(ox - _cx), System.Math.Abs(oy - _cy)) + 5;
+                    k.X0 = ox - k.R; k.Y0 = oy - k.R; k.W = k.H = k.R * 2 + 1;
+                    _notes.Add($"{k.What}: heading {heading}, {dist} squares to ({ox},{oy}), radius {k.R}");
+                }
                 int x0 = k.AroundPlayer ? _cx - k.R : k.X0, y0 = k.AroundPlayer ? _cy - k.R : k.Y0;
                 int w = k.AroundPlayer ? k.R * 2 + 1 : k.W, h = k.AroundPlayer ? k.R * 2 + 1 : k.H;
                 var expected = Model(uw2, k.Count, k.Src, k.Type, x0, y0, w, h, k.Succeeds, new BatchB.DosRand(k.Seed));
@@ -154,7 +195,15 @@ public sealed class AreaSpellArea : Scenario
                     return k.Succeeds;
                 };
                 Rng.Source = new BorlandRandSource(k.Seed);
-                if (k.AroundPlayer)
+                if (k.OffMapCentre)
+                {
+                    var p = playerdat.playerObject;
+                    short h0 = p.heading, nh0 = p.npc_heading;
+                    p.heading = (short)(heading >> 5); p.npc_heading = (short)(heading & 0x1F);
+                    try { CallBacks.RunCodeOnTargetsAroundObject(record, 1, k.Count, k.Type, dist, k.R); }
+                    finally { p.heading = h0; p.npc_heading = nh0; }
+                }
+                else if (k.AroundPlayer)
                     CallBacks.RunCodeOnTargetsAroundObject(record, 1, k.Count, k.Type, 0, k.R);
                 else
                     CallBacks.RunCodeOnTargetsInArea(record, k.Count, k.Src, k.Type, k.X0, k.Y0, k.W, k.H);
