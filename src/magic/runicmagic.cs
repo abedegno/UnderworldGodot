@@ -332,7 +332,6 @@ namespace Underworld
                 {
                     //apply mana cost
                     //playerdat.play_mana = System.Math.Max(0, playerdat.play_mana - spell.ManaCost);
-                    PendingSpellCost = spell.ManaCost;
 
                     Debug.Print($"{spell.spellname}");
                     //do the skill check
@@ -352,6 +351,10 @@ namespace Underworld
                     if (chkresult != playerdat.SkillCheckResult.Fail)
                     {
                         StartSpellCastInterval(spell.SpellLevel);
+                        // The cost is held only once the skill check has passed, so a failed
+                        // incantation leaves nothing for a later object cast to pay
+                        // (uw2 RUNES.C:238-239, 248; uw1 RUNES.C:249-250, 259).
+                        PendingSpellCost = spell.ManaCost;
                     }
                     switch (chkresult)
                     {
