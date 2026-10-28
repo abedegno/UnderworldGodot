@@ -24,24 +24,10 @@ namespace Underworld
             {
                 if (IsPlayerOfferingItems() && IsNPCOfferingItems())
                 {
-                    var evaluation = 0;
-                    //get the npc to evaluate the deal using their accuracy and applying their likes dislikes
-                    var playervalue = GetPCTradeValue(
-                           ApplyLikeDislike: true,
-                           appraise_accuracy: NPCAppraisalAccuracy,
-                           applyAccuracy: true);
-                    var npcvalue = GetNPCTradeValue(
-                       ApplyLikeDislike: true,
-                       appraise_accuracy: NPCAppraisalAccuracy,
-                       applyAccuracy: true);
-                    if (npcvalue <= 0)
-                    {
-                        evaluation = 100;
-                    }
-                    else
-                    {
-                        evaluation = ((playervalue - npcvalue) * 100) / npcvalue;
-                    }
+                    //the NPC values the player's items with its likes and dislikes, its own without (uw1 BARTER.C:648-657, uw2 BARTER.C:611-620)
+                    var playervalue = TotalOffering(useLikes: true, playerSide: true, accuracy: NPCAppraisalAccuracy);
+                    var npcvalue = TotalOffering(useLikes: false, playerSide: false, accuracy: NPCAppraisalAccuracy);
+                    var evaluation = TradeGain(playervalue, npcvalue);
                     if (evaluation >= TradeThreshold)
                     {//accept offer
                         yield return say_op(YeahWeTrade);
@@ -54,70 +40,28 @@ namespace Underworld
                     }
                     else
                     {
-                        var result =0; // 0 no change to patience, 1 = bad offer, 2 = insulting offer
-                        //trade is not good enough. Check if it impacts on npc patience
-                        if (PreviousEvaluation!=0)
+                        //trade is not good enough. Check if it impacts on npc patience, in 16 bits (uw1 BARTER.C:665-676, uw2 BARTER.C:628-637).
+                        //A first offer under half of greed is not good enough; in UW1 a first offer of half of greed or more is not tested further.
+                        //Then an offer worse than the last is insulting, and one that closed too little of the gap is not good enough.
+                        var firstoffer = PreviousEvaluation == 0 && (_RES != GAME_UW2 || (short)(evaluation * 2) < TradeThreshold);
+                        if (firstoffer)
+                        {
+                            if ((short)(evaluation * 2) < TradeThreshold)
                             {
-                                if (evaluation>=PreviousEvaluation)
-                                    {
-                                        var ax = ((TradeThreshold - PreviousEvaluation) * 3)/2;
-                                        var dx = TradeThreshold  - evaluation;
-                                        if (ax<=dx)
-                                        {
-                                            result = 0; //no change
-                                        }
-                                        else
-                                        {
-                                            result = 1;//bad
-                                        }
-                                    }
-                                    else
-                                    {
-                                        result = 2;//insulting
-                                    }  
+                                yield return say_op(INoLike);
+                                TradePatience--;
                             }
-                        else
-                            {
-                                if (evaluation * 2 < TradeThreshold)
-                                {
-                                    result = 1;
-                                }
-                                else
-                                {
-                                    if (evaluation>=PreviousEvaluation)
-                                    {
-                                        var ax = ((TradeThreshold - PreviousEvaluation) * 3)/2;
-                                        var dx = TradeThreshold  - evaluation;
-                                        if (ax<=dx)
-                                        {
-                                            result = 0; //no change
-                                        }
-                                        else
-                                        {
-                                            result = 1;//bad
-                                        }
-                                    }
-                                    else
-                                    {
-                                        result = 2;
-                                    }
-                                }
-                            }
-
-                            switch(result)
-                            {
-                                case 2: //insulting
-                                    yield return say_op(YouThinkMeStupid);
-                                    TradePatience-=2;
-                                    break;
-                                case 1: //bad offer
-                                    yield return say_op(INoLike);
-                                    TradePatience--;
-                                    break;
-                                case 0: //no change
-                                    //for some reason nothing gets said here in this scenario.
-                                    break;
-                            }
+                        }
+                        else if (evaluation < PreviousEvaluation)
+                        {
+                            yield return say_op(YouThinkMeStupid);
+                            TradePatience -= 2;
+                        }
+                        else if ((short)((TradeThreshold - PreviousEvaluation) * 3) / 2 > (short)(TradeThreshold - evaluation))
+                        {
+                            yield return say_op(INoLike);
+                            TradePatience--;
+                        }
                         result_register = 0;
                         //Store evaluation for next time
                         PreviousEvaluation = evaluation;
