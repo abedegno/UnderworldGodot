@@ -887,7 +887,21 @@ namespace Underworld
 
                 case 25: // music
                     Debug.Print($"  Music: theme {cmd.functionParams[0]}");
-                    XMIMusic.LoadXMI((byte)cmd.functionParams[0]);
+                    if (_RES == GAME_UW2)
+                    {//a request that the cutscene's music step starts; 0 stops the music (uw2 CUTS.C:564-570)
+                        if (cmd.functionParams[0] == 0)
+                        {
+                            MusicStreamPlayer.Instance?.Stop();
+                        }
+                        else
+                        {
+                            XMIMusic.ChangeThemeMusic((byte)cmd.functionParams[0]);
+                        }
+                    }
+                    else
+                    {
+                        XMIMusic.LoadXMI((byte)cmd.functionParams[0]);
+                    }
                     break;
 
                 case 27: // audio-wait — wait for audio playback completion or timeout
