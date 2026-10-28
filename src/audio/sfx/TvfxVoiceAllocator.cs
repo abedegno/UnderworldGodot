@@ -38,6 +38,21 @@ public sealed class TvfxVoiceAllocator
         }
     }
 
+    /// <summary>
+    /// Stop the voices playing the effect with this handle, or every voice for
+    /// <see cref="SfxCommand.AllHandles"/>, and send their key-off at once.
+    /// </summary>
+    public void Stop(int handle, IOplRegisterSink sink)
+    {
+        foreach (var v in _voices)
+        {
+            if (v.Phase == TvfxPhase.Idle) continue;
+            if (handle != SfxCommand.AllHandles && v.Handle != handle) continue;
+            v.Stop();
+            v.EmitRegisters(sink);
+        }
+    }
+
     /// <summary>Total active (non-Idle) voices. Used by tests and diagnostics.</summary>
     public int ActiveCount
     {
