@@ -59,7 +59,10 @@ namespace Underworld
                                     }
                                 case 3:// Do and hack traps
                                     {
-                                        implemented = hack_trap.ActivateHackTrap(
+                                        // The chain goes on after any hack, handled or not
+                                        // (uw1 TRIGGER.C:288-290, uw2 TRIGGER.C:514-516).
+                                        implemented = true;
+                                        hack_trap.ActivateHackTrap(
                                                 trapObj: trapObj,
                                                 ObjectUsed: ObjectUsed,
                                                 triggerX: triggerX,
@@ -119,6 +122,10 @@ namespace Underworld
                                             triggerY: triggerY,
                                             trapObj: trapObj,
                                             objList: objList);
+                                        if (_RES != GAME_UW2)
+                                        {
+                                            triggerNextIndex = 0;//a door trap always ends the chain in UW1 (uw1 TRIGGER.C:339-340)
+                                        }
                                         break;
                                     }
                                 case 0x9: //6-0-9
