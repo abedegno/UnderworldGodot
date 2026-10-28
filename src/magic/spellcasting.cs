@@ -82,11 +82,18 @@ namespace Underworld
                     break;
                 case 7://spells with prompts and code callbacks.
                     {
-                        currentSpell = new RunicMagic(majorclass,minorclass);
-                        uimanager.instance.mousecursor.SetCursorToCursor(10);
-                        if ((PlayerCast) && (_RES == GAME_UW2))
-                        {//UW2 holds the cost until the target is clicked, and pays it only if the spell works (uw2 RUNES.C:248-251, SPELLS.C:772-773, 915). UW1 pays now (uw1 RUNES.C:260-263).
-                            applyCost = false;
+                        if (_RES == GAME_UW2)
+                        {//UW2 holds the cost until the target is clicked, and pays it only if the spell works (uw2 RUNES.C:248-251, SPELLS.C:772-773, 915).
+                            currentSpell = new RunicMagic(majorclass,minorclass);
+                            uimanager.instance.mousecursor.SetCursorToCursor(10);
+                            if (PlayerCast)
+                            {
+                                applyCost = false;
+                            }
+                        }
+                        else
+                        {//UW1 has no target cursor: the spell finds its critter ahead of the player at once (uw1 SPELLS.C:553-559), and is paid now (uw1 RUNES.C:260-263).
+                            CastClass7_SpellsAheadUW1(minorclass: minorclass, caster: caster);
                         }
                     }
                     break;
