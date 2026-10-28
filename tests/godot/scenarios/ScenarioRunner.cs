@@ -189,6 +189,10 @@ public partial class ScenarioRunner : Node
         (() => new RaceAttitudeRange(), true),
         (() => new CollisionScanLimit(), true),
         (() => new DemoFallbackRecompute(), true),
+        // missing routines: doors
+        (() => new DoorTurnsRound(), true),
+        (() => new DoorObstructed(), true),
+        (() => new GruesomeDoorHack(), true),
         (() => new HarnessFails(), false),
     };
 
