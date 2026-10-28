@@ -119,6 +119,60 @@ namespace Underworld
             }
         }
 
+        /// <summary>
+        /// The weapon's sideways sway in the original's pixels (wxo), added to its x when drawn.
+        /// </summary>
+        public static int WeaponSwayX;
+        static float WeaponAnimBaseX = float.NaN;
+
+        /// <summary>
+        /// Sways the weapon sideways as the player moves: how 0 still, 1 a little, 2 more; any other
+        /// value leaves it as it is. The sign test keeps the sway on the side it is already on.
+        /// (jiggle_weapon, underworld-exhumed uw1/src/ui/PANELS.C:776-794, uw2/src/ui/PANELS.C:587-602)
+        /// </summary>
+        public static void JiggleWeapon(int how)
+        {
+            switch (how)
+            {
+                case 0:
+                    WeaponSwayX = 0;
+                    break;
+                case 1:
+                    if (WeaponSwayX > 0)
+                        WeaponSwayX = Rng.Source.Rand() % 5;
+                    else
+                        WeaponSwayX = -Rng.Source.Rand() % 5;
+                    break;
+                case 2:
+                    WeaponSwayX = (WeaponSwayX > 0 ? Rng.Source.Rand() : -Rng.Source.Rand()) % 10;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Once a game loop, where the original draws the weapon (do_fbuf_bms, uw1 PANELS.C:1268-1283,
+        /// uw2 PANELS.C:889-900): sways the shown weapon with the player's speed, but not during a swing.
+        /// </summary>
+        public static void SwayWeapon()
+        {
+            if (WeaponAnim.Texture == null)
+                return;
+            if (UWClass._RES == UWClass.GAME_UW2 && playerdat.RoamingSightEnchantment)
+                return;//no weapon under Roaming Sight (uw2 PANELS.C:890)
+            int speed = motion.playerMotionParams.momentum_14;
+            JiggleWeapon(speed != 0 ? speed * 2 / 0x31F + 1 : 0);
+            if (CurrentWeaponAnim % 7 != 6)
+            {//a swing's frames are drawn without the sway (uw1 PANELS.C:1278, uw2 PANELS.C:871)
+                WeaponSwayX = 0;
+            }
+            if (float.IsNaN(WeaponAnimBaseX))
+            {
+                WeaponAnimBaseX = WeaponAnim.Position.X;
+            }
+            //4 screen units to one of the original's 320 pixels
+            WeaponAnim.Position = new Vector2(WeaponAnimBaseX + WeaponSwayX * 4, WeaponAnim.Position.Y);
+        }
+
         public static void ClearWeaponAnimation()
         {
             WeaponAnim.Texture = null;
