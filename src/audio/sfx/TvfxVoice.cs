@@ -15,6 +15,9 @@ public sealed class TvfxVoice
     public TvfxPhase Phase { get; private set; } = TvfxPhase.Idle;
     public TvfxPatch? Patch { get; private set; }
 
+    /// <summary>The handle SoundEffects.Play gave the effect this voice is playing, for Stop.</summary>
+    public int Handle { get; private set; }
+
     private readonly ushort[] _acc       = new ushort[8];
     private readonly ushort[] _counter   = new ushort[8];
     private readonly short[]  _increment = new short[8];
@@ -140,6 +143,17 @@ public sealed class TvfxVoice
             _lifetimeTicks--;
             if (_lifetimeTicks == 0) Phase = TvfxPhase.Idle;
         }
+    }
+
+    /// <summary>
+    /// Silence the voice at once, as the original's kill_effect does (an all notes off or a
+    /// released channel, no release phase: uw1 SOUND.C:627-637, uw2 SOUND.C:1204-1220), the
+    /// same cut as the lifetime running out. The next <see cref="EmitRegisters"/> sends the
+    /// key-off.
+    /// </summary>
+    public void Stop()
+    {
+        Phase = TvfxPhase.Idle;
     }
 
     /// <summary>
@@ -274,9 +288,10 @@ public sealed class TvfxVoice
     /// handover. No runtime assertion is raised; restart is safe.
     /// </para>
     /// </summary>
-    public void StartKeyon(TvfxPatch patch, int lifetimeTicks, byte volScale = 127)
+    public void StartKeyon(TvfxPatch patch, int lifetimeTicks, byte volScale = 127, int handle = 0)
     {
         Patch = patch;
+        Handle = handle;
         Phase = TvfxPhase.Keyon;
         _phaseTicks = 0;
         _lifetimeTicks = lifetimeTicks;
