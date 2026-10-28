@@ -106,6 +106,40 @@ namespace Underworld
         }
 
         /// <summary>
+        /// Map Area: maps every tile within the circle of radius r round cX,cY with its own tile type, reachable or not.
+        /// automap_area with clip_circle, uw2 AUTOMAP.C:130-170 and SPELLS.C:924-934, keeping the original's loop and edge handling.
+        /// </summary>
+        public static void MapAreaCircle(int cX, int cY, int r, int dungeon_level)
+        {
+            for (int y = cY - r; y <= cY + r; y++)
+            {
+                for (int x = cX - r; x <= cX + r; x++)
+                {
+                    var dx = x - cX;
+                    var dy = y - cY;
+                    if (dx * dx + dy * dy > r * r)
+                    {
+                        continue;
+                    }
+                    if (x < 1)
+                    {
+                        x = 1;
+                    }
+                    if ((x >= 0x3F) || (y < 1) || (y >= 0x3F))
+                    {
+                        break;
+                    }
+                    var tile = UWTileMap.current_tilemap.Tiles[x, y];
+                    MarkTileVisited(
+                        level: dungeon_level - 1,
+                        tileX: x, tileY: y,
+                        tiletype: tile.tileType,
+                        displaytype: automaptileinfo.GetDisplayType(tile));
+                }
+            }
+        }
+
+        /// <summary>
         /// Marks a range of tiles around the center X,Y as visited.
         /// </summary>
         /// <param name="cX"></param>
