@@ -549,15 +549,25 @@ namespace Underworld
                             newHeight = initialheight + 2 - HeightAdjustFlag;
                         }
 
-                        if ((newHeight >= 0) && (newHeight <= 0xE))
+                        if (_RES == GAME_UW2)
                         {
-                            tileToChange.floorHeight = (short)newHeight;
+                            if ((newHeight >= 0) && (newHeight <= 0xE))
+                            {
+                                tileToChange.floorHeight = (short)newHeight;
 
+                            }
+
+                            if ((newHeight == 15) && (HeightAdjustFlag == 4))
+                            {
+                                tileToChange.floorHeight = 0xF;
+                            }
                         }
-
-                        if ((newHeight == 15) && (HeightAdjustFlag == 4))
-                        {
-                            tileToChange.floorHeight = 0xF;
+                        else
+                        {//UW1 sets a height up to 0xD, and only from 0 when adjusting (underworld-exhumed uw1/src/event/WORLDEV.C:225-230)
+                            if ((HeightAdjustFlag == 1) || (HeightAdjustFlag == 3) ? (newHeight >= 0) && (newHeight <= 0xD) : (newHeight <= 0xD))
+                            {
+                                tileToChange.floorHeight = (short)newHeight;
+                            }
                         }
                         bool NewTileIsSolid = false;
                         if ((newFloorTexture < 0xF) && (_RES == GAME_UW2))
@@ -586,8 +596,8 @@ namespace Underworld
                         //     //TODO some terrain changes happen here too.
                         // }
 
-                        //wall textures
-                        if (newWallTexture < 0x3F)
+                        //wall textures. 0x3F or more means unchanged in UW2, 0x30 or more in UW1 (underworld-exhumed uw2/src/event/WORLDEV.C:370, uw1/src/event/WORLDEV.C:258)
+                        if (newWallTexture < (_RES == GAME_UW2 ? 0x3F : 0x30))
                         {
                             tileToChange.wallTexture = (short)newWallTexture;
                             //Update NSEW of neighbours
@@ -597,8 +607,8 @@ namespace Underworld
                         if (newType < 0xA)
                         {
                             tileToChange.tileType = (short)newType;
-                            if (newType == UWTileMap.TILE_SOLID)
-                            {
+                            if ((newType == UWTileMap.TILE_SOLID) && (_RES == GAME_UW2))
+                            {//UW1 removes nothing when a tile changes (underworld-exhumed uw1/src/event/WORLDEV.C:231-255)
                                 NewTileIsSolid = true;
                             }
                         }
@@ -608,6 +618,11 @@ namespace Underworld
                         var tileObjectMoveYMin = Math.Max(currentY - 1, 0);
                         var tileObjectMoveXMax = Math.Max(currentX + 1, 63);
                         var tileObjectMoveYMax = Math.Max(currentY + 1, 63);
+                        if (_RES != GAME_UW2)
+                        {//UW1 moves only the objects on the changing tile (underworld-exhumed uw1/src/event/WORLDEV.C:231-255)
+                            tileObjectMoveXMin = tileObjectMoveXMax = currentX;
+                            tileObjectMoveYMin = tileObjectMoveYMax = currentY;
+                        }
                         if (tileToChange.floorHeight != initialheight)
                         {
                             tileToChange.floorHeight = (short)newHeight; //UW seems to set this again here?
@@ -661,8 +676,8 @@ namespace Underworld
         /// <returns></returns>
         static bool WillObjectMoveWithTileHeightChange(int tileXToCheck, int tileYToCheck, int currentX, int currentY, int InitialTileHeight, int NewHeight, uwObject obj)
         {
-            //if a 3d model or trap/trigger it will not move
-            if ((obj.majorclass == 6) || (obj.majorclass == 5))
+            //a trap/trigger will not move, nor in UW2 a door, 3d model or switch (underworld-exhumed uw2/src/event/WORLDEV.C:308; uw1/src/event/WORLDEV.C:234, 246 skip only traps)
+            if ((obj.majorclass == 6) || ((obj.majorclass == 5) && (_RES == GAME_UW2)))
             {
                 return false;
             }
@@ -716,7 +731,7 @@ namespace Underworld
 
             if (XCoordinate > 7)
             {
-                if (XCoordinate + radius <= 7)
+                if (XCoordinate - radius <= 7)//underworld-exhumed uw2/src/event/WORLDEV.C:323
                 {
                     goto evalY;
                 }
@@ -767,10 +782,10 @@ namespace Underworld
             var nextObj = obj.next;
             if (obj.zpos == InitialTileHeight << 3)
             {
-                obj.zpos = (short)NewTileHeight;
+                obj.zpos = (short)(NewTileHeight << 3);//SET_Z(obj, height << 3) (underworld-exhumed uw1/src/event/WORLDEV.C:248, uw2/src/event/WORLDEV.C:276)
                 if (obj == playerdat.playerObject)
                 {
-                    if ((HeightAdjustFlag == 1) || (HeightAdjustFlag == 3))
+                    if ((_RES == GAME_UW2) && ((HeightAdjustFlag == 1) || (HeightAdjustFlag == 3)))
                     {
                         motion.playerMotionParams.z_4 = (short)(NewTileHeight << 6);
                     }
@@ -789,13 +804,20 @@ namespace Underworld
                             Debug.Print("Object deletion in LowerObject, Replace this function call with proper version of RemoveObject()");
                             ObjectRemover_OLD.DeleteObjectFromTile_DEPRECIATED(obj.tileX, obj.tileY, obj.index, true);
                         }
+                        else
+                        {
+                            objectInstance.Reposition(obj);
+                        }
                     }
                     else
                     {
                         if (obj.majorclass == 1)
                         {
-                            // mobile npc
-                            obj.UnkBit_0X13_Bit7 = 1;
+                            // mobile npc. UW2 marks it to fall; UW1 does nothing more (underworld-exhumed uw2/src/event/WORLDEV.C:285-286, uw1/src/event/WORLDEV.C:249-252)
+                            if (_RES == GAME_UW2)
+                            {
+                                obj.UnkBit_0X13_Bit7 = 1;
+                            }
                         }
                         else
                         {
@@ -820,8 +842,8 @@ namespace Underworld
         static int RaiseObjectInChangingTile(uwObject obj, int NewTileHeight, bool TileIsSolid)
         {
             var nextObj = obj.next;
-            if ((NewTileHeight << 3) + commonObjDat.height(obj.item_id) >= 0x7F)
-            {
+            if ((_RES == GAME_UW2) && ((NewTileHeight << 3) + commonObjDat.height(obj.item_id) >= 0x7F))
+            {//UW2 only: UW1 damages nothing (underworld-exhumed uw2/src/event/WORLDEV.C:246; uw1/src/event/WORLDEV.C:235-241)
                 damage.DamageObject(obj, 0xFF, 0, UWTileMap.current_tilemap.LevelObjects, true, 0); //apply raw crushing damage to the object.
             }
             if (obj.zpos < (NewTileHeight << 3))
