@@ -21,6 +21,8 @@
     <!-- SoundsDatLoader references UWClass for UW1/UW2 block-size selection;
          include it so the test project can compile in isolation. -->
     <Compile Include="..\..\src\base\UWClass.cs" />
+    <!-- PositionalAudio takes the original's square root (cSqRt) from uwMath. -->
+    <Compile Include="..\..\src\utility\uwMath.cs" />
   </ItemGroup>
 
   <ItemGroup>

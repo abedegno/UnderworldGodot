@@ -46,7 +46,7 @@ public static class PositionalAudio
     {
         int dx = srcX - playerX;
         int dy = srcY - playerY;
-        int dist = IntSqrt(dx * dx + dy * dy);
+        int dist = UnderWorldSqrt.sqrt_vanilla((uint)(dx * dx + dy * dy)); // cSqRt, uw1 SOUND.C:558, uw2 SOUND.C:581
 
         // Cull — UW1_asm.asm:64850 / uw2_asm.asm:79639.
         if (dist > CullDistance) return SoundFalloff.CulledResult;
@@ -118,18 +118,6 @@ public static class PositionalAudio
 
         // Clamp — UW1_asm.asm:64822-64835.
         return (byte)Clamp(PanCentre - offset, 0, PanMax);
-    }
-
-    // Integer square root matching UW1 seg019_A78 behaviour
-    // (UW1_asm.asm:74772). Newton-Raphson on 32-bit input.
-    // For our range (dist² ≤ 2 × 512² = ~500k), a simple loop suffices.
-    private static int IntSqrt(int n)
-    {
-        if (n <= 0) return 0;
-        int x = n;
-        int y = (x + 1) / 2;
-        while (y < x) { x = y; y = (x + n / x) / 2; }
-        return x;
     }
 
     private static int Clamp(int v, int lo, int hi)
