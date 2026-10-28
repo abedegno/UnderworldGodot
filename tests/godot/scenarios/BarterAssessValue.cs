@@ -141,8 +141,8 @@ public sealed class BarterAssessValue : Scenario
             ConversationVM.TradeThreshold = 10;
             ConversationVM.TradePatience = 5;
             ConversationVM.PreviousEvaluation = 0;
-            _overPlayer = ConversationVM.TotalOffering(true, true, 0);
-            _overNpc = ConversationVM.TotalOffering(false, false, 0);
+            _overPlayer = ConversationVM.TotalOffering(true, true, TradeHelp.Unvalued(), 0);
+            _overNpc = ConversationVM.TotalOffering(false, false, TradeHelp.Unvalued(), 0);
             _overGain32 = (_overPlayer - _overNpc) * 100 / System.Math.Max(1, _overNpc);
             ConversationVM.result_register = -1;
             TradeHelp.RunImport("do_offer", talker);
@@ -165,11 +165,12 @@ public sealed class BarterAssessValue : Scenario
             if (mine == 0 || theirs == 0) { _problem = "the normal offer's items could not be made"; return; }
             uimanager.SetPlayerTradeSlot(0, mine, selected: true);
             uimanager.SetNPCTradeSlot(0, theirs, selected: true);
+            TradeHelp.ForgetValuations();
             ConversationVM.TradeThreshold = 40;
             ConversationVM.TradePatience = 5;
             ConversationVM.PreviousEvaluation = 0;
-            _normPlayer = ConversationVM.TotalOffering(true, true, 0);
-            _normNpc = ConversationVM.TotalOffering(false, false, 0);
+            _normPlayer = ConversationVM.TotalOffering(true, true, TradeHelp.Unvalued(), 0);
+            _normNpc = ConversationVM.TotalOffering(false, false, TradeHelp.Unvalued(), 0);
             ConversationVM.result_register = -1;
             TradeHelp.RunImport("do_offer", talker);
             _normResult1 = ConversationVM.result_register;
