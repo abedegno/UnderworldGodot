@@ -277,78 +277,60 @@ namespace Underworld
         /// <returns></returns>
         public static IEnumerator DoPickupQty(int index, uwObject[] objList, uwObject obj)
         {
-            MessageDisplay.WaitingForTypedInput = true;
-            uimanager.instance.TypedInput.Text = obj.ObjectQuantity.ToString();
-            uimanager.instance.TypedInput.CaretColumn =uimanager.instance.TypedInput.Text.Length;
-            uimanager.instance.scroll.Clear();
-            uimanager.AddToMessageScroll("Move how many? {TYPEDINPUT}|");
-
+            uimanager.OpenHowMany();
             while (MessageDisplay.WaitingForTypedInput)
             {
                 yield return new WaitOneFrame();
             }
 
-            var response = uimanager.instance.TypedInput.Text;
-            if (int.TryParse(response, out int result))
+            int result = uimanager.HowManyAnswer(obj.ObjectQuantity);
+            if (result > 0)
             {
-                if (result > 0)
-                {
-                    if (obj.ObjectQuantity <= result)
-                    {//at least all of the stack is selected
-                        if (TooHeavyToPickUp(obj))
-                        {
-                            yield return false;
-                            yield break;
-                        }
-                        DoPickup(index, objList, obj);
-                    }
-                    else
+                if (obj.ObjectQuantity <= result)
+                {//at least all of the stack is selected
+                    if (TooHeavyToPickUp(obj))
                     {
-                        //if <quantity selected, split objects: a copy of the stack keeps the rest on the map and the stack itself, cut to the quantity, is picked up (uw1 INVPANEL.C:486-489, uw2 INVPANEL.C:473-476)
-                        var newObjIndex = ObjectCreator.PrepareNewObject(obj.item_id);
-                        if (newObjIndex == 0)
-                        {//no free object even after garbage collection: nothing is picked up, with no message, as AskHowMany's 0 (uw1 INTERACT.C:457-458, uw2 INTERACT.C:360-361).
-                         //DOS does not check Obj_Alloc and cuts the stack to the number asked first, so the rest is lost (uw1 INVPANEL.C:486-489, uw2 INVPANEL.C:473-476); the port keeps the stack whole instead
-                            yield return false;
-                            yield break;
-                        }
-                        var newObj = UWTileMap.current_tilemap.LevelObjects[newObjIndex];
-                        //copy the bytes
-                        for (int i =0; i<8; i++)
-                        {
-                            newObj.DataBuffer[newObj.PTR+i] = obj.DataBuffer[obj.PTR+i];
-                        }
-                        newObj.link = (short)(obj.link - result);//the copy keeps the rest
-                        obj.link = (short)result;//the stack is cut to the quantity picked up
-                        //the copy goes next after the stack in the tile's list (uw1 INTERACT.C:460, uw2 INTERACT.C:363)
-                        newObj.next = obj.next;
-                        obj.next = (short)newObjIndex;
-                        if (TooHeavyToPickUp(obj))
-                        {//only the part taken is weighed; too heavy, the stack is put back together and the copy freed (uw2 INTERACT.C:365-369).
-                         //UW1 leaves the copy on no list and never frees it (uw1 INTERACT.C:462-465), an original bug the port does not copy
-                            obj.link += newObj.link;
-                            obj.next = newObj.next;
-                            ObjectFreeLists.ReleaseFreeObject(newObj);
-                            yield return false;
-                            yield break;
-                        }
-                        newObj.tileX = obj.tileX; newObj.tileY = obj.tileY;
-                        ObjectCreator.RenderObject(newObj, UWTileMap.current_tilemap);
-                        //then the stack is picked up as any other object, with its triggers and owner checks (uw1 INTERACT.C:476-481, uw2 INTERACT.C:370-387)
-                        DoPickup(index, objList, obj);
+                        yield return false;
+                        yield break;
                     }
-                    yield return true;
+                    DoPickup(index, objList, obj);
                 }
                 else
                 {
-                    //<0
-                    yield return false;
+                    //if <quantity selected, split objects: a copy of the stack keeps the rest on the map and the stack itself, cut to the quantity, is picked up (uw1 INVPANEL.C:486-489, uw2 INVPANEL.C:473-476)
+                    var newObjIndex = ObjectCreator.PrepareNewObject(obj.item_id);
+                    if (newObjIndex == 0)
+                    {//no free object even after garbage collection: nothing is picked up, with no message, as AskHowMany's 0 (uw1 INTERACT.C:457-458, uw2 INTERACT.C:360-361).
+                     //DOS does not check Obj_Alloc and cuts the stack to the number asked first, so the rest is lost (uw1 INVPANEL.C:486-489, uw2 INVPANEL.C:473-476); the port keeps the stack whole instead
+                        yield return false;
+                        yield break;
+                    }
+                    var newObj = UWTileMap.current_tilemap.LevelObjects[newObjIndex];
+                    //copy the bytes
+                    for (int i =0; i<8; i++)
+                    {
+                        newObj.DataBuffer[newObj.PTR+i] = obj.DataBuffer[obj.PTR+i];
+                    }
+                    newObj.link = (short)(obj.link - result);//the copy keeps the rest
+                    obj.link = (short)result;//the stack is cut to the quantity picked up
+                    //the copy goes next after the stack in the tile's list (uw1 INTERACT.C:460, uw2 INTERACT.C:363)
+                    newObj.next = obj.next;
+                    obj.next = (short)newObjIndex;
+                    if (TooHeavyToPickUp(obj))
+                    {//only the part taken is weighed; too heavy, the stack is put back together and the copy freed (uw2 INTERACT.C:365-369).
+                     //UW1 leaves the copy on no list and never frees it (uw1 INTERACT.C:462-465), an original bug the port does not copy
+                        obj.link += newObj.link;
+                        obj.next = newObj.next;
+                        ObjectFreeLists.ReleaseFreeObject(newObj);
+                        yield return false;
+                        yield break;
+                    }
+                    newObj.tileX = obj.tileX; newObj.tileY = obj.tileY;
+                    ObjectCreator.RenderObject(newObj, UWTileMap.current_tilemap);
+                    //then the stack is picked up as any other object, with its triggers and owner checks (uw1 INTERACT.C:476-481, uw2 INTERACT.C:370-387)
+                    DoPickup(index, objList, obj);
                 }
-            }
-            else
-            {
-                //invalid input. cancel                
-                yield return false;
+                yield return true;
             }
             yield return false;
         }
