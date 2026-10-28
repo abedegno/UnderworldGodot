@@ -9,9 +9,10 @@ namespace Underworld
             if (!WorldObject)
             {
                  var spell = MagicEnchantment.GetSpellEnchantment(obj, playerdat.InventoryObjects);
-                if (spell != null)
+                // A cast refused by checkSpell's wait spends no charge (uw1 USEITEMS.C:1059-1061,
+                // uw2 OBJUSE.C:362-365).
+                if (spell != null && MagicEnchantment.CastObjectSpell(obj, spell))
                 {
-                    MagicEnchantment.CastObjectSpell(obj, spell);
                     if (spell.LinkedSpellObject != null)
                     {
                         var hasRanOut = MagicEnchantment.DecrementSpellQuality(
