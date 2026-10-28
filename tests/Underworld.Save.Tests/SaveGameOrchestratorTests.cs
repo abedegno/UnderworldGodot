@@ -136,7 +136,7 @@ public class SaveGameOrchestratorTests : IDisposable
     /// patched afterwards in SaveGame, so a test that only calls the writer passes
     /// whatever was already in memory and never exercises the patch.
     /// </summary>
-    [Fact]
+    [GameDataFact]
     public void Save_Uw1_EmptyInventory_WritesCountOneAndHeadZero()
     {
         SetupUw1State();
@@ -161,7 +161,7 @@ public class SaveGameOrchestratorTests : IDisposable
         Assert.Equal(0, head);
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_Uw1_WritesExpectedFilesExceptScdArk()
     {
         SetupUw1State();
@@ -178,7 +178,7 @@ public class SaveGameOrchestratorTests : IDisposable
         Assert.False(File.Exists(Path.Combine(saveDir, "SCD.ARK")),    "SCD.ARK must not exist for UW1");
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_Uw1_FilesHaveNonZeroSize()
     {
         SetupUw1State();
@@ -195,7 +195,7 @@ public class SaveGameOrchestratorTests : IDisposable
     // DESC tests
     // -------------------------------------------------------------------------
 
-    [Fact]
+    [GameDataFact]
     public void Save_DescHoldsTheWholeDescription()
     {
         // These two tests previously asserted a single byte, justified by a comment saying
@@ -211,7 +211,7 @@ public class SaveGameOrchestratorTests : IDisposable
         Assert.Equal(Encoding.ASCII.GetBytes("test desc"), raw);
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_DescPreservesCaseAndHasNoTerminator()
     {
         SetupUw1State();
@@ -224,7 +224,7 @@ public class SaveGameOrchestratorTests : IDisposable
         Assert.DoesNotContain((byte)0, raw);
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_EmptyDescription_WritesAZeroLengthDescRatherThanNoFile()
     {
         // DOS accepts an empty description and leaves the file behind at zero length. The
@@ -239,7 +239,7 @@ public class SaveGameOrchestratorTests : IDisposable
         Assert.Empty(File.ReadAllBytes(descPath));
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_DescriptionThatCannotBeStored_FailsBeforeTouchingTheSlot()
     {
         // Everything after the encode either creates the directory or mutates live game
@@ -324,7 +324,7 @@ public class SaveGameOrchestratorTests : IDisposable
         }
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_Uw2_WritesAllFiveFiles()
     {
         SetupUw2State();
@@ -340,7 +340,7 @@ public class SaveGameOrchestratorTests : IDisposable
         Assert.True(File.Exists(Path.Combine(saveDir, "SCD.ARK")),      "SCD.ARK missing for UW2");
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_Uw2_AllFilesNonZeroSize()
     {
         SetupUw2State();
@@ -355,7 +355,7 @@ public class SaveGameOrchestratorTests : IDisposable
         }
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_Uw2_OverwritesExistingFiles()
     {
         // UW2 writes the same file set as UW1, DESC included, so it takes the same rule.
@@ -383,7 +383,7 @@ public class SaveGameOrchestratorTests : IDisposable
             .ToArray();
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_LeavesNoWorkingFilesBehind()
     {
         SetupUw1State();
@@ -396,7 +396,7 @@ public class SaveGameOrchestratorTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_tempRoot, "SAVE1", "LEV.ARK")));
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_OverAnOccupiedSlot_KeepsAFileTheGameDidNotWrite()
     {
         SetupUw1State();
@@ -413,7 +413,7 @@ public class SaveGameOrchestratorTests : IDisposable
         Assert.Empty(LeftoversBeside(1));
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_TwiceToTheSameSlot_LeavesOnlyTheSecond()
     {
         SetupUw1State();
@@ -429,7 +429,7 @@ public class SaveGameOrchestratorTests : IDisposable
         Assert.Empty(LeftoversBeside(1));
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_DoesNotDisturbAnotherSlot()
     {
         SetupUw1State();
@@ -442,7 +442,7 @@ public class SaveGameOrchestratorTests : IDisposable
         Assert.Empty(LeftoversBeside(2));
     }
 
-    [Fact]
+    [GameDataFact]
     public void Save_ThatFailsPartWay_LeavesThePreviousSaveIntact()
     {
         SetupUw1State();

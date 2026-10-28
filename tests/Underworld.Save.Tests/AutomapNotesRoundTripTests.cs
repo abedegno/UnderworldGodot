@@ -68,7 +68,7 @@ public class AutomapNotesRoundTripTests : System.IDisposable
         Assert.Equal((byte)4, result[54 + 0x34]);
     }
 
-    [Fact]
+    [GameDataFact]
     public void LevArkWriter_Uw1_NewNoteInMemory_SurvivesFullSerializeAndReextract()
     {
         Underworld.UWClass.BasePath = System.IO.Path.Combine(TestData.UW2GogRoot, "UW1");
@@ -136,7 +136,7 @@ public class AutomapNotesRoundTripTests : System.IDisposable
         return ark;
     }
 
-    [Fact]
+    [GameDataFact]
     public void LevArkWriter_Uw1_DeletingEveryNote_ClearsTheBlockAndSurvivesReload()
     {
         Underworld.UWClass.BasePath = Path.Combine(TestData.UW2GogRoot, "UW1");
@@ -173,7 +173,7 @@ public class AutomapNotesRoundTripTests : System.IDisposable
         }
     }
 
-    [Fact]
+    [GameDataFact]
     public void LevArkWriter_Uw1_DeletingNotesOnOneLevel_LeavesAnUnloadedLevelIntact()
     {
         // The regression guard for dropping the Count > 0 gate: a level that was never
@@ -212,7 +212,7 @@ public class AutomapNotesRoundTripTests : System.IDisposable
         }
     }
 
-    [Fact]
+    [GameDataFact]
     public void LevArkWriter_Uw2_DeletingEveryNote_ClearsTheBlockAndItsHeaderFields()
     {
         Underworld.UWClass.BasePath = Path.Combine(TestData.UW2GogRoot, "UW2");
@@ -249,7 +249,7 @@ public class AutomapNotesRoundTripTests : System.IDisposable
         }
     }
 
-    [Fact]
+    [GameDataFact]
     public void LevArkWriter_Uw2_DeletingNotesOnOneLevel_LeavesAnUnloadedLevelIntact()
     {
         Underworld.UWClass.BasePath = Path.Combine(TestData.UW2GogRoot, "UW2");
