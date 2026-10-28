@@ -211,6 +211,9 @@ public partial class ScenarioRunner : Node
         (() => new BonesBurial(), true),
         (() => new LastTalismanKeepsHp(), true),
         (() => new CritterLockedDoor(), true),
+        // visual effects
+        (() => new WeaponSway(), true),
+        (() => new MenuPaletteCycle(), true),
         (() => new HarnessFails(), false),
     };
 
