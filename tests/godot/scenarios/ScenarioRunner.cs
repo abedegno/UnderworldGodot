@@ -111,6 +111,7 @@ public partial class ScenarioRunner : Node
         (() => new XTrapsValueRange(), true),
         (() => new NumberedVariableRanges(), true),
         (() => new MenuMusicRepeat(), true),
+        (() => new Uw1EndgameEffects(), true),
         // batch D: guards
         (() => new GuardEat(), true),
         (() => new GuardLight(), true),
@@ -299,6 +300,14 @@ public partial class ScenarioRunner : Node
 
             string notStarted = await StartNewGame();
             if (notStarted != null) return "FAIL " + notStarted;
+
+            // A "more" prompt left open keeps uimanager.blockinput true, and with it the player's
+            // update (PlayerTimedLoop) does nothing. The flag is static (MessageDisplay.cs:46) and a
+            // new game does not clear it. It is cleared here, after the new game has started, not
+            // in ResetProcessStatics: a conversation an earlier scenario started keeps running
+            // across the scene change and its pause() (conversation_functions/pause.cs:10) can set
+            // the flag again while this new game starts.
+            MessageDisplay.WaitingForMore = false;
 
             // Seeded again, so Setup starts from exactly Seed: the seeding above makes the new
             // game's own draws repeatable, and they have moved the generator on since.
