@@ -44,6 +44,7 @@ public partial class ScenarioRunner : Node
         (() => new SwingChargeResets(), true),
         (() => new CritterMeleeChoice(), true),
         (() => new NpcCastNeedsSlot(), true),
+        (() => new NpcShotFrameFour(), true),
         (() => new FleeingCritterSteers(), true),
         (() => new CritterFlees(), true),
         (() => new AlliesJoinFight(), true),
