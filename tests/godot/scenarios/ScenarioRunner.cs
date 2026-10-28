@@ -88,6 +88,7 @@ public partial class ScenarioRunner : Node
         (() => new ScdSetQuestBit(), true),
         (() => new QbertGate(), true),
         (() => new CastleSchedule(), true),
+        (() => new HackSetAllClocks(), true),
         (() => new EnchantWeaponTier(), true),
         (() => new EnchantRechargeWand(), true),
         (() => new GivePtrNpc(), true),
