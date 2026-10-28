@@ -243,8 +243,9 @@ namespace Underworld
         /// </summary>
         public static void SetRangeOfVisionParams(short camerax, short cameray, short camerayaw)
         {
-            var tileX = playerdat.playerObject.tileX;//camerax >> 8; var tileY = cameray >> 8;
-            var tileY = playerdat.playerObject.tileY;
+            //the grid starts from the eye's square, mapptr (uw1 VIEW3D.C:456-459, uw2 VIEW3D.C:451-454): the camera's, not the player's
+            var tileX = playerdat.CameraTileX;
+            var tileY = playerdat.CameraTileY;
             if (!UWTileMap.ValidTile(tileX, tileY))
             {
                 return;
@@ -330,14 +331,19 @@ namespace Underworld
             int RenderingTile_2F7C_ptr = 0;
             var automapdata = automap.automaps[playerdat.dungeon_level - 1].buffer;
             short si_offsettilemap;
-            var playerTile = UWTileMap.current_tilemap.Tiles[playerdat.playerObject.tileX, playerdat.playerObject.tileY];
+            //subprocess walks from the eye's square, mapptr (uw1 GRIDDB.C:330, uw2 GRIDDB.C:329): the camera's, not the player's
+            if (!UWTileMap.ValidTile(playerdat.CameraTileX, playerdat.CameraTileY))
+            {
+                return;
+            }
+            var eyeTile = UWTileMap.current_tilemap.Tiles[playerdat.CameraTileX, playerdat.CameraTileY];
             var shading = shade.shadesdata[playerdat.lightlevel].ShadingArray_26EE;//System.IO.File.WriteAllBytes("c:\\temp\\shading.dat", shading);
             var di_dseg432 = dseg_432[playerdat.CameraYawHeadingRelated_2B52 * 6];
             var varC_tileoffset = dseg_432[2 + (playerdat.CameraYawHeadingRelated_2B52 * 6)];
             var var2_offsetshadeatdistance = DistanceToWallOrDarkness * 0x42;
 
 
-            var var4_tile_ptr = (int)(playerTile.Ptr + ((varC_tileoffset * DistanceToWallOrDarkness) << 2));
+            var var4_tile_ptr = (int)(eyeTile.Ptr + ((varC_tileoffset * DistanceToWallOrDarkness) << 2));
             var4_tile_ptr = var4_tile_ptr - (di_dseg432 << 6);
 
 
