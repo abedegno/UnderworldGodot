@@ -300,7 +300,8 @@ namespace Underworld
         {
             TilesDiscoveredForExpGain = 0;
             GetTilesToRender();
-            if ((playerdat.play_level >= 0) && (playerdat.play_level < 16))
+            //none at character level 0, and in UW1 none in the Void (uw1 GRIDDB.C:256, uw2 GRIDDB.C:255)
+            if ((playerdat.play_level != 0) && (playerdat.play_level < 16) && !(_RES != GAME_UW2 && playerdat.dungeon_level == 9))
             {
                 int finalgain = 0;
 

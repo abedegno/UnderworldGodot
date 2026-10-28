@@ -36,7 +36,7 @@ namespace Underworld
                     uimanager.SetBackPackIndex(i, BackPackObject(i));
                 }
                 RenderingServer.GlobalShaderParameterSet("cutoffdistance", shade.GetViewingDistance(lightlevel));
-                RenderingServer.GlobalShaderParameterSet("simpleshade", (Texture)shade.shadesdata[playerdat.lightlevel].simpleshade);
+                RenderingServer.GlobalShaderParameterSet("simpleshade", (Texture)shade.DrawnSimpleShade);
             }
             else
             {

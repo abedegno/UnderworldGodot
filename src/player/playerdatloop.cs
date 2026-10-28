@@ -795,7 +795,7 @@ namespace Underworld
         public static void RefreshLighting()
         {
             RenderingServer.GlobalShaderParameterSet("cutoffdistance", shade.GetViewingDistance(lightlevel));
-            RenderingServer.GlobalShaderParameterSet("simpleshade", (Texture)shade.shadesdata[playerdat.lightlevel].simpleshade);
+            RenderingServer.GlobalShaderParameterSet("simpleshade", (Texture)shade.DrawnSimpleShade);
         }
 
         /// <summary>

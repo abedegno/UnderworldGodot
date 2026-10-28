@@ -19,6 +19,56 @@ namespace Underworld
 
         public static shade[] shadesdata;
 
+        /// <summary>
+        /// The light level the 3D view is drawn with when lighting is off. The original's process_grid turns
+        /// lighting off (lighton 0, shade mode 0) for the UW1 Void, level 9, and for UW2's levels 65 to 72 other
+        /// than 68, so every distance takes light table 0 (uw1 GRIDDB.C:242-251, 380; uw2 GRIDDB.C:238-249, 381).
+        /// </summary>
+        public const int Unlit = 8;
+
+        static ImageTexture unlitsimpleshade;
+
+        /// <summary>
+        /// The light level the 3D view is drawn with: Unlit where the original draws without lighting, else the
+        /// player's light level. Only the drawing changes; the automap and line of sight still use the light level.
+        /// </summary>
+        public static int DrawnLightLevel
+        {
+            get
+            {
+                bool unlit;
+                if (playerdat.pdat == null)
+                {//no player yet (the menus cycle the palette too)
+                    unlit = false;
+                }
+                else if (_RES == GAME_UW2)
+                {
+                    unlit = ((playerdat.dungeon_level - 1) / 8 == 8) && (playerdat.dungeon_level != 0x44);
+                }
+                else
+                {
+                    unlit = playerdat.dungeon_level == 9;
+                }
+                return unlit ? Unlit : playerdat.lightlevel;
+            }
+        }
+
+        /// <summary>
+        /// The simple shade for the drawn light level, all light where it is Unlit.
+        /// </summary>
+        public static ImageTexture DrawnSimpleShade
+        {
+            get
+            {
+                if (DrawnLightLevel == Unlit)
+                {
+                    unlitsimpleshade ??= CreateSimpleShade(new short[16]);
+                    return unlitsimpleshade;
+                }
+                return shadesdata[playerdat.lightlevel].simpleshade;
+            }
+        }
+
         public short[] shadingbasedata;
 
         public byte[] ShadingArray_26EE = new byte[17 * 66];//This array is probably the light map that should be used for the shading but the existing effect looks right enough. possible structure is byte0 - is point visible, byte1 shading value to use at that point?
