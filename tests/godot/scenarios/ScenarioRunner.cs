@@ -253,6 +253,8 @@ public partial class ScenarioRunner : Node
         (() => new TremorHarmless(), true),
         (() => new CastSlotsFull(), true),
         (() => new NoAmmoMessage(), true),
+        (() => new SpellDurations(), true),
+        (() => new BowDrawTiming(), true),
         (() => new FlutterNeverDies(), true),
         // UW1 using UW2's rules, and valuable loot
         (() => new ReachSwimming(), true),
