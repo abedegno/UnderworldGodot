@@ -104,6 +104,7 @@ public partial class ScenarioRunner : Node
         (() => new TeleportCritter(), true),
         (() => new SleepAmbush(), true),
         (() => new CritterGoesHome(), true),
+        (() => new MissImpactSound(), true),
         (() => new TybalTalkTrap(), true),
         (() => new XTrapsValueRange(), true),
         (() => new NumberedVariableRanges(), true),
