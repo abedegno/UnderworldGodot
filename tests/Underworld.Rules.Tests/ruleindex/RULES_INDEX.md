@@ -2,7 +2,7 @@
 
 The original's routines that UnderworldGodot implements, and where. Written by `RULES_INDEX_RECORD=1 dotnet test --filter RuleIndex` in tests/Underworld.Rules.Tests; do not edit by hand. Routine names and files are Underworld Exhumed's (Underworld Exhumed e5deadd (https://github.com/abedegno/underworld-exhumed, uw1/map/crosswalk.tsv and uw2/map/crosswalk.tsv)).
 
-236 routines in 199 declarations: 53 UW1, 181 UW2. 10 have more than one declaration (see EXPECTED_DUPLICATES).
+237 routines in 198 declarations: 53 UW1, 182 UW2. 9 have more than one declaration (see EXPECTED_DUPLICATES).
 
 How: `name` the declaration's name carries the address, `cite` its comment cites the routine's definition, `comment` its comment gives the address.
 
@@ -16,8 +16,7 @@ How: `name` the declaration's name carries the address, `cite` its comment cites
 | `uw1:DegradeLights@PLAYTIME.C` | `src/player/playerdatloop.cs:438` UpdateLightStability | cite |
 | `uw1:HasOrIsObj@OBJECTS.C` | `src/utility/objectsearch.cs:227` HasOrIsObj | cite |
 | `uw1:Obj_GarbageCollect@OBJECTS.C` | `src/utility/ObjectRemover.cs:70` GarbageCollect | cite |
-| `uw1:SquareRoot_seg019_A78@IMATH.ASM` | `src/audio/sfx/PositionalAudio.cs:126` IntSqrt | comment |
-| `uw1:SquareRoot_seg019_A78@IMATH.ASM` | `src/npc/npcai.cs:955` SquareRoot_seg019_A78 | name |
+| `uw1:SquareRoot_seg019_A78@IMATH.ASM` | `src/utility/uwMath.cs:193` sqrt_vanilla | cite |
 | `uw1:UseBonesOn@USEITEMS.C` | `src/interaction/useon.cs:221` UseBonesOn | cite |
 | `uw1:armor_val@PLAYDATA.C` | `src/player/playerdatloop.cs:722` ArmourValue | cite |
 | `uw1:build_corpse@PATHFIND.C` | `src/npc/npcdeath.cs:553` BuildCorpse | cite |
@@ -27,10 +26,10 @@ How: `name` the declaration's name carries the address, `cite` its comment cites
 | `uw1:check_door@EFFECT.C` | `src/objects/door.cs:373` CheckDoor | cite |
 | `uw1:choose_music@OPTIONS.C` | `src/ui/uimanager_options.cs:612` PressOptionButton | cite |
 | `uw1:choose_music@OPTIONS.C` | `src/ui/uimanager_options.cs:924` LeaveMusicSoundPage | cite |
-| `uw1:clear_paths@PATHFIND.C` | `src/npc/npcai.cs:1944` ClearPaths | cite |
+| `uw1:clear_paths@PATHFIND.C` | `src/npc/npcai.cs:1926` ClearPaths | cite |
 | `uw1:conv_give_inv@CONVERSE.C` | `src/conversation/conversation_functions/give_to_npc.cs:9` give_to_npc | cite |
-| `uw1:crit_avoid_player@AI.C` | `src/npc/npcai.cs:2949` VectorsToPlayer | cite |
-| `uw1:crit_offense_find_target@AI.C` | `src/npc/npcai.cs:1243` AttackGoalSearchForTarget | cite |
+| `uw1:crit_avoid_player@AI.C` | `src/npc/npcai.cs:2931` VectorsToPlayer | cite |
+| `uw1:crit_offense_find_target@AI.C` | `src/npc/npcai.cs:1225` AttackGoalSearchForTarget | cite |
 | `uw1:do_intro_scene@MAINMENU.C` | `src/ui/uimanager_mainmenu.cs:391` TitleFinished | cite |
 | `uw1:do_keyarray_input@MOUSE.C` | `main.cs:481` ProcessStepMoveInputs | cite |
 | `uw1:do_miss@COMBAT.C` | `src/interaction/combat/combat.cs:356` MissImpactEffect | cite |
@@ -85,11 +84,12 @@ How: `name` the declaration's name carries the address, `cite` its comment cites
 | `uw2:SetSomeValuesInSCDRows_ovr151_D3@SCHEDULE.C` | `src/scd/scd.cs:213` SomethingWithSCDRows_ovr151_D3 | name |
 | `uw2:SolveCenter@COLLIDE.C` | `src/physics/motion_calc.cs:511` seg028_2941_2CF_terrainrelated | name |
 | `uw2:SolvePnt@COLLIDE.C` | `src/physics/motion_calc.cs:635` GetNeighbourTileHeightDetails_seg028_2941_217 | name |
+| `uw2:SquareRoot_seg021_22FD_A78@IMATH.ASM` | `src/utility/uwMath.cs:193` sqrt_vanilla | cite |
 | `uw2:TerrainCheck@COLLIDE.C` | `src/physics/motion_calc.cs:342` ProcessMotionTileHeights_seg028_2941_385 | name |
 | `uw2:UseBonesOn@USEITEMS.C` | `src/interaction/useon.cs:221` UseBonesOn | cite |
-| `uw2:acceptable_danger@AI.C` | `src/npc/npcai.cs:1920` GetCritterRange_seg007_17A2_30D1 | name |
+| `uw2:acceptable_danger@AI.C` | `src/npc/npcai.cs:1902` GetCritterRange_seg007_17A2_30D1 | name |
 | `uw2:add_to_beeline_path@PATHFIND.C` | `src/npc/pathfind.cs:1372` TestStraightPathTraversal_seg006_1413_2769 | name |
-| `uw2:adjust_height@PATHFIND.C` | `src/npc/npcai.cs:2063` FlyingCritterPitching_seg006_1413_36B8 | name |
+| `uw2:adjust_height@PATHFIND.C` | `src/npc/npcai.cs:2045` FlyingCritterPitching_seg006_1413_36B8 | name |
 | `uw2:arena_player_runs@WORLDEV.C` | `src/World/specificworlds/pitsofcarnage.cs:101` AvatarIsACoward | cite |
 | `uw2:armor_val@PLAYDATA.C` | `src/player/playerdatloop.cs:722` ArmourValue | cite |
 | `uw2:back_to_space@MOTION.C` | `src/physics/motion_calc.cs:678` StoreNewXYZH_seg031_2CFA_800 | name |
@@ -106,12 +106,12 @@ How: `name` the declaration's name carries the address, `cite` its comment cites
 | `uw2:check_alert@TRIGGER.C` | `src/traps/a_create_object_trap.cs:215` FindAndRunCreateObjectTraps | cite |
 | `uw2:check_door@EFFECT.C` | `src/objects/door.cs:373` CheckDoor | cite |
 | `uw2:check_positions@MOTION.C` | `src/physics/motion_calc.cs:744` DoTileCollisionMaybe_seg031_2CFA_179C | name |
-| `uw2:clear_paths@CRITTIME.C` | `src/npc/npcai.cs:1944` ClearPaths | cite |
-| `uw2:constrain_movement@AI.C` | `src/npc/npcai.cs:994` NPC_Move | comment |
+| `uw2:clear_paths@CRITTIME.C` | `src/npc/npcai.cs:1926` ClearPaths | cite |
+| `uw2:constrain_movement@AI.C` | `src/npc/npcai.cs:976` NPC_Move | comment |
 | `uw2:conv_give_inv@CONVERSE.C` | `src/conversation/conversation_functions/give_to_npc.cs:9` give_to_npc | cite |
-| `uw2:crit_avoid_player@AI.C` | `src/npc/npcai.cs:2949` VectorsToPlayer | cite |
-| `uw2:crit_hover@AI.C` | `src/npc/npcai.cs:1556` NPCGoalC_StandAtLocation | comment |
-| `uw2:crit_offense_find_target@AI.C` | `src/npc/npcai.cs:1243` AttackGoalSearchForTarget | cite |
+| `uw2:crit_avoid_player@AI.C` | `src/npc/npcai.cs:2931` VectorsToPlayer | cite |
+| `uw2:crit_hover@AI.C` | `src/npc/npcai.cs:1538` NPCGoalC_StandAtLocation | comment |
+| `uw2:crit_offense_find_target@AI.C` | `src/npc/npcai.cs:1225` AttackGoalSearchForTarget | cite |
 | `uw2:cutoff_cutscene_speech@CUTS.C` | `src/cuts/cutsplayer.cs:247` CutOffSpeech | cite |
 | `uw2:deal_with_button@WRAPPER.C` | `src/ui/uimanager_options.cs:612` PressOptionButton | cite |
 | `uw2:decvec@VIEW3D.C` | `src/utility/visionlos.cs:1235` GetNextVisionTileNegative_seg032_6A9 | name |
@@ -123,7 +123,7 @@ How: `name` the declaration's name carries the address, `cite` its comment cites
 | `uw2:do_objhit@OBJPHYS.C` | `src/physics/motion_collisions.cs:893` CollideObjects_seg030_2BB7_1CE | name |
 | `uw2:do_option_shortcut@ICONS.C` | `src/ui/uimanager_options.cs:579` OptionShortcut | cite |
 | `uw2:do_player_input@PHYSICS.C` | `src/physics/motion_player.cs:648` CalculateMotionFromCommand_seg008_1B09_108E | name |
-| `uw2:do_that_jump_kinda_thing@PATHFIND.C` | `src/npc/npcai.cs:2138` TurnTowardsPath_Adjusted_seg006_1413_2D3F | name |
+| `uw2:do_that_jump_kinda_thing@PATHFIND.C` | `src/npc/npcai.cs:2120` TurnTowardsPath_Adjusted_seg006_1413_2D3F | name |
 | `uw2:do_zbounce@MOTION.C` | `src/physics/motion_collisions.cs:16` DoCollision_seg031_2CFA_D1F | name |
 | `uw2:drop_link_chain@TREASURE.C` | `src/npc/npcdeath.cs:603` DropSomeObjects | cite |
 | `uw2:dseg_67d6_1BA6` | `src/physics/motion_lookuptables.cs:341` TileTraversalFlags_dseg_67d6_1BA6 | name |
@@ -219,7 +219,7 @@ How: `name` the declaration's name carries the address, `cite` its comment cites
 | `uw2:line_of_sight@PATHFIND.C` | `src/npc/pathfind.cs:1455` TestBetweenPoints | comment |
 | `uw2:loop_music_maybe@SOUND.C` | `src/loaders/xmimusic.cs:255` LoopMusicMaybe | cite |
 | `uw2:mob_to_static@OBJPHYS.C` | `src/physics/motion.cs:422` ObjectHitsFloorTile_seg030_2BB7_DDF | name |
-| `uw2:move_along_path@PATHFIND.C` | `src/npc/npcai.cs:1990` TurnTowardsPath_seg006_1413_2BF5 | name |
+| `uw2:move_along_path@PATHFIND.C` | `src/npc/npcai.cs:1972` TurnTowardsPath_seg006_1413_2BF5 | name |
 | `uw2:move_hilite@WRAPPER.C` | `src/ui/uimanager_options.cs:482` OptionsHandleKey | cite |
 | `uw2:move_hilite@WRAPPER.C` | `src/ui/uimanager_options.cs:539` MoveOptionsHilite | cite |
 | `uw2:move_to_next@VIEW3D.C` | `src/utility/visionlos.cs:651` MaybeProcessLOSArc_seg032_C9D | name |
@@ -238,7 +238,7 @@ How: `name` the declaration's name carries the address, `cite` its comment cites
 | `uw2:seg021_22FD_B78@IMATH.ASM` | `src/physics/satellite.cs:200` seg021_22FD_B78_maybetangent | name |
 | `uw2:seg021_22FD_BA2@IMATH.ASM` | `src/physics/satellite.cs:161` seg021_22FD_BA2_MaybeTangent | name |
 | `uw2:set_gridx_and_y_based_on_tile_type@CRITTIME.C` | `src/npc/npcutil.cs:222` set_gridx_and_y_based_on_tile_type | cite |
-| `uw2:set_next_square_on_path@PATHFIND.C` | `src/npc/npcai.cs:2192` UpdatePathFlag_seg006_1413_2ABB | name |
+| `uw2:set_next_square_on_path@PATHFIND.C` | `src/npc/npcai.cs:2174` UpdatePathFlag_seg006_1413_2ABB | name |
 | `uw2:set_phys_data@OBJPHYS.C` | `src/physics/motion.cs:110` ApplyProjectileMotion | comment |
 | `uw2:set_player_phys_params@PHYSICS.C` | `src/physics/motion_player.cs:140` PlayerMotionInitialCalculation_seg008_1B09_7B2 | name |
 | `uw2:set_targz@MOTION.C` | `src/physics/motion_collisions.cs:345` SetCollisionTarget_seg031_2CFA_10E | name |

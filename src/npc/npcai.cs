@@ -922,7 +922,7 @@ namespace Underworld
             }
             else if (currentGTargSquaredDistanceByTiles > 0x40)
             {
-                var dist = SquareRoot_seg019_A78(currentGTargSquaredDistanceByTiles);
+                var dist = UnderWorldSqrt.sqrt_vanilla((uint)currentGTargSquaredDistanceByTiles);
                 var x = currentGTargXHome + (currObj_XHome - currentGTargXHome) * 4 / dist;
                 var y = currentGTargYHome + (currObj_YHome - currentGTargYHome) * 4 / dist;
                 var from = UWTileMap.current_tilemap.Tiles[currObj_XHome, currObj_YHome];
@@ -946,24 +946,6 @@ namespace Underworld
                 }
                 NPC_Goto(critter, currentGTargXHome, currentGTargYHome, currentGTargFloorHeight);
             }
-        }
-
-        /// <summary>
-        /// Integer square root of a value below 0x10000: five Newton steps from 4 (below 0x100) or 0x40.
-        /// cSqRt, uw1 IMATH.ASM SquareRoot_seg019_A78
-        /// </summary>
-        static int SquareRoot_seg019_A78(int value)
-        {
-            if (value == 0)
-            {
-                return 0;
-            }
-            var root = value < 0x100 ? 4 : 0x40;
-            for (int i = 0; i < 5; i++)
-            {
-                root = (root + value / root) >> 1;
-            }
-            return root;
         }
 
         static void ResetGoalAndTarget(uwObject critter)
@@ -1938,7 +1920,8 @@ namespace Underworld
 
         /// <summary>
         /// clear_paths: frees all 16 stored paths and clears every critter's has-a-path bit.
-        /// Run when a level is loaded (GetLevel, uw1 GAMEWRAP.C:116, uw2 GAMEWRAP.C:102), for a new game, a restore and a level change.
+        /// Run when a level is loaded (GetLevel, uw1 GAMEWRAP.C:116, uw2 GAMEWRAP.C:102), for a new game, a restore and a level change,
+        /// and again on arriving by a level change, from init_level_creature_stuff (do_level_hacks, uw1 GAMEWRAP.C:455, uw2 GAMEWRAP.C:469).
         /// uw1 PATHFIND.C:945-954, uw2 CRITTIME.C:445-456
         /// </summary>
         public static void ClearPaths()
