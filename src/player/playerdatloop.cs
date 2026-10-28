@@ -669,7 +669,7 @@ namespace Underworld
                 {
                     if (uimanager.ValidObjectForSlot(i, obj))
                     {//apply protection if object is valid
-                        var protection = armourObjectDat.protection(obj.item_id);
+                        var protection = ArmourValue(obj);
                         switch (i)
                         {//apply protection to the appropiate body location
                             case 0://helm
@@ -685,8 +685,38 @@ namespace Underworld
                     }
                 }
             }
+
+            //a shield (hack major, minor 3, types 11 to 15) in the off hand protects body and arms (uw2 PLAYDATA.C:362-368, uw1 PLAYDATA.C:401-408)
+            var offhand = InventoryObjects[uimanager.GetPaperDollObjAtSlot(uimanager.DominantHandSlot == 8 ? 7 : 8)];
+            if ((offhand != null) && (offhand.majorclass == 0) && (offhand.minorclass == 3) && (offhand.classindex >= 11) && (offhand.classindex <= 15))
+            {
+                var shield = ArmourValue(offhand);
+                LocationalArmourValues[0] += shield;
+                LocationalArmourValues[1] += shield;
+            }
+
+            //defence is the Defence skill plus half the skill of the weapon in hand, sword, axe or mace for a melee weapon, else barehand (uw2 PLAYDATA.C:370-385, uw1 PLAYDATA.C:409-425)
+            var weaponskill = 2;
+            var weapon = InventoryObjects[uimanager.GetPaperDollObjAtSlot(uimanager.DominantHandSlot)];
+            if ((weapon != null) && (weapon.majorclass == 0) && (weapon.minorclass == 0))
+            {
+                weaponskill = Math.Clamp(weaponObjectDat.skill(weapon.item_id), 3, 5);
+            }
+            PlayerDefence = Defense + (GetSkillValue(weaponskill) >> 1);
         }
 
+
+        /// <summary>
+        /// An armour item's protection, armor_val: table protection scaled by quality / 64, plus one; weapons give none (uw2 PLAYDATA.C:322-332, uw1 PLAYDATA.C:364-374)
+        /// </summary>
+        static int ArmourValue(uwObject obj)
+        {
+            if ((obj.majorclass == 0) && (obj.minorclass < 2))
+            {
+                return 0;
+            }
+            return ((obj.quality * armourObjectDat.protection(obj.item_id)) >> 6) + 1;
+        }
 
         /// <summary>
         /// Applies the bonuses from things like iron flesh, resist blows to the player. 
