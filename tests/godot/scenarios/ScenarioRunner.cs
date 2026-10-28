@@ -86,6 +86,7 @@ public partial class ScenarioRunner : Node
         (() => new Uw1SoundsDatLength(), true),
         (() => new Uw1AreaSpells(), true),
         (() => new AreaSpellArea(), true),
+        (() => new Uw1Class7Ahead(), true),
         // end batch B
         // batch C
         (() => new TimeOfDayHourlyStep(), true),
