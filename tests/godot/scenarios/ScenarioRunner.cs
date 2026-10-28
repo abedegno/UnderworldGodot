@@ -81,6 +81,7 @@ public partial class ScenarioRunner : Node
         (() => new CarryCapacity(), true),
         (() => new CollisionMapEdge(), true),
         (() => new VisionMapEdge(), true),
+        (() => new PlayerComputeMana(), true),
         (() => new LightBurnRates(), true),
         (() => new LightOnQuality(), true),
         (() => new LightStackInSlot(), true),
