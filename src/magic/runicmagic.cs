@@ -375,6 +375,8 @@ namespace Underworld
                             }
                         case playerdat.SkillCheckResult.Fail:
                             {
+                                //fail_spell(2): the failure sound and "The incantation failed." (uw1 RUNES.C:221-226, 249-250; uw2 RUNES.C:202-207, 238-239)
+                                UWsoundeffects.PlaySoundEffectAtAvatar(effectno: UWsoundeffects.SoundEffectSpellFailure, pan: 0x40, velocityOffset: 0);
                                 uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_the_incantation_failed_));
                                 break;
                             }
