@@ -52,205 +52,111 @@ namespace Underworld
         public static int BablTradeBonus = 0;
 
         /// <summary>
-        /// Get the total value of the players trade area (selected items)
+        /// The total value of one side's selected items, each valued by AssessValue, summed in 16 bits as DOS's int is
+        /// (total_offering, uw1 BARTER.C:788-803, uw2 BARTER.C:767-782).
+        /// With useLikes the NPC's likes and dislikes count.
         /// </summary>
-        /// <param name="ApplyLikeDislike"></param>
-        /// <param name="appraise_accuracy"></param>
-        /// <returns></returns>
-        static int GetNPCTradeValue(bool ApplyLikeDislike = false, int appraise_accuracy = 0, bool applyAccuracy = false)
+        public static int TotalOffering(bool useLikes, bool playerSide, int accuracy)
         {
-            var result = 0;
+            short total = 0;
             for (int i = 0; i < uimanager.NoOfTradeSlots; i++)
             {
-                //if slot select get monetary value, possibly adjusted for likes dislike and player appraisal score
-                var index = uimanager.GetNPCTradeSlot(i);
-                if (index != -1)
+                var index = playerSide ? uimanager.GetPlayerTradeSlot(i) : uimanager.GetNPCTradeSlot(i);
+                if (index > 0)
                 {
-                    var obj = UWTileMap.current_tilemap.LevelObjects[index];
-                    result += GetTradeValueOfItem(
-                        ApplyLikeDislike: ApplyLikeDislike,
-                        appraise_accuracy: appraise_accuracy,
-                        applyAccuracy: applyAccuracy,
-                        obj: obj);
+                    total = (short)(total + AssessValue(useLikes, index, accuracy));
                 }
             }
-            return result;
+            return total;
         }
 
-
         /// <summary>
-        /// Get the total value of the PC trade area (selected items)
+        /// An object's value to a trade (assess_value, uw1 BARTER.C:810-843, uw2 BARTER.C:789-823).
+        /// The class value, with useLikes 0 for an item the NPC dislikes and 1.5 times for one it likes, times the quantity,
+        /// times the quality / 64 (at least 1 unless the quality is 0; UW2 counts its coin as quality 63), blurred by up to accuracy %.
+        /// The products are 16-bit as Turbo C's int, so a stack or a valuable item can pass 0x7FFF and come out below 0;
+        /// UW2 alone multiplies the quality as a long.
+        /// The blur is drawn after srand(object index), so an object is valued the same each time; the original then reseeds
+        /// from the clock, and here the port's own generator is put back.
         /// </summary>
-        /// <param name="ApplyLikeDislike"></param>
-        /// <param name="appraise_accuracy"></param>
-        /// <param name="applyAccuracy"></param>
-        /// <returns></returns>
-        static int GetPCTradeValue(bool ApplyLikeDislike = false, int appraise_accuracy = 0, bool applyAccuracy = false)
+        public static int AssessValue(bool useLikes, int index, int accuracy)
         {
-            var result = 0;
-            for (int i = 0; i < uimanager.NoOfTradeSlots; i++)
+            var obj = UWTileMap.current_tilemap.LevelObjects[index];
+            int value = (short)commonObjDat.monetaryvalue(obj.item_id);
+            if (useLikes)
             {
-                //if slot select get monetary value, possibly adjusted for likes dislike and player appraisal score
-                var index = uimanager.GetPlayerTradeSlot(i);
-                if (index != -1)
+                var disposition = DoesNpcLike(obj);
+                if (disposition == -1)
                 {
-                    var obj = UWTileMap.current_tilemap.LevelObjects[index];
-                    result += GetTradeValueOfItem(
-                        ApplyLikeDislike: ApplyLikeDislike,
-                        appraise_accuracy: appraise_accuracy,
-                        applyAccuracy: applyAccuracy,
-                        obj: obj);
+                    return 0;
+                }
+                if (disposition != 0)
+                {
+                    value = (short)(value * 3) >> 1;
                 }
             }
-            return result;
+            value = (short)(value * obj.ObjectQuantity);
+            int quality = obj.quality;
+            if ((_RES == GAME_UW2) && (obj.item_id == 0xA0))
+            {//ITEM_COIN (uw2 BARTER.C:812); UW1 has no coin rule
+                quality = 0x3F;
+            }
+            if (value > 0)
+            {
+                if (quality > 0)
+                {
+                    if (_RES == GAME_UW2)
+                    {
+                        value = (short)(((long)value * quality) >> 6);
+                    }
+                    else
+                    {
+                        value = (short)(value * quality) >> 6;
+                    }
+                    if (value == 0)
+                    {
+                        value = 1;
+                    }
+                }
+                else
+                {
+                    value = 0;
+                }
+            }
+            var source = Rng.Source;
+            Rng.Source = new BorlandRandSource((uint)index);
+            try
+            {
+                value = Range(value, -accuracy, accuracy);
+            }
+            finally
+            {
+                Rng.Source = source;
+            }
+            return value;
         }
 
-        // private static int GetTrueItemValue(bool ApplyLikeDislike, int appraise_accuracy, bool applyAccuracy, int index)
-        // {
-        //     if (index != -1)
-        //     {
-        //         var obj = UWTileMap.current_tilemap.LevelObjects[index];
-        //         if (obj != null)
-        //         {
-        //             //obj.ObjectQuantity;
-        //             var itemvalue = commonObjDat.monetaryvalue(obj.item_id);
-        //             if (ApplyLikeDislike)
-        //             {//todo
-        //                 itemvalue = itemvalue * 1;
-        //             }
-        //             itemvalue = itemvalue * obj.ObjectQuantity;
-        //             var quality = obj.quality;
-        //             //if coin quality = 0x40
-        //             if (
-        //                 (obj.item_id == 160)
-        //                 ||
-        //                 ((_RES != GAME_UW2) && (obj.item_id == 161))
-        //                 )
-        //             {
-        //                 quality = 0x3F;
-        //             }
-
-        //             itemvalue = (itemvalue * quality) >> 6;
-        //             if (applyAccuracy)
-        //             {
-        //                 //Rng.r = new System.Random(obj.item_id);//RNG is always re-seeded with item_id before getting offset here
-        //                 Rng.Seed = (uint)obj.item_id;
-        //                 itemvalue = Rng.RandomOffset(itemvalue, -appraise_accuracy, +appraise_accuracy);
-        //             }
-        //             return itemvalue;
-        //         }
-        //     }
-
-        //     return 0;
-        // }
-
+        /// <summary>
+        /// basevalue plus a random min to max % of it (max excluded), the product with basevalue in 16 bits
+        /// (range, uw1 BARTER.C:846-851, uw2 BARTER.C:826-831).
+        /// </summary>
+        static int Range(int basevalue, int min, int max)
+        {
+            return (short)(basevalue + (short)(basevalue * (min + Rng.RandScale(max - min))) / 100);
+        }
 
         /// <summary>
-        /// Gets the value of the item trading, account for likes/dislikes and appraisal accuracy
+        /// The gain of an offer in %, (player's value - NPC's value) * 100 / NPC's value, or 100 when the NPC's side is worth nothing.
+        /// The product is 16-bit, so once the two sides differ by more than 327 it wraps, and a gross overpayment comes out
+        /// as a loss (do_offer and do_judgement, uw1 BARTER.C:656-657, 764-765, uw2 BARTER.C:619-620, 743-744).
         /// </summary>
-        /// <param name="obj"></param>
-        /// <param name="ApplyLikeDislike"></param>
-        /// <param name="appraise_accuracy"></param>
-        /// <param name="applyAccuracy"></param>
-        /// <returns></returns>
-        static int GetTradeValueOfItem(uwObject obj, bool ApplyLikeDislike = false, int appraise_accuracy = 0, bool applyAccuracy = false)
+        public static int TradeGain(int playerValue, int npcValue)
         {
-            float multiplier = 1f;
-            int itemvalue = 0;
-            var itemCategory = obj.item_id >> 4;
-
-            var quality = obj.quality;
-            if (((obj.item_id == 160) || (obj.item_id == 161)) && (_RES != GAME_UW2))
+            if (npcValue > 0)
             {
-                quality = 63;
+                return (short)((playerValue - npcValue) * 100) / npcValue;
             }
-            if (((obj.item_id == 160)) && (_RES == GAME_UW2))
-            {
-                quality = 63;
-            }
-
-            if (ApplyLikeDislike)
-            {
-                //return the value adjusted for the npc likes dislikes.
-                if (Likes != 0)
-                {//loop the stack starting at Likes until value 0xFF is hit.
-                 //if value is >=1000 then liked is a class of object
-                 //if value < 1000 then liked is an exact object match
-                 //if liked value is 1.5 times
-                 //itemvalue = (commonObjDat.monetaryvalue(obj.item_id) / 3) * 2;
-                 //Debug.Print($"Likes are {Likes}");                   
-
-                    var arrayindex = Likes;
-                    var entry = at(arrayindex);
-                    while (entry != -1)
-                    {
-                        if (entry >= 1000)
-                        {
-                            if (itemCategory == entry - 1000)
-                            {
-                                multiplier = 1.5f;
-                                Debug.Print($"NPC likes item category of {GameStrings.GetSimpleObjectNameUW(obj.item_id)}");
-                            }
-                        }
-                        else
-                        {
-
-                            if (entry == obj.item_id)
-                            {
-                                multiplier = 1.5f;
-                                Debug.Print($"NPC likes item {GameStrings.GetSimpleObjectNameUW(obj.item_id)}");
-                            }
-                        }
-                        arrayindex++;
-                        entry = at(arrayindex);
-                    }
-                }
-                if (Dislikes != 0)
-                {
-                    //if unliked no value
-                    //itemvalue = 0;
-                    Debug.Print($"Dislikes are {Dislikes}");
-
-                    var arrayindex = Dislikes;
-                    var entry = at(arrayindex);
-                    while (entry != -1)
-                    {
-                        if (entry >= 1000)
-                        {
-                            if (itemCategory == entry - 1000)
-                            {
-                                multiplier = 0f;
-                                Debug.Print($"NPC dislikes item category of {GameStrings.GetSimpleObjectNameUW(obj.item_id)}");
-                                return 0;
-                            }
-                        }
-                        else
-                        {
-                            if (obj.item_id == entry)
-                            {
-                                multiplier = 0f;
-                                Debug.Print($"NPC dislikes item {GameStrings.GetSimpleObjectNameUW(obj.item_id)}");
-                                return 0;
-                            }
-                        }
-                        arrayindex++;
-                        entry = at(arrayindex);
-                    }
-                }
-
-                itemvalue = (int)(commonObjDat.monetaryvalue(obj.item_id) * multiplier);
-                itemvalue = (itemvalue * quality) >> 6;
-            }
-            else
-            {
-                //return the true base value adjusted for quality.
-                itemvalue = commonObjDat.monetaryvalue(obj.item_id);
-                itemvalue = (itemvalue * quality) >> 6;
-            }
-
-            //Adjust the value of the item based on the players/npcs appraisal accuracy score
-            var offset = Rng.RandomOffset(itemvalue, -appraise_accuracy, +appraise_accuracy);
-            return itemvalue;
+            return 100;
         }
 
         /// <summary>
