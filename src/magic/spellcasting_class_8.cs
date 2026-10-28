@@ -71,38 +71,32 @@ namespace Underworld
                         var monsterlevel = 2;
                         if (caster == playerdat.playerObject)
                         {
-                            monsterlevel = System.Math.Max(monsterlevel, playerdat.Casting);
+                            monsterlevel = System.Math.Max(monsterlevel, playerdat.Casting & 0xFF);
                         }
                         else
                         {
-                            monsterlevel = System.Math.Max(monsterlevel, playerdat.dungeon_level << 2); //this is very high, carried over code from UW1 as summon monster not available in uw2
+                            monsterlevel = System.Math.Max(monsterlevel, (playerdat.dungeon_level << 2) & 0xFF); //lvl is an unsigned char in the original. this is very high, carried over code from UW1 as summon monster not available in uw2
                         }
+                        //Pick lvl + rand() % lvl, rerolled until valid. uw1 SPELLS.C:605-612, uw2 SPELLS2.C:511-518
+                        //The original rerolls forever; the retry limit only guards against a hang.
                         bool ValidMonster = false;
-                        int retries = 0;//just in case probability runs against us
-                        while ((!ValidMonster) && (retries <= 16))
+                        int retries = 0;
+                        while (!ValidMonster)
                         {
-                            itemid = 0x40 + (Rng.r.Next(0, monsterlevel) & 0x3F);
+                            if (retries++ >= 1000)
+                            {
+                                itemid = -1;//cancel
+                                return;
+                            }
+                            itemid = monsterlevel + Rng.r.Next(0, monsterlevel) + 0x40;
                             //whichList = ObjectFreeLists.ObjectListType.MobileList;
-                            if (
+                            ValidMonster = !(
                                 (critterObjectDat.avghit(itemid) == 0)
                                 || critterObjectDat.isSwimmer(itemid)
                                 || critterObjectDat.unkPassivenessProperty(itemid)
                                 || (itemid == 0x7b)
                                 || (itemid == 0x7c)
-                                )
-                            {//monster types not allowed
-                                ValidMonster = false;
-                            }
-                            else
-                            {
-                                ValidMonster = true;
-                            }
-                            retries++;
-                            if (retries >= 16)
-                            {
-                                itemid = -1;//cancel
-                                return;
-                            }
+                                );//monster types not allowed
                         }
                         break;
                     }
