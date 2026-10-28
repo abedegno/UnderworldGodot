@@ -76,7 +76,7 @@ public sealed class VisionMapEdge : Scenario
                             _runs++;
                             try
                             {
-                                position.Invoke(null, new object[] { (short)((s.x << 8) + 0x80), (short)((s.y << 8) + 0x80), (short)0, Yaw[dir], (short)0, (short)0, false, true });
+                                position.Invoke(null, new object[] { (short)((s.x << 8) + 0x80), (short)((s.y << 8) + 0x80), (short)0, Yaw[dir], (short)0, (short)0, false, true, false, false });
                             }
                             catch (TargetInvocationException e)
                             {
