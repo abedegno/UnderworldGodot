@@ -245,6 +245,7 @@ public partial class ScenarioRunner : Node
         (() => new StackMerge(), true),
         (() => new LitLightPlaces(), true),
         (() => new ContainerWeightFirst(), true),
+        (() => new BagOrderAndMoveOut(), true),
         (() => new VoidNoExploreExperience(), true),
         (() => new ExploreExperienceLevelZero(), true),
         (() => new VoidUnlit(), true),
