@@ -511,7 +511,7 @@ namespace Underworld
                 {
                     //damage & 3 != 0
                     //seg025_26A1_4BA:
-                    var r = Rng.r.Next(0, 3);
+                    var r = Rng.RandMod(3);
                     if (r >= (scales & 0x3))
                     {
                         //seg025_26A1_4D5
@@ -548,7 +548,7 @@ namespace Underworld
                 {
                     //damage & 3 != 0
                     //seg025_26A1_4BA:
-                    var r = Rng.r.Next(0, 3);
+                    var r = Rng.RandMod(3);
                     if (r >= (scales & 0x3))
                     {
                         //seg025_26A1_4D5
