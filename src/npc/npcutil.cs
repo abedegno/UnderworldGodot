@@ -55,31 +55,20 @@ namespace Underworld
         }
 
 
+        /// <summary>
+        /// Sets the attitude of every active, non-loner critter of a race.
+        /// uw2 SCDEVENT.C:42-60 (gronk_race) with gronkify_attitude (uw2 SCDEVENT.C:424-430)
+        /// </summary>
         static void SetRaceAttitude(int targetrace, int newAttitute)
         {
-            for (var tileX = 0; tileX <= 63; tileX++)
+            for (int i = 0; i < UWTileMap.current_tilemap.NoOfActiveMobiles; i++)
             {
-                for (var tileY = 0; tileY <= 63; tileY++)
-                {
-                    if (UWTileMap.ValidTile(tileX, tileY))
-                    {
-                        var next = UWTileMap.current_tilemap.Tiles[tileX, tileY].indexObjectList;
-                        while (next != 0)
-                        {
-                            var obj = UWTileMap.current_tilemap.LevelObjects[next];
-                            if (obj.majorclass == 1)
-                            {//npc
-                                if (critterObjectDat.faction(obj.item_id) == targetrace)
-                                {
-                                    obj.npc_attitude = (short)newAttitute;
-                                    if (newAttitute == 0)
-                                    {
-                                        obj.ProjectileSourceID = 0; //clear last hit index
-                                    }
-                                }
-                            }
-                            next = obj.next;
-                        }
+                var obj = UWTileMap.current_tilemap.LevelObjects[UWTileMap.current_tilemap.GetActiveMobileAtIndex(i)];
+                if (obj.majorclass == 1)
+                {//npc
+                    if ((critterObjectDat.faction(obj.item_id) == targetrace) && (obj.UnkBit_0XA_Bit7 == 0))
+                    {//not a loner
+                        set_attitude(obj, newAttitute);
                     }
                 }
             }
