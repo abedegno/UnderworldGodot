@@ -73,6 +73,7 @@ public partial class ScenarioRunner : Node
         (() => new SummonMonsterLevel(), true),
         (() => new CarryCapacity(), true),
         (() => new LightBurnRates(), true),
+        (() => new LightOnQuality(), true),
         (() => new RepairCriticalFailure(), true),
         (() => new Uw1CreateObjectTrap(), true),
         (() => new Uw1SoundsDatLength(), true),
