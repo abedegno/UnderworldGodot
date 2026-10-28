@@ -495,7 +495,8 @@ namespace Underworld
                                     }
                                 }
 
-                                if (critter.AnimationFrame >= MaxAnimFrame)
+                                //UW1 counts the frames itself and ends on the shot frame whatever the art holds (uw1 AI.C:1163-1170, 1172-1178). UW2 ends on the art's last frame.
+                                if ((_RES == GAME_UW2) ? (critter.AnimationFrame >= MaxAnimFrame) : (critter.AnimationFrame == COMBAT_HITFRAME))
                                 {
                                     if (_RES == GAME_UW2)
                                     {//uw2 AI.C:1150-1151, a cast or a shot clears both
