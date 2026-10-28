@@ -114,7 +114,11 @@ namespace Underworld
                 }
             }
 
-            RenderCeiling(parent, 0, 0, CEILING_HEIGHT, CEILING_HEIGHT + CEIL_ADJ, Level.UWCeilingTexture, "CEILING", Level);
+            var ceiling = RenderCeiling(parent, 0, 0, CEILING_HEIGHT, CEILING_HEIGHT + CEIL_ADJ, Level.UWCeilingTexture, "CEILING", Level);
+            if (_RES == GAME_UW2)
+            {//UW2 draws no ceiling on levels 65 to 72 other than 68 (ciels 0, uw2 GRIDDB.C:237-249, 580). Hidden, so its collision stays.
+                ceiling.Visible = !((Level.thisDungeonLevel - 1) / 8 == 8 && Level.thisDungeonLevel != 0x44);
+            }
         }
 
 
