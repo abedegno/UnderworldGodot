@@ -951,7 +951,7 @@ namespace Underworld
             if (defenderZ + 1 <= si_attackermid)
             {
                 //seg024_24E9_29:
-                if (defenderTop - 1 >= attackerZ)
+                if (defenderTop - 1 >= si_attackermid)
                 {
                     //seg024_24E9_36
                     if (si_attackermid >= di_defendermid)
