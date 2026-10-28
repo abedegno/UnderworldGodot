@@ -72,6 +72,7 @@ public partial class ScenarioRunner : Node
         (() => new AcademyManaLevel(), true),
         (() => new SlowTickInterval(), true),
         (() => new TargetedSpellMana(), true),
+        (() => new TargetedSpellWaived(), true),
         (() => new Uw1CastingCheck(), true),
         (() => new SummonMonsterLevel(), true),
         (() => new CarryCapacity(), true),
