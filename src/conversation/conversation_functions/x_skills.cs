@@ -37,7 +37,7 @@ namespace Underworld
                     if (playerdat.SkillPoints > 0)
                     {
                         var result = playerdat.IncreaseSkillGroup(SkillNo);
-                        playerdat.UpdateHPManaMax(true);
+                        playerdat.UpdateHPManaMax(false);//grant_skill_advance ends with player_compute(0), which does not fill mana (uw2 SKILLS.C:220)
                         if (result==1)
                         {
                             playerdat.SkillPoints--;
@@ -55,16 +55,14 @@ namespace Underworld
                     {
                         if ((NewValue>=0) && (NewValue<=30))
                         {
-                            playerdat.SetSkillValue(SkillNo, NewValue);
-                            playerdat.UpdateHPManaMax(true);
+                            playerdat.SetSkillValue(SkillNo, NewValue);//no recompute (uw2 BABLHACK.C:430-431)
                         }
                     }
                     else
                     {
                         //General skill increase function based on governing stats. 
                         //Uses UW1 implementation from shrines
-                        playerdat.IncreaseSkill(SkillNo);
-                        playerdat.UpdateHPManaMax(true);
+                        playerdat.IncreaseSkill(SkillNo);//get_skill, no recompute (uw2 BABLHACK.C:424-425)
                     }
                     result_register = playerdat.GetSkillValue(SkillNo);
                 }

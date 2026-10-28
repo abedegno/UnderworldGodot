@@ -98,6 +98,7 @@ namespace Underworld
 
                     PlayEatingSounds();
                     TasteDescriptionString(obj);
+                    ClearObjectSpellWaitUW2();
 
                     int foodItemID = obj.item_id;
                     ObjectCreator.Consume(obj, UsedFromInventory);
@@ -240,6 +241,7 @@ namespace Underworld
                         break;
                     }
             }
+            ClearObjectSpellWaitUW2();
             var foodItemID = obj.item_id;
             ObjectCreator.Consume(obj, UsedFromInventory);
             if (_RES == GAME_UW2)
@@ -255,13 +257,15 @@ namespace Underworld
         /// <param name="UsedFromInventory"></param>
         static void TakeShrooms(uwObject obj, bool UsedFromInventory)
         {
-            var SkillCheckResult = playerdat.SkillCheck(playerdat.INT, 0x14);
-            var manachange = Rng.r.Next(1, 4) * (int)SkillCheckResult;
-
-            playerdat.ManaRegenChange(manachange);
+            //Any result but a near miss restores a flat 0 to 2 mana: restore_mana(-(rand() * 3 / 0x8000)) (uw1 USEITEMS.C:622-623, uw2 USEITEMS.C:222-223)
+            if (playerdat.SkillCheck(playerdat.INT, 0x14) != playerdat.SkillCheckResult.Fail)
+            {
+                playerdat.ManaRegenChange(-Rng.RandScale(3));
+            }
 
             playerdat.shrooms = Math.Min(3, playerdat.shrooms + 1);
             uimanager.AddToMessageScroll(GameStrings.GetString(1, GameStrings.str_the_mushroom_causes_your_head_to_spin_and_your_vision_to_blur_));
+            ClearObjectSpellWaitUW2();
             ObjectCreator.Consume(obj, UsedFromInventory);
             playerdat.PlayerStatusUpdate();
         }
@@ -357,6 +361,7 @@ namespace Underworld
                 }
             }
            
+            ClearObjectSpellWaitUW2();
             var foodItemID = obj.item_id;
             
             ObjectCreator.Consume(obj, UsedFromInventory);
@@ -368,6 +373,18 @@ namespace Underworld
             return true;
         }
 
+
+        /// <summary>
+        /// UW2's UseFood sets nextSpellTime to 0 for anything eaten or drunk that is not refused, so it also ends
+        /// any wait left by a wand (uw2 USEITEMS.C:349-351). UW1's UseFood has no such line.
+        /// </summary>
+        static void ClearObjectSpellWaitUW2()
+        {
+            if (_RES == GAME_UW2)
+            {
+                SpellCasting.ClearObjectSpellWait();
+            }
+        }
 
         public static bool IsFood(uwObject obj)
         {

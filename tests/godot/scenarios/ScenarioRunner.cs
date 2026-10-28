@@ -160,6 +160,11 @@ public partial class ScenarioRunner : Node
         (() => new CulledContainerContents(), true),
         (() => new MusicThemeChoice(), true),
         (() => new DoCollisionMomentumRestore(), true),
+        // fix/mana-and-food
+        (() => new SkillAdvanceMana(), true),
+        (() => new MushroomMana(), true),
+        (() => new FoodHeal(), true),
+        (() => new FoodClearsCastWait(), true),
         (() => new HarnessFails(), false),
     };
 
