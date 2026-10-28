@@ -47,7 +47,8 @@ namespace Underworld
         /// </summary>
         /// <param name="newTileX"></param>
         /// <param name="newTileY"></param>
-        public static void PlacePlayerInTile(int newTileX, int newTileY, int previousTileX = -1, int previousTileY = -1)
+        /// <param name="enterZ">The height the player arrives at, as UW2's change_GrSq takes it (uw2 PHYSICS.C:785-802); -1 for his current height.</param>
+        public static void PlacePlayerInTile(int newTileX, int newTileY, int previousTileX = -1, int previousTileY = -1, int enterZ = -1)
         {   
             if (UWTileMap.ValidTile(previousTileX, previousTileY))
             {
@@ -81,10 +82,14 @@ namespace Underworld
                 obj.tileX = newTileX; obj.tileY = newTileY;
                 if (_RES == GAME_UW2)
                 {
+                    if (enterZ != -1)
+                    {
+                        obj.zpos = (short)enterZ;
+                    }
                     trigger.RunPressureEnterExitTriggersInTile(
                         triggeringObject: playerObject,
                         tile: tile,
-                        ZParam: motion.playerMotionParams.z_4 >> 3,
+                        ZParam: (enterZ == -1) ? motion.playerMotionParams.z_4 >> 3 : enterZ,
                         triggerType: (int)triggerObjectDat.triggertypes.ENTER);
                 }
             }
