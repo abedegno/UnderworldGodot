@@ -300,6 +300,7 @@ namespace Underworld
                         //backpack
                         if (OpenedContainerIndex < 0)
                         {//backpackslot
+                            PutOutLitLight(UWTileMap.current_tilemap.LevelObjects[ObjectToPickup]);
                             var index = playerdat.AddObjectToPlayerInventory(ObjectToPickup, false);
                             playerdat.SetInventorySlotListHead(CurrentSlot, index);
 
@@ -314,10 +315,15 @@ namespace Underworld
                         }
                         else
                         {//into a container directly. test if it can hold the object
-                            if (container.TestContainerCanHold(
+                            var lit = PutOutLitLight(UWTileMap.current_tilemap.LevelObjects[ObjectToPickup]);
+                            if (!container.TestContainerCanHold(
                                 containerobject: playerdat.InventoryObjects[OpenedContainerIndex],
                                 objectToAdd: UWTileMap.current_tilemap.LevelObjects[ObjectToPickup],
                                 printReason: true))
+                            {
+                                UWTileMap.current_tilemap.LevelObjects[ObjectToPickup].item_id = lit;
+                            }
+                            else
                             {
                                 int occupiedslots;
                                 var containerobjects = container.GetObjects(
@@ -645,7 +651,17 @@ namespace Underworld
             {
                 //containers excluding the runebag.
                 //add object to container
-                if (container.TestContainerCanHold(target, source))
+                var lit = PutOutLitLight(source);
+                if (!container.TestContainerCanHold(target, source))
+                {
+                    source.item_id = lit;
+                }
+                else if (JoinStackInContainer(target, source))
+                {
+                    playerdat.ObjectInHand = -1;
+                    instance.mousecursor.SetCursorToCursor();
+                }
+                else
                 {
                     var Added = playerdat.AddObjectToPlayerInventory(srcObj, false);
                     var AddedObj = playerdat.InventoryObjects[Added];
@@ -680,23 +696,29 @@ namespace Underworld
                 return;
             }
 
-            if (target.item_id == source.item_id)
+            if (CanStackTogether(source, target))
             {
-                if ((commonObjDat.stackable(target.item_id) & 0x1) == 0)
-                {//and is stackable.
-                    //average out the quality between the stacks
-                    target.quality = (short)(((target.quality * target.ObjectQuantity) + (source.quality * source.ObjectQuantity)) / (target.ObjectQuantity + source.ObjectQuantity));
-
-                    //change the quantities.
-                    target.link += source.link;
-                    target.is_quant = 1;
-
-                    UpdateInventoryDisplay();
-                    //destroy the source.
-                    ObjectFreeLists.ReleaseFreeObject(source); //object in hand
-                    playerdat.ObjectInHand = -1; instance.mousecursor.SetCursorToCursor();
+                if ((OpenedContainerIndex >= 0) && (CurrentSlot >= 11)
+                    && !container.TestContainerCanHold(playerdat.InventoryObjects[OpenedContainerIndex], source))
+                {//the open bag must take the extra weight (uw1 INVPANEL.C:747-748, uw2 INVPANEL.C:738-739)
                     return;
                 }
+                //a piece without the quantity bit counts as one, and the stack takes the plain average of the two qualities (uw1 INVPANEL.C:749-764, uw2 INVPANEL.C:740-755)
+                var qty = source.ObjectQuantity;
+                if (target.is_quant == 0)
+                {
+                    target.is_quant = 1;
+                    target.link = 1;
+                }
+                target.link = (short)(target.link + qty);
+                target.quality = (short)((target.quality + source.quality) >> 1);
+
+                UpdateInventoryDisplay();
+                //destroy the source.
+                ObjectFreeLists.ReleaseFreeObject(source); //object in hand
+                playerdat.ObjectInHand = -1; instance.mousecursor.SetCursorToCursor();
+                playerdat.PlayerStatusUpdate();
+                return;
             }
             //try item combinations
             if (objectCombination.TryObjectCombination(target, source))
@@ -720,6 +742,92 @@ namespace Underworld
 
             //Update player state
             playerdat.PlayerStatusUpdate();
+        }
+
+        /// <summary>
+        /// A lit light (misc minor class 1, class 4 to 7) burns only in a shoulder or hand slot; put anywhere else, in the
+        /// backpack or in a bag, it goes out (ItemFitsSlot, uw1 INVPANEL.C:586-594, uw2 INVPANEL.C:572-582; PutObjectInBag,
+        /// uw1 BAGS.C:469-470, uw2 BAGS.C:466-467). Returns the item id it had, to put back if the object is then refused.
+        /// </summary>
+        public static int PutOutLitLight(uwObject obj)
+        {
+            var item_id = obj.item_id;
+            if ((obj.majorclass == 2) && (obj.minorclass == 1) && (obj.classindex >= 4) && (obj.classindex <= 7))
+            {
+                light.LightOff(obj);
+            }
+            return item_id;
+        }
+
+        /// <summary>
+        /// PutObjectInBag joins the object with the first stack in the container it can join, as AddToOccupiedSlot does
+        /// (uw1 BAGS.C:441-458, uw2 BAGS.C:438-455). Returns true when it joined and the object is gone.
+        /// </summary>
+        static bool JoinStackInContainer(uwObject cont, uwObject obj)
+        {
+            if ((cont.is_quant != 0) || (cont.link == 0))
+            {
+                return false;
+            }
+            var next = playerdat.InventoryObjects[cont.link];
+            while (next != null)
+            {
+                if (CanStackTogether(obj, next))
+                {
+                    var qty = obj.ObjectQuantity;
+                    if (next.is_quant == 0)
+                    {
+                        next.is_quant = 1;
+                        next.link = 1;
+                    }
+                    next.link = (short)(next.link + qty);
+                    next.quality = (short)((next.quality + obj.quality) >> 1);
+                    ObjectFreeLists.ReleaseFreeObject(obj);
+                    UpdateInventoryDisplay();
+                    return true;
+                }
+                next = (next.next == 0) ? null : playerdat.InventoryObjects[next.next];
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Whether obj joins the stack onto (AddTogether, uw1 INVPANEL.C:697-721, uw2 INVPANEL.C:686-712): the same item,
+        /// neither a container or other object whose link is not a count, a stackable item, keys for the same lock, and,
+        /// except for sling stones, bolts and arrows, the same quality band with neither ruined unless both are. UW2's
+        /// storage crystals never join.
+        /// </summary>
+        public static bool CanStackTogether(uwObject obj, uwObject onto)
+        {
+            if (obj.item_id != onto.item_id)
+            {
+                return false;
+            }
+            if (((obj.is_quant == 0) && (obj.link > 0)) || ((onto.is_quant == 0) && (onto.link > 0))
+                || ((obj.link & 0x200) != 0) || ((onto.link & 0x200) != 0)
+                || ((commonObjDat.stackable(obj.item_id) & 0x1) != 0))
+            {//contents, or a special link, or a stack field of 1 or 3
+                return false;
+            }
+            if (((obj.item_id >> 4) == 0x10) && (obj.owner != onto.owner))
+            {//keys to different locks
+                return false;
+            }
+            if (obj.ObjectQuantity + onto.ObjectQuantity >= 0x200)
+            {//the original allows any total below 999, but from 512 the quantity reads as a special link and the stack
+             //becomes a single object (uw1 INVPANEL.C:713, include/object.h:175; uw2 INVPANEL.C:702). Kept below 512 here.
+                return false;
+            }
+            if ((obj.item_id >= 0x10) && (obj.item_id <= 0x12))
+            {//sling stones, bolts and arrows join at any quality
+                return true;
+            }
+            if ((UWClass._RES == UWClass.GAME_UW2) && (obj.item_id == 0xA1))
+            {//storage crystal (uw2 INVPANEL.C:705-706)
+                return false;
+            }
+            int q1 = obj.quality, q2 = onto.quality;
+            return ((q1 >> 4) == (q2 >> 4)) && (((q1 != 0) && (q2 != 0)) || (q1 == q2));
         }
 
         public static void PickupObjectFromSlot(uwObject objAtSlot, bool forceFullQty = false)
@@ -779,6 +887,7 @@ namespace Underworld
 
         public static void MoveObjectInHandOutOfOpenedContainer(int ObjectToPickup)
         {
+            PutOutLitLight(UWTileMap.current_tilemap.LevelObjects[ObjectToPickup]);
             //the opened container
             if (OpenedContainerParent == -1)
             {

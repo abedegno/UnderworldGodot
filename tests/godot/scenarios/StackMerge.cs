@@ -20,7 +20,14 @@ namespace Underworld.Scenarios;
 /// occupied slot does (uimanager.UseObjectsTogether), in seven cases: two single torches of quality 40 and 35
 /// (the observed pair: a stack of 2 at 37); a stack of 3 torches at 40 and one at 35 (a stack of 4 at 37); torches
 /// at 40 and 50 (different bands: kept apart); torches at 0 and 10 (one ruined: kept apart); two keys 0x102 for
-/// lock 1; keys 0x102 for locks 1 and 2 (kept apart); and two lockpicks without the quantity bit (a stack of 2).
+/// lock 1; keys 0x102 for locks 1 and 2 (kept apart); two lockpicks without the quantity bit (a stack of 2); 300 and
+/// 211 arrows (a stack of 511); and 300 and 250 arrows. The original joins those last two too, since its limit is a total
+/// below 999, but the quantity is the 10-bit link field and from 512 it has the special-link bit 0x200, so the stack of
+/// 550 reads as a single arrow (uw1 INVPANEL.C:713, include/object.h:80, 175; uw2 INVPANEL.C:702). The port does not copy
+/// that bug: it keeps such pieces apart.
+/// PutObjectInBag joins an object dropped on a bag with the first stack inside that it can join, by the same rules
+/// (uw1/src/inv/BAGS.C:441-458; uw2/src/inv/BAGS.C:438-455). The scenario puts a sack holding one torch at 40 in the
+/// slot and drops on it a torch at 35 (joined: one stack of 2 at 37) and then one at 50 (a different band: kept apart).
 /// Where the game data marks an item as not stackable, the original keeps its pieces apart and so must the port.
 ///
 /// The port merged any two pieces of a stackable item, weighted the quality by the counts and added the link
@@ -29,6 +36,7 @@ namespace Underworld.Scenarios;
 public sealed class StackMerge : Scenario
 {
     const int Torch = 0x91, Key = 0x102, Lockpick = 0x101;   // ITEM_TORCH, ITEM_KEY_102, ITEM_LOCKPICK: uw1/src/include/items.h:293, 415-417; uw2 items.h:285, 407
+    const int Arrow = 0x12;   // ITEM_ARROW_12: uw1/src/include/items.h:167, uw2 items.h:152
     const int Slot = 5;
 
     public override string Name => "stack-merge";
@@ -46,9 +54,14 @@ public sealed class StackMerge : Scenario
         new("keys for lock 1 and lock 1", new(Key, true, 1, 40, 1), new(Key, true, 1, 40, 1), true, 40),
         new("keys for lock 1 and lock 2", new(Key, true, 1, 40, 1), new(Key, true, 1, 40, 2), false, 0),
         new("two lockpicks without the quantity bit", new(Lockpick, false, 0, 40, 0), new(Lockpick, false, 0, 40, 0), true, 40),
+        new("300 and 211 arrows", new(Arrow, true, 300, 40, 0), new(Arrow, true, 211, 40, 0), true, 40),
+        new("300 and 250 arrows", new(Arrow, true, 300, 40, 0), new(Arrow, true, 250, 40, 0), false, 0),
     };
 
+    const int Sack = 0x80;   // ITEM_SACK: uw1/src/include/items.h:273, uw2 items.h:266
+
     string _problem;
+    string _bag;   // the sack's contents after the drops into it
     readonly List<(bool merged, int count, int quality, int item)> _after = new();
 
     static int Count(uwObject o) => o.is_quant == 1 ? (o.link >= 0x200 ? -1 : o.link) : 1;
@@ -108,9 +121,46 @@ public sealed class StackMerge : Scenario
             _after.Add((handEmpty, o == null ? 0 : Count(o), o?.quality ?? -1, o?.item_id ?? 0));
             await Clear(c);
         }
+        {
+            int world = ObjectCreator.SpawnObjectInHand(Sack, changeInteractionmode: false);
+            if (world == 0) { _problem = "no sack could be made"; return; }
+            var sack = UWTileMap.current_tilemap.LevelObjects[world];
+            sack.is_quant = 0; sack.link = 0;
+            int sackIndex = playerdat.AddObjectToPlayerInventory(world, false);
+            playerdat.SetInventorySlotListHead(Slot, sackIndex);
+            playerdat.ObjectInHand = -1;
+            int inner = ObjectCreator.SpawnObjectInHand(Torch, changeInteractionmode: false);
+            if (inner == 0) { _problem = "no torch could be made for the sack"; return; }
+            Shape(UWTileMap.current_tilemap.LevelObjects[inner], new(Torch, true, 1, 40, 0));
+            int innerIndex = playerdat.AddObjectToPlayerInventory(inner, false);
+            sack = playerdat.InventoryObjects[sackIndex];
+            playerdat.InventoryObjects[innerIndex].next = 0;
+            sack.link = (short)innerIndex;
+            playerdat.ObjectInHand = -1;
+            foreach (int q in new[] { 35, 50 })
+            {
+                int hand = ObjectCreator.SpawnObjectInHand(Torch, changeInteractionmode: false);
+                if (hand == 0) { _problem = "no torch could be made for the hand"; return; }
+                Shape(UWTileMap.current_tilemap.LevelObjects[hand], new(Torch, true, 1, q, 0));
+                uimanager.UpdateInventoryDisplay();
+                uimanager.CurrentSlot = Slot;
+                uimanager.UseObjectsTogether(hand, sackIndex);
+                await c.Frames(1);
+            }
+            var parts = new List<string>();
+            sack = playerdat.InventoryObjects[playerdat.GetInventorySlotListHead(Slot)];
+            for (int i = sack.link; i != 0; i = playerdat.InventoryObjects[i].next)
+            {
+                var o = playerdat.InventoryObjects[i];
+                parts.Add($"0x{o.item_id:X} x{Count(o)} q{o.quality}");
+            }
+            _bag = string.Join(", ", parts);
+            await Clear(c);
+        }
         var notes = new List<string>();
         for (int i = 0; i < _after.Count; i++)
             notes.Add($"{Cases[i].What}: {(_after[i].merged ? "merged" : "kept apart")}, slot 0x{_after[i].item:X} x{_after[i].count} q{_after[i].quality}");
+        notes.Add($"sack after torches at 35 and 50 dropped on a torch at 40 inside: {_bag}");
         notes.Add($"stack field torch {commonObjDat.stackable(Torch)}, key {commonObjDat.stackable(Key)}, lockpick {commonObjDat.stackable(Lockpick)}");
         c.Note(string.Join("; ", notes));
     }
@@ -135,6 +185,12 @@ public sealed class StackMerge : Scenario
                 k.Equal($"{w.What}: count of the stack", n, a.count, average);
                 k.Equal($"{w.What}: quality of the stack", w.Quality, a.quality, average);
             }
+        }
+        if (commonObjDat.stackable(Torch) != 1 && commonObjDat.stackable(Torch) != 3)
+        {
+            var parts = (_bag ?? "").Split(", ");
+            bool joined = System.Array.IndexOf(parts, "0x91 x2 q37") >= 0 && System.Array.IndexOf(parts, "0x91 x1 q50") >= 0 && parts.Length == 2;
+            k.True(joined, $"torches at 35 and 50 dropped on a sack holding one at 40: expected a stack of 2 at 37 and one at 50, got \"{_bag}\" ({(c.Game == "uw1" ? "PutObjectInBag: uw1 BAGS.C:441-458" : "PutObjectInBag: uw2 BAGS.C:438-455")})");
         }
         return k.Result;
     }
