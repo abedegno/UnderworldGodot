@@ -419,7 +419,7 @@ namespace Underworld
                     {
                         if (critterObjectDat.bleed(DefendingCharacter.item_id) != 0) //this value is 0 for the player.
                         {
-                            AttackDamage += ((playerdat.Casting + 30) / 40); //there is a possible bug in vanilla uw2 where this will apply regardless of who the attacker is
+                            AttackDamage += AttackDamage * (playerdat.Casting + 30) / 40; //uw2 COMBAT.C:325. there is a possible bug in vanilla uw2 where this will apply regardless of who the attacker is
                         }
                     }
                 }
