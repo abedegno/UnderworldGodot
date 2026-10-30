@@ -282,6 +282,9 @@ namespace Underworld
             material.SetShaderParameter("objectindex_upperbytes", (obj.index >> 8) & 0xFF);
             var inst = new Instance { model = this, root = new Node3D { Name = "model" } };
             parent.AddChild(inst.root);
+            // the model stands where the sprite does: the quad stands 0.12 above the object (npc.CreateInstance)
+            // and every body's standing frame reaches the quad's bottom edge
+            inst.root.Position = new Vector3(0, 0.12f, 0);
             if (IsVoxel)
             {
                 inst.voxel = new MeshInstance3D { MaterialOverride = material };
