@@ -107,6 +107,9 @@ public class uwsettings
 
     public string pathuw1 { get; set; } = @"C:\Games\UW";
     public string pathuw2 { get; set; } = @"C:\Games\UW2";
+    /// <summary>The folder holding 3D creature models for enhancements.crittermodels (docs/enhancements.md):
+    /// uw1/CRnn.glb and uw1/CRnn.vox, named as the critter page files. Empty means none.</summary>
+    public string modelpath { get; set; } = "";
     public string gametoload { get; set; } = "UW1";
     public int level { get; set; } = 0;
     public float FOV { get; set; } = 75;
@@ -130,6 +133,11 @@ public class uwsettings
         /// <summary>Draws the camera between the game's motion updates, so the view moves at the
         /// display's frame rate rather than ten times a second. Drawing only.</summary>
         public bool smoothcamera { get; set; } = true;
+
+        /// <summary>Draws UW1 creatures as 3D models instead of sprites: "off", "model" (a skinned
+        /// mesh) or "voxel" (voxels), from the folder in modelpath. A creature with no model there
+        /// stays a sprite. Drawing only.</summary>
+        public string crittermodels { get; set; } = "off";
     }
 
     public void Save()

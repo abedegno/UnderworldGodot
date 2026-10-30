@@ -19,6 +19,9 @@ namespace Underworld
         /// Mesh this sprite is drawn on
         /// </summary>
         public uwMeshInstance3D sprite;
+
+        /// <summary>The creature's 3D model when enhancements.crittermodels draws it (crittermodel.cs), else null.</summary>
+        public CritterModel.Instance model;
         // public uwMeshInstance3D sprite_xfer;
         // public uwMeshInstance3D sprite_objectinfo;
 
@@ -92,6 +95,11 @@ namespace Underworld
             parent.AddChild(a_sprite);
             a_sprite.Position = new Vector3(0, n.FrameSize.Y / 2 + 0.12f, 0);
             //a_sprite.CreateConvexCollision();
+            if (_RES != GAME_UW2)
+            {
+                var art = CritterArt.GetCritter(obj.item_id & 0x3F);
+                n.model = CritterModel.Get(art)?.Create(parent, obj, art);
+            }
             n.SetAnimSprite(animationNo: obj.npc_animation, frameNo: obj.AnimationFrame, relativeHeading: CalculateFacingAngleToNPC(obj));
 
             if (ObjectCreator.printlabels)
@@ -167,6 +175,7 @@ namespace Underworld
         /// </summary>
         private void SetAnimSpriteUW1(int animationNo, short frameNo, int relativeHeading)
         {
+            int sequence = animationNo;
             if ((animationNo < 0x20) && (animationNo != ANIMATION_DEATH) && (((relativeHeading + 5) & 7) >= 3))
             {
                 animationNo = ANIMATION_IDLE;
@@ -185,6 +194,16 @@ namespace Underworld
             else if (sprite != null)
             {
                 sprite.Visible = false;
+            }
+            if (model != null)
+            {
+                // drawn as a model instead (enhancements.crittermodels): the sprite is still chosen as
+                // before, and hidden
+                model.Show(uwobject, sequence, frameNo);
+                if (sprite != null)
+                {
+                    sprite.Visible = false;
+                }
             }
             if (ObjectCreator.printlabels)
             {

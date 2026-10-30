@@ -15,6 +15,13 @@ namespace Underworld
         public static CritterArt[] critterArtStone = new CritterArt[64];
 
         public Palette pal; //the game pal.
+
+        /// <summary>The critter page files' number (CRnnPAGE, in octal there), from the assoc file.</summary>
+        public int FileID;
+
+        /// <summary>The 32 main palette indices of this creature type's aux palette: the art's pixels
+        /// are indices into it. Read for UW1 only.</summary>
+        public byte[] AuxPalette = new byte[32];
                             //private Palette auxpal;
 
         public Dictionary<string, CritterAnimation> Animations = new Dictionary<string, CritterAnimation>();
@@ -35,6 +42,7 @@ namespace Underworld
             string critterIDO = DecimalToOct(critter_id.ToString());
 
             pal = paletteToUse;
+            FileID = critter_id;
             int spriteIndex = 0;
             for (int pass = 0; pass < 2; pass++)
             {
@@ -245,6 +253,10 @@ namespace Underworld
             for (int i = 0; i < 32; i++)
             {
                 auxPalVal[i] = (byte)getAt(PageFile, (addptr) + (AuxPalNo * 32) + i, 8);
+            }
+            if (YY == 0)
+            {
+                AuxPalette = auxPalVal;
             }
 
             //Skip past the palettes
