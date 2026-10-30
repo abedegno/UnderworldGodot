@@ -108,6 +108,11 @@ namespace Underworld
         Node3D glbTemplate;
         readonly Dictionary<string, int> keyCount = new();
         readonly Dictionary<string, ArrayMesh[]> voxFrames = new();
+        // each voxel frame's bytes until it is first shown: building every frame of every clip at load
+        // took ten seconds for a level's creatures, and most frames are seldom seen
+        readonly Dictionary<string, byte[][]> voxData = new();
+        Vector3 voxOrigin;
+        float voxSize;
         bool IsVoxel => glbTemplate == null;
 
         static CritterModel LoadGlb(string path)
@@ -141,21 +146,36 @@ namespace Underworld
             if (new string(f.ReadChars(4)) != "UWVX" || f.ReadByte() != 1) { throw new InvalidDataException("not a version 1 voxel file"); }
             float size = f.ReadSingle();
             var origin = new Vector3(f.ReadInt16(), f.ReadInt16(), f.ReadInt16());
-            var m = new CritterModel();
+            var m = new CritterModel { voxOrigin = origin, voxSize = size };
             int clips = f.ReadByte();
             for (int c = 0; c < clips; c++)
             {
                 var name = System.Text.Encoding.ASCII.GetString(f.ReadBytes(f.ReadByte()));
-                var frames = new ArrayMesh[f.ReadByte()];
-                for (int i = 0; i < frames.Length; i++)
+                var data = new byte[f.ReadByte()][];
+                for (int i = 0; i < data.Length; i++)
                 {
                     int n = (int)f.ReadUInt32();
-                    frames[i] = VoxelMesh(f.ReadBytes(n * 4), n, origin, size);
+                    data[i] = f.ReadBytes(n * 4);
+                    if (data[i].Length != n * 4) { throw new EndOfStreamException("the file ends inside a frame"); }
                 }
-                m.voxFrames[name] = frames;
-                m.keyCount[name] = frames.Length;
+                m.voxData[name] = data;
+                m.voxFrames[name] = new ArrayMesh[data.Length];
+                m.keyCount[name] = data.Length;
             }
             return m;
+        }
+
+        /// <summary>A voxel frame's mesh, built the first time it is shown.</summary>
+        ArrayMesh VoxFrame(string clip, int key)
+        {
+            var frames = voxFrames[clip];
+            if (frames[key] == null)
+            {
+                var b = voxData[clip][key];
+                frames[key] = VoxelMesh(b, b.Length / 4, voxOrigin, voxSize);
+                voxData[clip][key] = null;
+            }
+            return frames[key];
         }
 
         static readonly Vector3I[] Dirs = { new(1, 0, 0), new(-1, 0, 0), new(0, 1, 0), new(0, -1, 0), new(0, 0, 1), new(0, 0, -1) };
@@ -168,27 +188,74 @@ namespace Underworld
             new Vector3[] { new(1, 0, 1), new(1, 1, 1), new(0, 1, 1), new(0, 0, 1) },
             new Vector3[] { new(0, 0, 0), new(0, 1, 0), new(1, 1, 0), new(1, 0, 0) } };
 
-        /// <summary>A mesh of the voxels' outer faces; each face's vertex colour red is its slot / 255.</summary>
+        /// <summary>
+        /// A mesh of the voxels' outer faces; each face's vertex colour red is its slot / 255. Faces of one
+        /// slot that touch on the same layer are joined into rectangles (greedy meshing), the same picture
+        /// with about half the triangles; neighbouring voxels seldom share a slot, so it is not more.
+        /// </summary>
         public static ArrayMesh VoxelMesh(byte[] b, int n, Vector3 origin, float size)
         {
-            var occ = new HashSet<Vector3I>();
-            for (int i = 0; i < n; i++) { occ.Add(new Vector3I(b[4 * i], b[4 * i + 1], b[4 * i + 2])); }
             var pos = new List<Vector3>(); var nor = new List<Vector3>(); var col = new List<Color>(); var idx = new List<int>();
-            for (int i = 0; i < n; i++)
+            if (n > 0)
             {
-                var p = new Vector3I(b[4 * i], b[4 * i + 1], b[4 * i + 2]);
-                var c = new Color(b[4 * i + 3] / 255f, 0, 0);
+                // the frame's voxels in a grid one voxel bigger all round, each cell its slot + 1 (0 empty)
+                var lo = new Vector3I(255, 255, 255); var hi = new Vector3I(0, 0, 0);
+                for (int i = 0; i < n; i++)
+                {
+                    for (int k = 0; k < 3; k++) { lo[k] = Math.Min(lo[k], b[4 * i + k]); hi[k] = Math.Max(hi[k], b[4 * i + k]); }
+                }
+                var dim = hi - lo + new Vector3I(3, 3, 3);
+                var grid = new byte[dim.X * dim.Y * dim.Z];
+                int At(int x, int y, int z) => (z * dim.Y + y) * dim.X + x;
+                for (int i = 0; i < n; i++) { grid[At(b[4 * i] - lo.X + 1, b[4 * i + 1] - lo.Y + 1, b[4 * i + 2] - lo.Z + 1)] = (byte)(b[4 * i + 3] + 1); }
+                var c3 = new int[3];
                 for (int d = 0; d < 6; d++)
                 {
-                    if (occ.Contains(p + Dirs[d])) { continue; }
-                    int start = pos.Count;
-                    foreach (var q in Quads[d])
+                    int a = d / 2, ua = (a + 1) % 3, va = (a + 2) % 3, du = dim[ua], dv = dim[va];
+                    var mask = new int[du * dv];
+                    for (int l = 1; l < dim[a] - 1; l++)
                     {
-                        pos.Add((new Vector3(p.X, p.Y, p.Z) + origin + q) * size);
-                        nor.Add(new Vector3(Dirs[d].X, Dirs[d].Y, Dirs[d].Z));
-                        col.Add(c);
+                        // the slot + 1 of each face on this layer that looks out to this side, else 0
+                        for (int v = 0; v < dv; v++)
+                        {
+                            for (int u = 0; u < du; u++)
+                            {
+                                c3[a] = l; c3[ua] = u; c3[va] = v;
+                                int g = grid[At(c3[0], c3[1], c3[2])];
+                                c3[a] = l + Dirs[d][a];
+                                mask[v * du + u] = g != 0 && grid[At(c3[0], c3[1], c3[2])] == 0 ? g : 0;
+                            }
+                        }
+                        for (int v = 0; v < dv; v++)
+                        {
+                            for (int u = 0; u < du; u++)
+                            {
+                                int s = mask[v * du + u];
+                                if (s == 0) { continue; }
+                                int w = 1; while (u + w < du && mask[v * du + u + w] == s) { w++; }
+                                int h = 1;
+                                while (v + h < dv)
+                                {
+                                    int k = 0; while (k < w && mask[(v + h) * du + u + k] == s) { k++; }
+                                    if (k < w) { break; }
+                                    h++;
+                                }
+                                for (int y = v; y < v + h; y++) { for (int x = u; x < u + w; x++) { mask[y * du + x] = 0; } }
+                                var c = new Color((s - 1) / 255f, 0, 0);
+                                int start = pos.Count;
+                                foreach (var q in Quads[d])
+                                {
+                                    // the unit face's corner, stretched over the rectangle, back in the file's voxels
+                                    var corner = new Vector3();
+                                    corner[a] = l - 1 + lo[a] + q[a]; corner[ua] = u - 1 + lo[ua] + q[ua] * w; corner[va] = v - 1 + lo[va] + q[va] * h;
+                                    pos.Add((corner + origin) * size);
+                                    nor.Add(new Vector3(Dirs[d].X, Dirs[d].Y, Dirs[d].Z));
+                                    col.Add(c);
+                                }
+                                idx.AddRange(new[] { start, start + 1, start + 2, start, start + 2, start + 3 });
+                            }
+                        }
                     }
-                    idx.AddRange(new[] { start, start + 1, start + 2, start, start + 2, start + 3 });
                 }
             }
             var arr = new Godot.Collections.Array();
@@ -261,7 +328,7 @@ namespace Underworld
                 root.Rotation = new Vector3(0, Turn(obj), 0);
                 if (voxel != null)
                 {
-                    voxel.Mesh = model.voxFrames[clip][Key];
+                    voxel.Mesh = model.VoxFrame(clip, Key);
                 }
                 else
                 {

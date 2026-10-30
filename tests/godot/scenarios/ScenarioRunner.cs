@@ -270,6 +270,7 @@ public partial class ScenarioRunner : Node
         // enhancements (docs/enhancements.md)
         (() => new SmoothCamera(), true),
         (() => new CritterModels(), true),
+        (() => new CritterModelsLife(), true),
         (() => new SettingsEnhancements(), true),
         (() => new HarnessFails(), false),
     };
