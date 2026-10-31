@@ -1,9 +1,11 @@
-// A creature drawn as a 3D model (enhancements.crittermodels, docs/enhancements.md). It writes what
+// A creature or floor object drawn as a 3D model (enhancements.crittermodels and itemmodels, docs/enhancements.md). It writes what
 // uwnpc_allred writes for a sprite, so the viewport combination shades and colours it the same way:
 // red the palette index, green the distance, and the object's index on the objectinfo layer.
 // The model's pixels hold the creature art's 32 colour slots, not colours. A slot becomes a main
 // palette index through the creature type's aux palette, as the original does with the sprites, so
 // the types that share a body (the four goblins) share one model.
+// A floor object's model (enhancements.itemmodels) uses the same shader with palette_direct: its
+// pixels are main palette indices already, as the object icons' are.
 
 shader_type spatial;
 render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_disabled,unshaded;
@@ -12,6 +14,8 @@ render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_disabl
 uniform sampler2D slot_texture : filter_nearest, repeat_enable;
 uniform bool slot_from_vertex = false;
 uniform int auxpalette[32];
+// a floor object's model (enhancements.itemmodels): its pixels hold main palette indices, not slots
+uniform bool palette_direct = false;
 
 global uniform float cutoffdistance; // how far away the scene will render
 global uniform sampler2D simpleshade: source_color,filter_nearest;//shading data for objectinfo layer. used to find darkness
@@ -28,7 +32,7 @@ void fragment() {
 		discard;
 	}
 	int slot = int(round((slot_from_vertex ? COLOR.r : texture(slot_texture, UV).r) * 255.0));
-	int index = auxpalette[clamp(slot, 0, 31)];
+	int index = palette_direct ? clamp(slot, 0, 255) : auxpalette[clamp(slot, 0, 31)];
 	float r = float(index) / 255.0;	// raw, as the sprites' one-channel textures give it
 	float maptouse = dist/cutoffdistance;
 

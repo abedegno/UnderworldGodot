@@ -564,6 +564,11 @@ namespace Underworld
 
         public static void CreateSprite(GRLoader gr, uwObject obj, int spriteNo, Node3D parent, string name, bool EnableCollision = false)
         {
+            if (ItemModel.Get(spriteNo) is ItemModel model)
+            {
+                model.Create(parent, obj);   // enhancements.itemmodels: drawn as a model instead (itemmodel.cs)
+                return;
+            }
             var a_sprite = new uwMeshInstance3D(); //MeshInstance3D(); //new Sprite3D();
             a_sprite.Name = name;
             a_sprite.Mesh = new QuadMesh();

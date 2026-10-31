@@ -138,6 +138,11 @@ public class uwsettings
         /// mesh) or "voxel" (voxels), from the folder in modelpath. A creature with no model there
         /// stays a sprite. Drawing only.</summary>
         public string crittermodels { get; set; } = "off";
+
+        /// <summary>Draws UW1 floor objects as 3D models instead of sprites: "off", "model" (a mesh,
+        /// or voxels where there is no mesh) or "voxel" (voxels), from the folder in modelpath. An
+        /// object with no model there stays a sprite. Drawing only.</summary>
+        public string itemmodels { get; set; } = "off";
     }
 
     public void Save()
