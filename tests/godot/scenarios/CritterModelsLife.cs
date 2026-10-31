@@ -24,6 +24,10 @@ namespace Underworld.Scenarios;
 ///   every creature drawn has its model again;
 /// - after a change of level (the game's teleport) and back, every creature drawn has a model and
 ///   every model belongs to a creature of the level shown.
+///
+/// The click check needs a window and a run of its own: after another scenario in the same run (a new game scene)
+/// the object-information view was not rendered at all, every pixel 0, while the game view drew. Headless, as the
+/// suite runs, it is skipped.
 /// </summary>
 public sealed class CritterModelsLife : Scenario
 {

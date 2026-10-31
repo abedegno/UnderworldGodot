@@ -272,6 +272,7 @@ public partial class ScenarioRunner : Node
         (() => new CritterModels(), true),
         (() => new CritterModelsLife(), true),
         (() => new ItemModels(), true),
+        (() => new ItemModelsLife(), true),
         (() => new SettingsEnhancements(), true),
         (() => new HarnessFails(), false),
     };
