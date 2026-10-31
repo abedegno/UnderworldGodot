@@ -192,6 +192,11 @@ public sealed class ItemModelsLife : Scenario
         Check(where == null || where.Value.DistanceTo(_spot) > 1.2f, $"PickUpAndDrop: the picked-up potion's model was left on the floor at {where}");
         if (held <= 0) return;
         var inHand = UWTileMap.current_tilemap.LevelObjects[held];
+        // a second red potion lying elsewhere already: the search below must find the dropped one, not this
+        var decoy = BatchB.SpawnStatic(Potion, playerdat.playerObject.tileX, Math.Clamp(playerdat.playerObject.tileY - 6, 1, 62));
+        if (decoy != null) objectInstance.RedrawFull(decoy);
+        // the red potions lying on the map before the drop: the dropped one must be none of them
+        var before = Items().Where(o => o.item_id == Potion && UWTileMap.ValidTile(o.tileX, o.tileY)).Select(o => o.index).ToHashSet();
         bool dropped = pickup.DropObjectByPlayer(inHand, false);
         if (dropped) { playerdat.ObjectInHand = -1; uimanager.instance.mousecursor.SetCursorToCursor(); }
         Check(dropped, "PickUpAndDrop: the potion could not be dropped");
@@ -200,10 +205,12 @@ public sealed class ItemModelsLife : Scenario
         for (int f = 0; f < 600 && landed == null; f++)
         {
             await c.Frames(1);
-            landed = Items().FirstOrDefault(o => o.item_id == Potion && o.instance?.uwnode != null && o.IsStatic);
+            landed = Items().FirstOrDefault(o => o.item_id == Potion && o.instance?.uwnode != null && o.IsStatic
+                && UWTileMap.ValidTile(o.tileX, o.tileY) && !before.Contains(o.index));
         }
         await c.Frames(10);
         c.Note(landed == null ? "dropped potion: not found lying anywhere" : $"dropped potion: object {landed.index} at ({landed.tileX},{landed.tileY})");
+        Check(landed == null || decoy == null || landed.index != decoy.index, "PickUpAndDrop: the search found the other red potion, not the dropped one");
         Check(landed != null && Model(landed) != null, "PickUpAndDrop: the dropped potion landed without a model");
         Check(landed == null || Quad(landed) == null, "PickUpAndDrop: the dropped potion shows its sprite as well");
     }
